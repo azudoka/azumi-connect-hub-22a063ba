@@ -280,6 +280,7 @@ export default function ProjetosPage() {
       consultorId: pConsultor,
       consultorNome: consultor?.nome ?? "—",
       consultorIniciais: consultor?.iniciais ?? "??",
+      assignedConsultorId: pConsultor,
       frente: "consultoria",
       status: "em_andamento",
       conclusao: 0,
