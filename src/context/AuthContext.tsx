@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-export type Papel = "admin" | "cliente";
+export type Papel = "admin" | "consultor" | "cliente";
 
 export interface AuthUser {
   nome: string;
@@ -26,7 +26,7 @@ function readStoredUser(): AuthUser | null {
     if (
       parsed &&
       typeof parsed.nome === "string" &&
-      (parsed.papel === "admin" || parsed.papel === "cliente")
+      (parsed.papel === "admin" || parsed.papel === "consultor" || parsed.papel === "cliente")
     ) {
       return parsed;
     }
