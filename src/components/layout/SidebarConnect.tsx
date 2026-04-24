@@ -91,7 +91,15 @@ const clienteGroups = [
 export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const papelLabel =
+    user?.papel === "admin"
+      ? "Administrador"
+      : user?.papel === "consultor"
+      ? "Consultor"
+      : user?.papel === "cliente"
+      ? "Cliente"
+      : "";
   const handleLogout = () => {
     logout();
     navigate("/login");
@@ -122,7 +130,7 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
                 Azumi Connect
               </div>
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">
-                {variant === "admin" ? "Admin · Consultor" : "Cliente"}
+                {papelLabel}
               </div>
             </div>
           </div>
