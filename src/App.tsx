@@ -76,7 +76,7 @@ const AppRoutes = () => (
     <Route
       element={
         <PrivateRoute allowed={["admin", "consultor"]}>
-          <AppLayout variant="admin" />
+          <AppLayout />
         </PrivateRoute>
       }
     >
