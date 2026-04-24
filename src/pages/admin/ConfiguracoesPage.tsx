@@ -598,14 +598,6 @@ function ConsultorDialog({
       onOpenChange={(v) => {
         onOpenChange(v);
         if (!v && !isEdit) reset();
-        if (v && initial) {
-          // Re-sincroniza ao abrir em modo edição
-          setNome(initial.nome);
-          setEmail(initial.email);
-          setCargo(initial.cargo);
-          setTaxa(initial.taxa.toString());
-          setStatus(initial.status);
-        }
       }}
     >
       <DialogContent>
