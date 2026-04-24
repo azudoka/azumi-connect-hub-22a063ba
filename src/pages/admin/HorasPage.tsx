@@ -126,6 +126,49 @@ const lancamentosIniciais: Lancamento[] = [
   },
 ];
 
+// Lista plana de tarefas para os Selects e para deep-link via ?task_id=
+type Tarefa = {
+  id: string;            // ex: "kentaki::Mapeamento de Cargos::Diagnóstico inicial"
+  empresaId: string;
+  empresaNome: string;
+  projeto: string;
+  entregavel: string;
+  label: string;         // texto exibido no select
+};
+
+const tarefasFlat: Tarefa[] = (() => {
+  const arr: Tarefa[] = [];
+  for (const [empresaId, projetos] of Object.entries(projetosPorEmpresa)) {
+    const empresaNome = empresas.find((e) => e.id === empresaId)?.nome ?? empresaId;
+    for (const p of projetos) {
+      for (const ent of p.entregaveis) {
+        arr.push({
+          id: `${empresaId}::${p.projeto}::${ent}`,
+          empresaId,
+          empresaNome,
+          projeto: p.projeto,
+          entregavel: ent,
+          label: `${p.projeto} — ${ent}`,
+        });
+      }
+    }
+  }
+  return arr;
+})();
+
+// Regra: timer só pode ser iniciado entre 08h e 18h, segunda a sábado.
+function isHorarioPermitido(now: Date = new Date()): {
+  permitido: boolean;
+  motivo?: string;
+} {
+  const dia = now.getDay(); // 0=dom, 6=sáb
+  const hora = now.getHours();
+  if (dia === 0) return { permitido: false, motivo: "Timer indisponível aos domingos." };
+  if (hora < 8) return { permitido: false, motivo: "Timer disponível a partir das 08h." };
+  if (hora >= 18) return { permitido: false, motivo: "Horário encerrado — disponível das 08h às 18h." };
+  return { permitido: true };
+}
+
 // ────────────────────────────────────────────────────────────────────
 // Componente principal
 // ────────────────────────────────────────────────────────────────────
