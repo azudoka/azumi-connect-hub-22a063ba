@@ -154,6 +154,7 @@ const ENTREGAVEIS: EntregavelProx[] = [
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { pode } = usePermissao();
   const now = useMemo(() => new Date(), []);
   const saudacao = getSaudacao(now.getHours());
   const dataFormatada = useMemo(
