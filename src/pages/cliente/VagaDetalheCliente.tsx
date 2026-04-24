@@ -452,6 +452,74 @@ export default function VagaDetalheCliente() {
           </div>
         </div>
       )}
+
+      {/* B01: Ciência do relatório final — botão global no rodapé,
+          visível apenas quando a vaga está concluída. Estado persistido
+          em localStorage (chave azumi_ciencias) por vagaId. */}
+      {podeAssinarCiencia && (
+        <>
+          <SectionDivider>Relatório final</SectionDivider>
+          <div className="bg-card border border-border rounded-xl p-5 flex items-start gap-4 flex-wrap">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <FileSignature className="h-5 w-5" />
+            </div>
+            <div className="flex-1 min-w-[220px]">
+              <h4 className="font-display font-semibold text-sm">Ciência do relatório final</h4>
+              <p className="text-xs text-muted-foreground mt-1">
+                {ciencia
+                  ? `Você assinou ciência em ${new Date(ciencia.data).toLocaleString("pt-BR")}.`
+                  : "Confirme que você tomou ciência do relatório final desta vaga."}
+              </p>
+            </div>
+            {ciencia ? (
+              <button
+                disabled
+                className="h-9 px-4 rounded-lg bg-success/15 text-success border border-success/30 text-sm font-medium inline-flex items-center gap-1.5 cursor-default"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Ciência assinada
+              </button>
+            ) : (
+              <button
+                onClick={() => setCienciaOpen(true)}
+                className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5 hover:opacity-90"
+              >
+                <FileSignature className="h-4 w-4" />
+                Assinar ciência do relatório final
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* B01: Modal de confirmação da ciência */}
+      {cienciaOpen && (
+        <div className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
+            <h3 className="font-display text-lg font-semibold">Assinar ciência do relatório final</h3>
+            <p className="text-sm text-muted-foreground mt-2">
+              Ao assinar, você confirma que tomou ciência do relatório final desta vaga.
+            </p>
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                onClick={() => setCienciaOpen(false)}
+                disabled={assinandoCiencia}
+                className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleAssinarCiencia}
+                disabled={assinandoCiencia}
+                className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 inline-flex items-center gap-1.5"
+              >
+                {assinandoCiencia && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                {assinandoCiencia ? "Assinando…" : "Assinar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
