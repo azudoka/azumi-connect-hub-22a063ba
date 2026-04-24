@@ -21,6 +21,7 @@ import GestaoConta from "./pages/admin/GestaoConta";
 import HorasPage from "./pages/admin/HorasPage";
 import ProjetosPage from "./pages/admin/ProjetosPage";
 import ProjetoDetalhe from "./pages/admin/ProjetoDetalhe";
+import FinanceiroPage from "./pages/admin/FinanceiroPage";
 
 import ClienteDashboard from "./pages/cliente/ClienteDashboard";
 import VagaDetalheCliente from "./pages/cliente/VagaDetalheCliente";
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/app/projetos" element={<ProjetosPage />} />
             <Route path="/app/projetos/:id" element={<ProjetoDetalhe />} />
             <Route path="/app/horas" element={<HorasPage />} />
+            <Route path="/app/financeiro" element={<FinanceiroPage />} />
             <Route path="/app/solicitacoes" element={<Stub title="Solicitações" subtitle="Central de solicitações" />} />
             <Route path="/app/solicitacoes/:id" element={<Stub title="Detalhe da solicitação" />} />
             <Route path="/app/atracao" element={<AtracaoLista />} />
