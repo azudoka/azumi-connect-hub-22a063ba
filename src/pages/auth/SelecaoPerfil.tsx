@@ -3,7 +3,7 @@ import {
   ShieldCheck, UserCog, Building2, Crown, Users, UserCircle2, BriefcaseBusiness, ArrowRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth, type Papel } from "@/context/AuthContext";
+import { useAuth, type AuthUser } from "@/context/AuthContext";
 
 type PerfilItem = {
   key: string;
@@ -12,7 +12,7 @@ type PerfilItem = {
   icon: typeof ShieldCheck;
   to: string;
   color: string;
-  auth?: { nome: string; papel: Papel };
+  auth?: AuthUser;
 };
 
 const perfis: PerfilItem[] = [
