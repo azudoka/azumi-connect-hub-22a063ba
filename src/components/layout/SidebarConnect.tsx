@@ -268,9 +268,14 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
               <div className="h-8 w-8 rounded-full bg-gradient-brand flex items-center justify-center text-[10px] font-semibold text-white">AB</div>
               <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-success ring-2 ring-sidebar" />
             </div>
-            <NavLink to="/login" className="text-muted-foreground hover:text-destructive">
+            <button
+              type="button"
+              onClick={handleLogout}
+              aria-label="Sair"
+              className="text-muted-foreground hover:text-destructive"
+            >
               <LogOut className="h-4 w-4" />
-            </NavLink>
+            </button>
           </div>
         )}
       </div>
