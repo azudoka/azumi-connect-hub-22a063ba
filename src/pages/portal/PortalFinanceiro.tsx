@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { CheckCircle2, Download, FileText, Wallet } from "lucide-react";
+import { Download, Wallet } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
 import { KpiCard } from "@/components/KpiCard";
@@ -50,12 +50,8 @@ const statusMap: Record<Fatura["status"], { key: StatusKey; label: string }> = {
 };
 
 export default function PortalFinanceiro() {
-  const totalFaturado = faturas.reduce((s, f) => s + f.valor, 0);
   const aPagar = faturas
     .filter((f) => f.status === "atrasado")
-    .reduce((s, f) => s + f.valor, 0);
-  const pago = faturas
-    .filter((f) => f.status === "pago")
     .reduce((s, f) => s + f.valor, 0);
 
   const handleBaixar = () => toast.info("Em breve");
