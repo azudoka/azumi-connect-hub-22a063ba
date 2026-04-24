@@ -205,13 +205,15 @@ export default function DashboardPage() {
           hint="vs 98h mês anterior"
           trend={{ value: "+17%", positive: true }}
         />
-        <KpiCard
-          label="Faturamento do mês"
-          value={formatBRL(fin.faturado)}
-          icon={CircleDollarSign}
-          hint={`Meta: ${formatBRL(fin.metaFaturamento)}`}
-          trend={{ value: `${pctFaturamento}% da meta`, positive: pctFaturamento >= 80 }}
-        />
+        {pode("financeiro.ver_valores") && (
+          <KpiCard
+            label="Faturamento do mês"
+            value={formatBRL(fin.faturado)}
+            icon={CircleDollarSign}
+            hint={`Meta: ${formatBRL(fin.metaFaturamento)}`}
+            trend={{ value: `${pctFaturamento}% da meta`, positive: pctFaturamento >= 80 }}
+          />
+        )}
         <KpiCard
           label="Entregáveis em atraso"
           value={String(atrasados)}
