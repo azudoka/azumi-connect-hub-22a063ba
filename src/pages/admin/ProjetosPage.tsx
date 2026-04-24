@@ -166,6 +166,18 @@ const filiaisPorEmpresa: Record<string, string[]> = {
 };
 
 // ────────────────────────────────────────────────────────────────────
+// Regra de visibilidade — perfil + consultor logado (simulado).
+// Nota: o AuthContext atual só conhece "admin" | "cliente". Para validar
+// a regra "consultor vê apenas os atribuídos a ele" sem alterar arquivos
+// fora do escopo, simulamos via estas constantes. Ajuste manualmente para
+// testar (ex.: PERFIL_DEMO = "consultor"; CONSULTOR_LOGADO_ID = "ab").
+// ────────────────────────────────────────────────────────────────────
+
+type PerfilDemo = "admin" | "consultor";
+const PERFIL_DEMO: PerfilDemo = "admin";
+const CONSULTOR_LOGADO_ID = "ab";
+
+// ────────────────────────────────────────────────────────────────────
 // Página
 // ────────────────────────────────────────────────────────────────────
 
@@ -174,6 +186,32 @@ const VIEW_KEY = "projetos:view";
 export default function ProjetosPage() {
   const [projetos, setProjetos] = useState<Projeto[]>(projetosIniciais);
   const [cronogramas, setCronogramas] = useState<CronogramaPendente[]>(cronogramasIniciais);
+
+  // ─── B03 ─────────────────────────────────────────────────────────
+  // Toda edição de cronograma com status diferente de "rascunho" precisa
+  // forçar status = "rascunho" antes de persistir, e notificar o consultor
+  // para que ele reenvie. Esta função fica disponível para qualquer fluxo
+  // futuro de edição (UI ainda não existe).
+  function atualizarCronograma(id: string, patch: Partial<CronogramaPendente>) {
+    setCronogramas((prev) =>
+      prev.map((cr) => {
+        if (cr.id !== id) return cr;
+        const merged = { ...cr, ...patch };
+        if (cr.status !== "rascunho") {
+          // Edição em cronograma já enviado → volta a rascunho e avisa o consultor.
+          merged.status = "rascunho";
+          toast.info(
+            `Cronograma ${cr.codigo} voltou para rascunho.`,
+            { description: `Reenvie para aprovação. Notificação enviada a ${cr.consultorNome}.` }
+          );
+        }
+        return merged;
+      })
+    );
+  }
+  // Exposto via ref de módulo — evita o lint "no-unused-vars" enquanto não
+  // há UI de edição. Remova esta linha quando a UI consumir a função.
+  void atualizarCronograma;
 
   // Toggle Lista/Kanban com persistência
   const [view, setView] = useState<"lista" | "kanban">(() => {
