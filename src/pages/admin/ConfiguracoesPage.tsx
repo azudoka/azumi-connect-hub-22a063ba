@@ -69,22 +69,34 @@ interface ConsultorTeam {
 }
 
 const CONSULTORES_INICIAIS: ConsultorTeam[] = [
-  { id: "ab", nome: "Ana Beatriz",  cargo: "Consultora Sênior", email: "ana.beatriz@azumi.com.br",  taxa: 85, status: "ativo" },
-  { id: "ct", nome: "Camila Torres", cargo: "Consultora Sênior", email: "camila.torres@azumi.com.br", taxa: 80, status: "ativo" },
-  { id: "rm", nome: "Rafael Moura",  cargo: "Consultor Pleno",   email: "rafael.moura@azumi.com.br",  taxa: 80, status: "ativo" },
+  { id: "ab", nome: "Ana Beatriz",   cargo: "Consultora Sênior", email: "ana@azumirh.com.br",    taxa: 85, status: "ativo" },
+  { id: "ct", nome: "Camila Torres", cargo: "Consultora Pleno",  email: "camila@azumirh.com.br", taxa: 80, status: "ativo" },
+  { id: "rm", nome: "Rafael Moura",  cargo: "Consultor Pleno",   email: "rafael@azumirh.com.br", taxa: 80, status: "ativo" },
 ];
 
 const FUSOS = [
   { value: "America/Sao_Paulo", label: "America/Sao_Paulo (GMT-3)" },
   { value: "America/Manaus",    label: "America/Manaus (GMT-4)" },
   { value: "America/Belem",     label: "America/Belem (GMT-3)" },
+  { value: "America/Fortaleza", label: "America/Fortaleza (GMT-3)" },
 ];
+
+// =====================================================================
+// Helpers
+// =====================================================================
 
 const getIniciais = (nome: string) =>
   nome.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("");
 
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+// Cor de avatar derivada do nome — mesmo padrão do ClientesPage
+const getAvatarTone = (nome: string) => {
+  let h = 0;
+  for (let i = 0; i < nome.length; i++) h = (h * 31 + nome.charCodeAt(i)) % 360;
+  return { backgroundColor: `hsl(${h} 60% 88%)`, color: `hsl(${h} 55% 28%)` };
+};
 
 // =====================================================================
 // Página
@@ -94,10 +106,10 @@ export default function ConfiguracoesPage() {
   const [tab, setTab] = useState("perfil");
 
   // ---- Perfil ----
-  const [nome, setNome]       = useState("Ana Beatriz");
-  const [email, setEmail]     = useState("ana.beatriz@azumi.com.br");
-  const [telefone, setTelefone] = useState("(11) 91234-5678");
-  const [cargo, setCargo]     = useState("Consultora Sênior");
+  const [nome, setNome]         = useState("Ana Beatriz");
+  const [email, setEmail]       = useState("ana@azumirh.com.br");
+  const [telefone, setTelefone] = useState("(41) 99999-0000");
+  const [cargo, setCargo]       = useState("Consultora Sênior");
   const [senhaOpen, setSenhaOpen] = useState(false);
 
   const handleSalvarPerfil = () => {
@@ -105,7 +117,7 @@ export default function ConfiguracoesPage() {
       toast.error("Nome e e-mail são obrigatórios.");
       return;
     }
-    toast.success("Perfil atualizado com sucesso.");
+    toast.success("Perfil atualizado com sucesso");
   };
 
   // ---- Equipe ----
@@ -124,8 +136,9 @@ export default function ConfiguracoesPage() {
   };
 
   // ---- Sistema ----
-  const [emailNotif, setEmailNotif] = useState(true);
+  const [emailNotif, setEmailNotif]   = useState(true);
   const [encerraTimer, setEncerraTimer] = useState(true);
+  const [resumoSemanal, setResumoSemanal] = useState(false);
   const [fuso, setFuso] = useState("America/Sao_Paulo");
   const [encerrarContaOpen, setEncerrarContaOpen] = useState(false);
 
@@ -146,39 +159,37 @@ export default function ConfiguracoesPage() {
         {/* =================== PERFIL =================== */}
         <TabsContent value="perfil" className="space-y-5">
           <Card className="p-6">
-            <div className="flex items-start gap-6 flex-wrap">
-              <div className="flex flex-col items-center gap-3">
-                <Avatar className="h-24 w-24">
-                  <AvatarFallback className="text-2xl bg-primary/15 text-primary font-semibold">
-                    {getIniciais(nome)}
-                  </AvatarFallback>
-                </Avatar>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => toast.info("Upload de foto em breve")}
-                >
-                  <Camera className="h-3.5 w-3.5 mr-1.5" /> Alterar foto
-                </Button>
-              </div>
+            <div className="flex flex-col items-center gap-3 mb-6">
+              <Avatar className="h-24 w-24">
+                <AvatarFallback className="text-2xl bg-primary/15 text-primary font-semibold">
+                  {getIniciais(nome) || "AB"}
+                </AvatarFallback>
+              </Avatar>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => toast.info("Em breve")}
+              >
+                <Camera className="h-3.5 w-3.5 mr-1.5" /> Alterar foto
+              </Button>
+            </div>
 
-              <div className="flex-1 min-w-[260px] grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nome">Nome completo</Label>
-                  <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">E-mail</Label>
-                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tel">Telefone</Label>
-                  <Input id="tel" value={telefone} onChange={(e) => setTelefone(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cargo">Cargo</Label>
-                  <Input id="cargo" value={cargo} onChange={(e) => setCargo(e.target.value)} />
-                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="nome">Nome completo</Label>
+                <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tel">Telefone</Label>
+                <Input id="tel" value={telefone} onChange={(e) => setTelefone(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cargo">Cargo</Label>
+                <Input id="cargo" value={cargo} onChange={(e) => setCargo(e.target.value)} />
               </div>
             </div>
 
@@ -234,7 +245,10 @@ export default function ConfiguracoesPage() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
+                          <AvatarFallback
+                            className="text-xs font-semibold"
+                            style={getAvatarTone(c.nome)}
+                          >
                             {getIniciais(c.nome)}
                           </AvatarFallback>
                         </Avatar>
@@ -262,7 +276,7 @@ export default function ConfiguracoesPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-right font-data tabular-nums">
-                      {formatBRL(c.taxa)}
+                      {formatBRL(c.taxa)}/h
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -311,13 +325,13 @@ export default function ConfiguracoesPage() {
 
             <SettingRow
               title="Notificações por e-mail"
-              description="Receba resumos diários e alertas importantes por e-mail."
+              description="Receba alertas importantes por e-mail."
             >
               <Switch
                 checked={emailNotif}
                 onCheckedChange={(v) => {
                   setEmailNotif(v);
-                  toast.success(v ? "Notificações ativadas." : "Notificações desativadas.");
+                  toast.success("Preferência salva");
                 }}
               />
             </SettingRow>
@@ -332,36 +346,45 @@ export default function ConfiguracoesPage() {
                 checked={encerraTimer}
                 onCheckedChange={(v) => {
                   setEncerraTimer(v);
-                  toast.success(v ? "Encerramento automático ativado." : "Encerramento automático desativado.");
+                  toast.success("Preferência salva");
                 }}
               />
             </SettingRow>
 
             <Separator />
 
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <p className="text-sm font-medium">Fuso horário</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Define o fuso de exibição de datas e timers.
-                </p>
-              </div>
-              <Select
-                value={fuso}
-                onValueChange={(v) => {
-                  setFuso(v);
-                  toast.success("Fuso horário atualizado.");
+            <SettingRow
+              title="Resumo semanal por e-mail"
+              description="Envie um resumo consolidado da operação toda segunda-feira."
+            >
+              <Switch
+                checked={resumoSemanal}
+                onCheckedChange={(v) => {
+                  setResumoSemanal(v);
+                  toast.success("Preferência salva");
                 }}
-              >
-                <SelectTrigger className="w-[260px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {FUSOS.map((f) => (
-                    <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
+            </SettingRow>
+
+            <Separator />
+
+            <div className="flex items-end justify-between gap-4 flex-wrap">
+              <div className="flex-1 min-w-[200px] space-y-2">
+                <Label>Fuso horário</Label>
+                <Select value={fuso} onValueChange={setFuso}>
+                  <SelectTrigger className="max-w-[280px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FUSOS.map((f) => (
+                      <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={() => toast.success("Fuso horário atualizado")}>
+                Salvar fuso
+              </Button>
             </div>
           </Card>
 
@@ -373,20 +396,20 @@ export default function ConfiguracoesPage() {
                   Exporte uma cópia de todos os seus dados.
                 </p>
               </div>
-              <Button variant="outline" onClick={() => toast.info("Exportação disponível em breve")}>
+              <Button variant="outline" onClick={() => toast.info("Em breve")}>
                 <Download className="h-4 w-4 mr-1.5" /> Exportar meus dados
               </Button>
             </div>
           </Card>
 
-          <Card className="p-6 border-destructive/40">
+          <Card className="p-6 border-destructive/50">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div>
                 <h3 className="font-display text-base font-semibold text-destructive">
                   Zona de perigo
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Ações irreversíveis. Tenha certeza antes de prosseguir.
+                  Esta ação é permanente e não pode ser desfeita.
                 </p>
               </div>
               <Button variant="destructive" onClick={() => setEncerrarContaOpen(true)}>
@@ -406,7 +429,7 @@ export default function ConfiguracoesPage() {
         onOpenChange={setNovoMembroOpen}
         onSave={(c) => {
           setTime((prev) => [...prev, { ...c, id: `m-${Date.now()}` }]);
-          toast.success(`Consultor "${c.nome}" adicionado.`);
+          toast.success(`Consultor "${c.nome}" adicionado`);
         }}
       />
 
@@ -418,7 +441,7 @@ export default function ConfiguracoesPage() {
         onSave={(c) => {
           if (!editarMembro) return;
           setTime((prev) => prev.map((m) => (m.id === editarMembro.id ? { ...m, ...c } : m)));
-          toast.success("Consultor atualizado.");
+          toast.success("Consultor atualizado");
           setEditarMembro(null);
         }}
       />
@@ -446,7 +469,7 @@ export default function ConfiguracoesPage() {
 }
 
 // =====================================================================
-// Linha de configuração reutilizável
+// SettingRow
 // =====================================================================
 
 function SettingRow({
@@ -481,8 +504,8 @@ function AlterarSenhaDialog({
   onOpenChange: (v: boolean) => void;
 }) {
   const [atual, setAtual] = useState("");
-  const [nova, setNova] = useState("");
-  const [conf, setConf] = useState("");
+  const [nova, setNova]   = useState("");
+  const [conf, setConf]   = useState("");
 
   const reset = () => { setAtual(""); setNova(""); setConf(""); };
 
@@ -499,7 +522,7 @@ function AlterarSenhaDialog({
       toast.error("A confirmação não confere com a nova senha.");
       return;
     }
-    toast.success("Senha alterada com sucesso.");
+    toast.success("Senha alterada com sucesso");
     reset();
     onOpenChange(false);
   };
@@ -554,13 +577,13 @@ function ConsultorDialog({
   onSave: (c: Omit<ConsultorTeam, "id">) => void;
 }) {
   const isEdit = !!initial;
-  const [nome, setNome]   = useState(initial?.nome ?? "");
-  const [email, setEmail] = useState(initial?.email ?? "");
-  const [cargo, setCargo] = useState(initial?.cargo ?? "");
-  const [taxa, setTaxa]   = useState<string>(initial?.taxa?.toString() ?? "");
-  const [status, setStatus] = useState<ConsultorStatus>(initial?.status ?? "ativo");
+  const [nome, setNome]   = useState("");
+  const [email, setEmail] = useState("");
+  const [cargo, setCargo] = useState("");
+  const [taxa, setTaxa]   = useState<string>("");
+  const [status, setStatus] = useState<ConsultorStatus>("ativo");
 
-  // Sincroniza campos quando o dialog abre em modo edição
+  // Sincroniza campos quando o dialog abre (reset para novo / preenche para edição)
   useEffect(() => {
     if (open) {
       setNome(initial?.nome ?? "");
@@ -570,10 +593,6 @@ function ConsultorDialog({
       setStatus(initial?.status ?? "ativo");
     }
   }, [open, initial]);
-
-  const reset = () => {
-    setNome(""); setEmail(""); setCargo(""); setTaxa(""); setStatus("ativo");
-  };
 
   const handleSave = () => {
     const taxaNum = parseFloat(taxa.replace(",", "."));
@@ -588,18 +607,11 @@ function ConsultorDialog({
       taxa: taxaNum,
       status,
     });
-    if (!isEdit) reset();
     onOpenChange(false);
   };
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(v) => {
-        onOpenChange(v);
-        if (!v && !isEdit) reset();
-      }}
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{isEdit ? "Editar consultor" : "Adicionar consultor"}</DialogTitle>
@@ -617,7 +629,7 @@ function ConsultorDialog({
           </div>
           <div className="space-y-2">
             <Label>E-mail <span className="text-destructive">*</span></Label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@azumi.com.br" />
+            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@azumirh.com.br" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -669,7 +681,7 @@ function EncerrarContaDialog({
   onOpenChange: (v: boolean) => void;
 }) {
   const [conf, setConf] = useState("");
-  const podeEncerrar = conf.trim() === "ENCERRAR";
+  const podeEncerrar = conf === "ENCERRAR";
 
   const handleClose = (v: boolean) => {
     onOpenChange(v);
@@ -677,7 +689,7 @@ function EncerrarContaDialog({
   };
 
   const handleEncerrar = () => {
-    toast.success("Solicitação de encerramento registrada.");
+    toast.error("Funcionalidade bloqueada neste ambiente");
     setConf("");
     onOpenChange(false);
   };
@@ -691,8 +703,7 @@ function EncerrarContaDialog({
             Encerrar conta
           </DialogTitle>
           <DialogDescription>
-            Esta ação é irreversível. Todos os dados relacionados à sua conta serão
-            excluídos após o período de retenção.
+            Esta ação é permanente e não pode ser desfeita.
           </DialogDescription>
         </DialogHeader>
 
@@ -704,14 +715,15 @@ function EncerrarContaDialog({
             <ul className="mt-2 space-y-1 text-xs text-muted-foreground list-disc pl-5">
               <li>Seu acesso é revogado imediatamente</li>
               <li>Projetos ativos serão reatribuídos</li>
-              <li>Histórico financeiro fica retido por 5 anos (obrigatório)</li>
+              <li>Histórico financeiro fica retido pelo período legal</li>
             </ul>
           </div>
 
           <div className="space-y-2">
             <Label>
-              Para confirmar, digite{" "}
-              <span className="font-mono font-semibold text-destructive">ENCERRAR</span>
+              Digite{" "}
+              <span className="font-mono font-semibold text-destructive">ENCERRAR</span>{" "}
+              para confirmar
             </Label>
             <Input
               value={conf}
