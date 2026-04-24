@@ -3,11 +3,55 @@ import {
   ShieldCheck, UserCog, Building2, Crown, Users, UserCircle2, BriefcaseBusiness, ArrowRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth, type Papel } from "@/context/AuthContext";
 
-const perfis = [
-  { key: "admin", label: "Admin Azumi", desc: "Acesso completo à plataforma", icon: ShieldCheck, to: "/app/dashboard", color: "text-primary" },
-  { key: "consultor", label: "Consultor", desc: "Gestão de clientes e operações", icon: UserCog, to: "/app/dashboard", color: "text-primary" },
-  { key: "cliente", label: "Cliente ADM", desc: "Visão da empresa contratante", icon: Building2, to: "/cliente/dashboard", color: "text-highlight" },
+type PerfilItem = {
+  key: string;
+  label: string;
+  desc: string;
+  icon: typeof ShieldCheck;
+  to: string;
+  color: string;
+  auth?: { nome: string; papel: Papel };
+};
+
+const perfis: PerfilItem[] = [
+  {
+    key: "admin",
+    label: "Admin Azumi",
+    desc: "Acesso completo à plataforma",
+    icon: ShieldCheck,
+    to: "/app/dashboard",
+    color: "text-primary",
+    auth: { nome: "Patricia Lima", papel: "admin" },
+  },
+  {
+    key: "consultor",
+    label: "Consultor",
+    desc: "Gestão de clientes e operações",
+    icon: UserCog,
+    to: "/app/dashboard",
+    color: "text-primary",
+    auth: { nome: "Ana Beatriz", papel: "consultor" },
+  },
+  {
+    key: "cliente",
+    label: "Cliente ADM",
+    desc: "Visão da empresa contratante",
+    icon: Building2,
+    to: "/portal",
+    color: "text-highlight",
+    auth: { nome: "Kentaki Foods", papel: "cliente" },
+  },
+  {
+    key: "cliente-avulso",
+    label: "Cliente Avulso",
+    desc: "Empresa em projeto pontual",
+    icon: Building2,
+    to: "/portal",
+    color: "text-highlight",
+    auth: { nome: "Cliente Avulso", papel: "cliente" },
+  },
   { key: "ceo", label: "CEO", desc: "Indicadores estratégicos", icon: Crown, to: "/hub/ceo/dashboard", color: "text-warning" },
   { key: "lider", label: "Líder", desc: "Gestão do time e feedback", icon: BriefcaseBusiness, to: "/hub/lider/painel", color: "text-info" },
   { key: "colab", label: "Colaborador", desc: "Sua jornada na empresa", icon: UserCircle2, to: "/hub/colaborador/inicio", color: "text-success" },
@@ -16,6 +60,15 @@ const perfis = [
 
 export default function SelecaoPerfil() {
   const navigate = useNavigate();
+  const { login } = useAuth();
+
+  const handleSelecionar = (p: PerfilItem) => {
+    if (p.auth) {
+      login(p.auth);
+    }
+    navigate(p.to);
+  };
+
   return (
     <div className="min-h-full w-full bg-background relative overflow-hidden p-6 sm:p-10">
       <div className="pointer-events-none absolute inset-0">
@@ -35,7 +88,7 @@ export default function SelecaoPerfil() {
           {perfis.map((p, i) => (
             <button
               key={p.key}
-              onClick={() => navigate(p.to)}
+              onClick={() => handleSelecionar(p)}
               className={cn(
                 "group text-left bg-card border border-border rounded-2xl p-5 card-hover animate-fade-in",
               )}
