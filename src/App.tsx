@@ -20,6 +20,7 @@ import Analytics from "./pages/admin/Analytics";
 import GestaoConta from "./pages/admin/GestaoConta";
 import HorasPage from "./pages/admin/HorasPage";
 import ProjetosPage from "./pages/admin/ProjetosPage";
+import ProjetoDetalhe from "./pages/admin/ProjetoDetalhe";
 
 import ClienteDashboard from "./pages/cliente/ClienteDashboard";
 import VagaDetalheCliente from "./pages/cliente/VagaDetalheCliente";
@@ -48,7 +49,7 @@ const App = () => (
             <Route path="/app/empresas/:id" element={<Stub title="Detalhe da empresa" subtitle="Visão geral, vagas, projetos, horas, boletos, contratos, usuários" />} />
             <Route path="/app/usuarios" element={<Stub title="Usuários" subtitle="Gestão de usuários internos e externos" />} />
             <Route path="/app/projetos" element={<ProjetosPage />} />
-            <Route path="/app/projetos/:id" element={<Stub title="Detalhe do projeto" subtitle="Briefing, entregáveis, timer, NPS" />} />
+            <Route path="/app/projetos/:id" element={<ProjetoDetalhe />} />
             <Route path="/app/horas" element={<HorasPage />} />
             <Route path="/app/solicitacoes" element={<Stub title="Solicitações" subtitle="Central de solicitações" />} />
             <Route path="/app/solicitacoes/:id" element={<Stub title="Detalhe da solicitação" />} />
