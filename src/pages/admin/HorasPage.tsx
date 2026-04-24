@@ -286,7 +286,8 @@ export default function HorasPage() {
   const [mData, setMData] = useState<Date | undefined>(undefined);
   const [mEmpresa, setMEmpresa] = useState<string>("");
   const [mProjeto, setMProjeto] = useState<string>("");
-  const [mHoras, setMHoras] = useState<string>("");
+  const [mInicio, setMInicio] = useState<string>("");   // "HH:mm"
+  const [mFim, setMFim] = useState<string>("");          // "HH:mm"
   const [mJustificativa, setMJustificativa] = useState<string>("");
 
   const projetosDisponiveis = useMemo(
@@ -294,15 +295,27 @@ export default function HorasPage() {
     [mEmpresa]
   );
 
+  // Calcula duração em horas (decimal) a partir de "HH:mm" → "HH:mm".
+  // Retorna null se inválido. Não cruza meia-noite (não permitido nesta versão).
+  function calcularDuracao(inicio: string, fim: string): number | null {
+    const [hi, mi] = inicio.split(":").map(Number);
+    const [hf, mf] = fim.split(":").map(Number);
+    if ([hi, mi, hf, mf].some((n) => !Number.isFinite(n))) return null;
+    const minInicio = hi * 60 + mi;
+    const minFim = hf * 60 + mf;
+    if (minFim <= minInicio) return null;
+    return Number(((minFim - minInicio) / 60).toFixed(2));
+  }
+
   function handleSalvarManual(e: React.FormEvent) {
     e.preventDefault();
-    if (!mData || !mEmpresa || !mProjeto || !mHoras || !mJustificativa.trim()) {
+    if (!mData || !mEmpresa || !mProjeto || !mInicio || !mFim || !mJustificativa.trim()) {
       toast.error("Preencha todos os campos obrigatórios.");
       return;
     }
-    const horasNum = Number(mHoras.replace(",", "."));
-    if (!Number.isFinite(horasNum) || horasNum <= 0) {
-      toast.error("Informe um número de horas válido (ex: 1.5).");
+    const horasNum = calcularDuracao(mInicio, mFim);
+    if (horasNum === null) {
+      toast.error("A hora de fim deve ser maior que a hora de início.");
       return;
     }
     const empresa = empresas.find((e) => e.id === mEmpresa);
@@ -319,14 +332,16 @@ export default function HorasPage() {
       consultorId: "ab",
       consultorNome: "Ana Beatriz",
       justificativa: mJustificativa.trim(),
+      observacao: `Início ${mInicio} · Fim ${mFim}`,
     };
     setLancamentos((prev) => [novo, ...prev]);
-    toast.success("Lançamento manual registrado com sucesso.");
+    toast.success(`Lançamento manual registrado (${horasNum.toFixed(2)}h).`);
     // reset
     setMData(undefined);
     setMEmpresa("");
     setMProjeto("");
-    setMHoras("");
+    setMInicio("");
+    setMFim("");
     setMJustificativa("");
   }
 
