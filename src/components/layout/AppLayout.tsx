@@ -1,12 +1,12 @@
 import { Outlet } from "react-router-dom";
 import { SidebarConnect } from "./SidebarConnect";
 import { Header } from "./Header";
+import { useAuth } from "@/context/AuthContext";
 
-interface AppLayoutProps {
-  variant?: "admin" | "cliente";
-}
+export function AppLayout() {
+  const { user } = useAuth();
+  const variant: "admin" | "cliente" = user?.papel === "cliente" ? "cliente" : "admin";
 
-export function AppLayout({ variant = "admin" }: AppLayoutProps) {
   return (
     <div className="flex h-full w-full bg-background text-foreground">
       <SidebarConnect variant={variant} />
