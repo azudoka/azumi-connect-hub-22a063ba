@@ -391,7 +391,7 @@ export default function HorasPage() {
             <div>
               <h3 className="font-display font-semibold text-sm">Timer global</h3>
               <p className="text-[11px] text-muted-foreground">
-                Apenas 1 timer ativo por consultor · encerra automaticamente às 18h
+                Apenas 1 timer ativo por consultor · disponível 08h–18h, seg-sáb
               </p>
             </div>
           </div>
@@ -403,24 +403,102 @@ export default function HorasPage() {
           )}
         </div>
 
+        {/* Seleção de tarefa para o timer (empresa → tarefa) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Empresa</Label>
+            <Select
+              value={tEmpresa}
+              onValueChange={(v) => { setTEmpresa(v); setTTarefaId(""); }}
+              disabled={timerAtivo}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Selecione a empresa" />
+              </SelectTrigger>
+              <SelectContent>
+                {empresas
+                  .filter((e) => projetosPorEmpresa[e.id])
+                  .map((e) => (
+                    <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Projeto / Entregável</Label>
+            <Select
+              value={tTarefaId}
+              onValueChange={setTTarefaId}
+              disabled={!tEmpresa || timerAtivo}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder={tEmpresa ? "Selecione a tarefa" : "Escolha a empresa primeiro"} />
+              </SelectTrigger>
+              <SelectContent>
+                {tarefasDaEmpresa.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         {timerAtivo ? (
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="rounded-lg border border-border bg-background/40 p-4 flex items-center gap-4 flex-wrap">
             <Timer key={timerKey} onStop={handleTimerStop} />
+            <div className="flex-1 min-w-[200px]">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Tarefa ativa</div>
+              {tarefaAtiva ? (
+                <div className="text-sm font-medium flex items-center gap-1.5">
+                  <Briefcase className="h-3.5 w-3.5 text-primary" />
+                  <span className="truncate">{tarefaAtiva.empresaNome} · {tarefaAtiva.label}</span>
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground italic">Sem tarefa selecionada</div>
+              )}
+            </div>
             <span className="text-xs text-muted-foreground">
               Consultor: <span className="text-foreground font-medium">Ana Beatriz</span>
             </span>
           </div>
         ) : (
-          <EmptyState
-            icon={Clock}
-            title="Nenhum timer ativo no momento"
-            description="Inicie uma nova entrada para começar a registrar horas em tempo real."
-            action={
-              <Button onClick={handleIniciarTimer} className="gap-1.5">
-                <Play className="h-4 w-4" /> Iniciar nova entrada
-              </Button>
-            }
-          />
+          <div className="rounded-lg border border-dashed border-border bg-background/30 p-5 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
+                <Clock className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="text-sm font-medium">Nenhum timer ativo</div>
+                <div className="text-[11px] text-muted-foreground">
+                  {tarefaAtiva
+                    ? `Pronto para registrar: ${tarefaAtiva.label}`
+                    : "Selecione uma empresa e uma tarefa para iniciar."}
+                </div>
+              </div>
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0}>
+                    <Button
+                      onClick={handleIniciarTimer}
+                      disabled={!horarioCheck.permitido || !tarefaAtiva}
+                      className="gap-1.5"
+                    >
+                      <Play className="h-4 w-4" /> Iniciar
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {(!horarioCheck.permitido || !tarefaAtiva) && (
+                  <TooltipContent>
+                    {!horarioCheck.permitido
+                      ? horarioCheck.motivo
+                      : "Selecione uma tarefa antes de iniciar o timer."}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         )}
       </section>
 
@@ -505,20 +583,34 @@ export default function HorasPage() {
                   </Select>
                 </div>
 
-                {/* Horas */}
+                {/* Hora início / Hora fim — cálculo automático da duração */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="m-horas">Horas <span className="text-destructive">*</span></Label>
+                  <Label htmlFor="m-inicio">Hora início <span className="text-destructive">*</span></Label>
                   <Input
-                    id="m-horas"
-                    type="number"
-                    inputMode="decimal"
-                    step="0.25"
-                    min="0.25"
-                    placeholder="1.5"
-                    value={mHoras}
-                    onChange={(e) => setMHoras(e.target.value)}
+                    id="m-inicio"
+                    type="time"
+                    value={mInicio}
+                    onChange={(e) => setMInicio(e.target.value)}
                   />
-                  <p className="text-[10px] text-muted-foreground">Aceita decimais — ex: 1.5 = 1h30</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="m-fim">Hora fim <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="m-fim"
+                    type="time"
+                    value={mFim}
+                    onChange={(e) => setMFim(e.target.value)}
+                  />
+                  {mInicio && mFim && (
+                    (() => {
+                      const dur = calcularDuracao(mInicio, mFim);
+                      return dur === null ? (
+                        <p className="text-[10px] text-destructive">A hora de fim deve ser maior que a de início.</p>
+                      ) : (
+                        <p className="text-[10px] text-muted-foreground">Duração calculada: <span className="text-foreground font-data">{dur.toFixed(2)}h</span></p>
+                      );
+                    })()
+                  )}
                 </div>
 
                 {/* Justificativa (oculta do cliente) */}
