@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 import type { ReactElement } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -12,9 +12,9 @@ import { HubLayout } from "@/components/layout/HubLayout";
 import PortalLayout from "@/layouts/PortalLayout";
 
 import PortalDashboard from "./pages/portal/PortalDashboard";
-import PortalProjetos from "./pages/portal/PortalProjetos";
-import PortalProjetoDetalhe from "./pages/portal/PortalProjetoDetalhe";
-import PortalFinanceiro from "./pages/portal/PortalFinanceiro";
+// PortalProjetos, PortalProjetoDetalhe e PortalFinanceiro foram descontinuados
+// como rotas — os arquivos permanecem no disco. As rotas /portal/* equivalentes
+// agora redirecionam para /cliente/* (caminho canônico do cliente).
 
 import Login from "./pages/Login";
 import SelecaoPerfil from "./pages/auth/SelecaoPerfil";
@@ -36,9 +36,12 @@ import ConfiguracoesPage from "./pages/admin/ConfiguracoesPage";
 import SolicitacoesPage from "./pages/admin/SolicitacoesPage";
 import VagasClientePage from "./pages/VagasClientePage";
 import PerfilPage from "./pages/PerfilPage";
+import SolicitacoesClientePage from "./pages/SolicitacoesClientePage";
+import ClienteProjetosPage from "./pages/cliente/ClienteProjetosPage";
+import ClienteProjetoDetalhe from "./pages/cliente/ClienteProjetoDetalhe";
+import ClienteHorasPage from "./pages/cliente/ClienteHorasPage";
 
 import ClienteDashboard from "./pages/cliente/ClienteDashboard";
-import ClienteSolicitacoes from "./pages/cliente/ClienteSolicitacoes";
 import VagaDetalheCliente from "./pages/cliente/VagaDetalheCliente";
 
 import LiderPainel from "./pages/hub/LiderPainel";
@@ -71,6 +74,12 @@ function RootRedirect() {
       ? "/app/dashboard"
       : "/portal";
   return <Navigate to={destino} replace />;
+}
+
+// Redireciona /portal/projetos/:id → /cliente/projetos/:id preservando o id
+function PortalProjetoRedirect() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`/cliente/projetos/${id ?? ""}`} replace />;
 }
 
 const AppRoutes = () => (
@@ -121,10 +130,11 @@ const AppRoutes = () => (
       }
     >
       <Route path="/cliente/dashboard" element={<ClienteDashboard />} />
-      <Route path="/cliente/projetos" element={<Stub title="Projetos da empresa" />} />
-      <Route path="/cliente/projetos/:id" element={<Stub title="Detalhe do projeto" subtitle="Entregáveis + timer consultor + NPS" />} />
-      <Route path="/cliente/horas" element={<Stub title="Horas consumidas" />} />
-      <Route path="/cliente/solicitacoes" element={<ClienteSolicitacoes />} />
+      <Route path="/cliente/projetos" element={<ClienteProjetosPage />} />
+      <Route path="/cliente/projetos/:id" element={<ClienteProjetoDetalhe />} />
+      <Route path="/cliente/horas" element={<ClienteHorasPage />} />
+      <Route path="/cliente/solicitacoes" element={<SolicitacoesClientePage />} />
+      <Route path="/cliente/solicitacoes/:id" element={<Stub title="Detalhe da solicitação" subtitle="Conversa completa com a consultora" />} />
       <Route path="/cliente/atracao" element={<VagasClientePage />} />
       <Route path="/cliente/atracao/:id" element={<VagaDetalheCliente />} />
       <Route path="/cliente/gestao-conta" element={<Stub title="Gestão de conta" subtitle="Boletos, contratos, relatórios" />} />
@@ -180,9 +190,9 @@ const AppRoutes = () => (
       }
     >
       <Route path="/portal" element={<PortalDashboard />} />
-      <Route path="/portal/projetos" element={<PortalProjetos />} />
-      <Route path="/portal/projetos/:id" element={<PortalProjetoDetalhe />} />
-      <Route path="/portal/financeiro" element={<PortalFinanceiro />} />
+      <Route path="/portal/projetos" element={<Navigate to="/cliente/projetos" replace />} />
+      <Route path="/portal/projetos/:id" element={<PortalProjetoRedirect />} />
+      <Route path="/portal/financeiro" element={<Navigate to="/cliente/gestao-conta" replace />} />
     </Route>
 
     <Route path="*" element={<NotFound />} />
