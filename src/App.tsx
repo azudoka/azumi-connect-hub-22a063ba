@@ -73,6 +73,13 @@ function RootRedirect() {
   return <Navigate to={destino} replace />;
 }
 
+// Redireciona /portal/projetos/:id → /cliente/projetos/:id preservando o id
+function PortalProjetoRedirect() {
+  const { useParams } = require("react-router-dom") as typeof import("react-router-dom");
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`/cliente/projetos/${id ?? ""}`} replace />;
+}
+
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<RootRedirect />} />
@@ -180,9 +187,9 @@ const AppRoutes = () => (
       }
     >
       <Route path="/portal" element={<PortalDashboard />} />
-      <Route path="/portal/projetos" element={<PortalProjetos />} />
-      <Route path="/portal/projetos/:id" element={<PortalProjetoDetalhe />} />
-      <Route path="/portal/financeiro" element={<PortalFinanceiro />} />
+      <Route path="/portal/projetos" element={<Navigate to="/cliente/projetos" replace />} />
+      <Route path="/portal/projetos/:id" element={<PortalProjetoRedirect />} />
+      <Route path="/portal/financeiro" element={<Navigate to="/cliente/gestao-conta" replace />} />
     </Route>
 
     <Route path="*" element={<NotFound />} />
