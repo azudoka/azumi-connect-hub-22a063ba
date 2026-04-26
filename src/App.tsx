@@ -12,9 +12,9 @@ import { HubLayout } from "@/components/layout/HubLayout";
 import PortalLayout from "@/layouts/PortalLayout";
 
 import PortalDashboard from "./pages/portal/PortalDashboard";
-import PortalProjetos from "./pages/portal/PortalProjetos";
-import PortalProjetoDetalhe from "./pages/portal/PortalProjetoDetalhe";
-import PortalFinanceiro from "./pages/portal/PortalFinanceiro";
+// PortalProjetos, PortalProjetoDetalhe e PortalFinanceiro foram descontinuados
+// como rotas — os arquivos permanecem no disco. As rotas /portal/* equivalentes
+// agora redirecionam para /cliente/* (caminho canônico do cliente).
 
 import Login from "./pages/Login";
 import SelecaoPerfil from "./pages/auth/SelecaoPerfil";
