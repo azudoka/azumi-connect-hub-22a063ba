@@ -158,7 +158,11 @@ const AppRoutes = () => (
     </Route>
 
     {/* Hub Líder */}
-    <Route element={<HubLayout profile="lider" />}>
+    <Route element={
+      <PrivateRoute allowed={["lider", "rh", "admin"]}>
+        <HubLayout profile="lider" />
+      </PrivateRoute>
+    }>
       <Route path="/hub/lider/painel" element={<LiderPainel />} />
       <Route path="/hub/lider/meu-time" element={<LiderMeuTime />} />
       <Route path="/hub/lider/meu-time/:id" element={<Stub title="Perfil do colaborador" />} />
@@ -173,7 +177,11 @@ const AppRoutes = () => (
     </Route>
 
     {/* Hub Colaborador */}
-    <Route element={<HubLayout profile="colaborador" />}>
+    <Route element={
+      <PrivateRoute allowed={["colaborador", "lider", "rh", "admin"]}>
+        <HubLayout profile="colaborador" />
+      </PrivateRoute>
+    }>
       <Route path="/hub/colaborador/inicio" element={<ColaboradorInicio />} />
       <Route path="/hub/colaborador/sobre-voce" element={<ColaboradorSobreVoce />} />
       <Route path="/hub/colaborador/solicitacoes" element={<ColaboradorSolicitacoes />} />
@@ -186,12 +194,47 @@ const AppRoutes = () => (
     </Route>
 
     {/* Hub CEO */}
-    <Route element={<HubLayout profile="ceo" />}>
+    <Route element={
+      <PrivateRoute allowed={["ceo", "admin"]}>
+        <HubLayout profile="ceo" />
+      </PrivateRoute>
+    }>
       <Route path="/hub/ceo/dashboard" element={<CeoDashboard />} />
       <Route path="/hub/ceo/headcount" element={<CeoHeadcount />} />
       <Route path="/hub/ceo/financeiro" element={<CeoFinanceiro />} />
       <Route path="/hub/ceo/avaliacoes" element={<CeoAvaliacoes />} />
       <Route path="/hub/ceo/turnover" element={<CeoTurnover />} />
+    </Route>
+
+    {/* Hub — Módulos terceiros */}
+    <Route element={
+      <PrivateRoute allowed={["dp", "rh_operacional", "rh", "admin"]}>
+        <HubLayout profile="colaborador" />
+      </PrivateRoute>
+    }>
+      <Route path="/hub/dp/inicio" element={<Stub title="Departamento Pessoal" subtitle="Holerites, férias, afastamentos e CCT" />} />
+      <Route path="/hub/dp/holerites" element={<Stub title="Holerites" />} />
+      <Route path="/hub/dp/ferias" element={<Stub title="Férias e Afastamentos" />} />
+      <Route path="/hub/dp/sindicato-cct" element={<Stub title="Sindicato e CCT" />} />
+    </Route>
+
+    <Route element={
+      <PrivateRoute allowed={["contador", "rh", "ceo", "admin"]}>
+        <HubLayout profile="colaborador" />
+      </PrivateRoute>
+    }>
+      <Route path="/hub/contabilidade/inicio" element={<Stub title="Contabilidade" subtitle="Folha, FGTS, DARF, prazos e relatórios" />} />
+      <Route path="/hub/contabilidade/folha" element={<Stub title="Folha de Pagamento" />} />
+      <Route path="/hub/contabilidade/arquivos" element={<Stub title="Arquivos do Mês" />} />
+    </Route>
+
+    <Route element={
+      <PrivateRoute allowed={["juridico", "rh", "ceo", "admin"]}>
+        <HubLayout profile="colaborador" />
+      </PrivateRoute>
+    }>
+      <Route path="/hub/juridico/inicio" element={<Stub title="Jurídico" subtitle="Processos trabalhistas e compliance" />} />
+      <Route path="/hub/juridico/processos" element={<Stub title="Processos Trabalhistas" />} />
     </Route>
 
     {/* Portal do Cliente */}
