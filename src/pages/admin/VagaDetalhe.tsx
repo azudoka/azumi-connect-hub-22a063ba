@@ -279,7 +279,7 @@ export default function VagaDetalheAdmin() {
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
             {colunas.map((col) => {
               const candidatosNaColuna = candidatosVaga.filter(
-                (c) => colunasEstado[c.id] === col
+                (c) => colunasEstado[c.id] === col && !desclassificados.has(c.id)
               );
               const isOver = dragOverCol === col;
               return (
@@ -307,7 +307,10 @@ export default function VagaDetalheAdmin() {
                   </div>
                   {candidatosNaColuna.length > 0 ? (
                     <ul className="space-y-2">
-                      {candidatosNaColuna.map((c) => (
+                      {candidatosNaColuna.map((c) => {
+                        const menuAberto = menuAbertoId === c.id;
+                        const obsAberta = obsAbertaId === c.id;
+                        return (
                         <li
                           key={c.id}
                           draggable
@@ -321,7 +324,7 @@ export default function VagaDetalheAdmin() {
                             setDragOverCol(null);
                           }}
                           className={cn(
-                            "bg-background/60 border border-border rounded-lg p-3 hover:border-primary/40 cursor-grab active:cursor-grabbing transition-colors",
+                            "relative bg-background/60 border border-border rounded-lg p-3 hover:border-primary/40 cursor-grab active:cursor-grabbing transition-colors",
                             draggingId === c.id && "opacity-50"
                           )}
                         >
@@ -329,16 +332,109 @@ export default function VagaDetalheAdmin() {
                             <div className="h-8 w-8 rounded-full bg-gradient-brand flex items-center justify-center text-[10px] font-semibold text-white">
                               {c.nome.split(" ").map(n => n[0]).join("").slice(0, 2)}
                             </div>
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <Link to={`/app/candidatos/${c.id}`} className="text-sm font-medium hover:text-primary truncate block">{c.nome}</Link>
                               <div className="text-[10px] text-muted-foreground">DISC: {c.perfilDom} dominante</div>
                             </div>
+                            <button
+                              type="button"
+                              aria-label="Mais ações"
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMenuAbertoId(menuAberto ? null : c.id);
+                              }}
+                              className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground shrink-0"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
                           </div>
                           <div className="mt-2">
                             <DiscBars values={c.disc} compact />
                           </div>
+
+                          {obsAberta && (
+                            <div
+                              className="mt-2 space-y-2"
+                              onMouseDown={(e) => e.stopPropagation()}
+                              draggable={false}
+                              onDragStart={(e) => e.preventDefault()}
+                            >
+                              <textarea
+                                value={obsTexto[c.id] ?? ""}
+                                onChange={(e) =>
+                                  setObsTexto((prev) => ({ ...prev, [c.id]: e.target.value }))
+                                }
+                                placeholder="Observação rápida sobre o candidato…"
+                                className="w-full h-20 p-2 rounded-md bg-secondary border border-input focus:border-primary outline-none text-xs resize-none"
+                              />
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setObsAbertaId(null)}
+                                  className="h-7 px-2.5 rounded-md border border-border text-[11px] hover:bg-secondary"
+                                >
+                                  Cancelar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => salvarObservacao(c.id)}
+                                  className="h-7 px-2.5 rounded-md bg-primary text-primary-foreground text-[11px] font-medium"
+                                >
+                                  Salvar
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {menuAberto && (
+                            <div
+                              ref={menuRef}
+                              className="absolute right-2 top-10 z-30 w-48 max-w-[calc(100vw-1rem)] rounded-lg border border-border bg-popover shadow-elevated py-1 text-sm"
+                              onMouseDown={(e) => e.stopPropagation()}
+                            >
+                              <Link
+                                to={`/app/candidatos/${c.id}`}
+                                onClick={() => setMenuAbertoId(null)}
+                                className="flex items-center gap-2 px-3 py-2 hover:bg-secondary"
+                              >
+                                <Eye className="h-3.5 w-3.5 text-muted-foreground" /> Ver perfil
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMenuAbertoId(null);
+                                  setObsAbertaId(c.id);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary text-left"
+                              >
+                                <StickyNote className="h-3.5 w-3.5 text-muted-foreground" /> Observação rápida
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMenuAbertoId(null);
+                                  avancarEtapa(c.id);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary text-left"
+                              >
+                                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" /> Mover para próxima etapa
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMenuAbertoId(null);
+                                  setConfirmarDesclId(c.id);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary text-left text-destructive"
+                              >
+                                <UserX className="h-3.5 w-3.5" /> Desclassificar
+                              </button>
+                            </div>
+                          )}
                         </li>
-                      ))}
+                        );
+                      })}
                     </ul>
                   ) : (
                     <div className="flex items-center justify-center h-32 text-xs text-muted-foreground">—</div>
