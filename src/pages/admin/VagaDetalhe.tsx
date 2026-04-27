@@ -114,6 +114,20 @@ export default function VagaDetalheAdmin() {
         }
       />
 
+      {vaga.beneficios && vaga.beneficios.length > 0 && (
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          <span className="text-xs uppercase tracking-wider text-muted-foreground mr-1">Benefícios</span>
+          {vaga.beneficios.map((b) => (
+            <span
+              key={b}
+              className="inline-flex items-center rounded-full border border-border bg-secondary px-2.5 py-0.5 text-xs font-medium text-foreground"
+            >
+              {BENEFICIO_LABEL[b] ?? b}
+            </span>
+          ))}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
         {/* Timeline */}
         <div className="lg:col-span-3 bg-card border border-border rounded-xl p-5 card-hover">
