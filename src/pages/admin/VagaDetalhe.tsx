@@ -6,6 +6,23 @@ import { DiscBars } from "@/components/DiscBars";
 import { Timer } from "@/components/Timer";
 import { useParams, Link } from "react-router-dom";
 import { vagas, candidatos, etapasVaga, comentariosVaga } from "@/data/mock";
+
+const BENEFICIO_LABEL: Record<string, string> = {
+  vale_transporte: "Vale-transporte",
+  vale_alimentacao: "Vale-alimentação",
+  vale_refeicao: "Vale-refeição",
+  plano_saude: "Plano de saúde",
+  plano_odontologico: "Plano odontológico",
+  gympass: "Gympass",
+  home_office: "Home office",
+  bonus: "Bônus",
+  participacao_lucros: "PLR",
+  seguro_vida: "Seguro de vida",
+  auxilio_creche: "Auxílio-creche",
+  auxilio_educacao: "Auxílio-educação",
+  stock_options: "Stock options",
+  ppr: "PPR",
+};
 import {
   ArrowLeft, Building2, MapPin, Send, MessageSquare, CheckCircle2, Clock,
   Users, FileQuestion, History, Filter, Loader2, AlertTriangle,
