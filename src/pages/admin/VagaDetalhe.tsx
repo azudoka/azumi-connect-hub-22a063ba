@@ -43,7 +43,28 @@ export default function VagaDetalheAdmin() {
   const max = Math.max(...funil.map((f) => f.n), 1);
 
   const candidatosVaga = candidatos.filter((c) => c.vagaId === vaga.id);
-  const colunas = ["Triagem", "Quest.", "Entrevista", "Enviados", "Decisão"];
+  const colunas = ["Triagem", "Quest.", "Entrevista", "Enviados", "Decisão"] as const;
+  type Coluna = typeof colunas[number];
+
+  // Estado do Kanban: candidato -> coluna (todos começam em "Triagem")
+  const [colunasEstado, setColunasEstado] = useState<Record<string, Coluna>>(
+    () => Object.fromEntries(candidatosVaga.map((c) => [c.id, "Triagem" as Coluna]))
+  );
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<Coluna | null>(null);
+
+  function handleDrop(coluna: Coluna) {
+    if (!draggingId) return;
+    const cand = candidatosVaga.find((c) => c.id === draggingId);
+    setColunasEstado((prev) =>
+      prev[draggingId] === coluna ? prev : { ...prev, [draggingId]: coluna }
+    );
+    if (cand && colunasEstado[draggingId] !== coluna) {
+      toast.info(`${cand.nome} movido para ${coluna}`);
+    }
+    setDraggingId(null);
+    setDragOverCol(null);
+  }
 
   function handleCliqueEnviar() {
     const total = candidatosVaga.filter(c => c.enviado).length;
