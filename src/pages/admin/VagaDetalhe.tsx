@@ -774,6 +774,118 @@ export default function VagaDetalheAdmin() {
           </div>
         );
       })()}
+
+      {/* Confirmação: Mover para "Enviados" (apresentação ao cliente) */}
+      {confirmarEnviadosId && (() => {
+        const cand = candidatosVaga.find((c) => c.id === confirmarEnviadosId);
+        return (
+          <div className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                  <Send className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-display text-lg font-semibold">Enviar para avaliação do cliente?</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    O perfil de <strong className="text-foreground">{cand?.nome}</strong> será apresentado ao cliente{" "}
+                    <strong className="text-foreground">{vaga.empresa}</strong>. O cliente tem 48h para emitir parecer.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-5 flex items-center justify-end gap-2">
+                <button
+                  onClick={() => setConfirmarEnviadosId(null)}
+                  className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    const id = confirmarEnviadosId;
+                    setConfirmarEnviadosId(null);
+                    if (id) moverCandidato(id, "Enviados");
+                  }}
+                  className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5"
+                >
+                  <Send className="h-3.5 w-3.5" /> Confirmar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Confirmação: Mover para "Decisão" final */}
+      {confirmarDecisaoId && (() => {
+        const cand = candidatosVaga.find((c) => c.id === confirmarDecisaoId);
+        const opcoes: OpcaoDecisao[] = ["Contratado", "Reprovado pelo cliente", "Em negociação"];
+        return (
+          <div className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-full bg-success/15 text-success flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-display text-lg font-semibold">Mover para Decisão Final</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Selecione o desfecho para <strong className="text-foreground">{cand?.nome}</strong>:
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 space-y-2">
+                {opcoes.map((op) => (
+                  <label
+                    key={op}
+                    className={cn(
+                      "flex items-center gap-2.5 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors",
+                      opcaoDecisao === op
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:bg-secondary"
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="decisao-final"
+                      value={op}
+                      checked={opcaoDecisao === op}
+                      onChange={() => setOpcaoDecisao(op)}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    <span className="text-sm font-medium">{op}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="mt-5 flex items-center justify-end gap-2">
+                <button
+                  onClick={() => { setConfirmarDecisaoId(null); setOpcaoDecisao(null); }}
+                  className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm"
+                >
+                  Cancelar
+                </button>
+                <button
+                  disabled={!opcaoDecisao}
+                  onClick={() => {
+                    const id = confirmarDecisaoId;
+                    const op = opcaoDecisao;
+                    const nome = cand?.nome ?? "Candidato";
+                    setConfirmarDecisaoId(null);
+                    setOpcaoDecisao(null);
+                    if (id && op) {
+                      moverCandidato(id, "Decisão");
+                      toast.success(`${nome} — ${op}`);
+                    }
+                  }}
+                  className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Confirmar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
