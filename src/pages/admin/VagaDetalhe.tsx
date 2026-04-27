@@ -97,6 +97,38 @@ export default function VagaDetalheAdmin() {
   // Confirmação de desclassificação
   const [confirmarDesclId, setConfirmarDesclId] = useState<string | null>(null);
 
+  // Confirmação de envio ao cliente (coluna "Enviados") via Kanban
+  const [confirmarEnviadosId, setConfirmarEnviadosId] = useState<string | null>(null);
+
+  // Decisão final (coluna "Decisão") via Kanban
+  type OpcaoDecisao = "Contratado" | "Reprovado pelo cliente" | "Em negociação";
+  const [confirmarDecisaoId, setConfirmarDecisaoId] = useState<string | null>(null);
+  const [opcaoDecisao, setOpcaoDecisao] = useState<OpcaoDecisao | null>(null);
+
+  function moverCandidato(candId: string, coluna: Coluna) {
+    const cand = candidatosVaga.find((c) => c.id === candId);
+    setColunasEstado((prev) =>
+      prev[candId] === coluna ? prev : { ...prev, [candId]: coluna }
+    );
+    if (cand && colunasEstado[candId] !== coluna) {
+      toast.info(`${cand.nome} movido para ${coluna}`);
+    }
+  }
+
+  function tentarMover(candId: string, coluna: Coluna): boolean {
+    if (colunasEstado[candId] === coluna) return false;
+    if (coluna === "Enviados") {
+      setConfirmarEnviadosId(candId);
+      return true;
+    }
+    if (coluna === "Decisão") {
+      setOpcaoDecisao(null);
+      setConfirmarDecisaoId(candId);
+      return true;
+    }
+    return false;
+  }
+
   function avancarEtapa(candId: string) {
     const cand = candidatosVaga.find((c) => c.id === candId);
     if (!cand) return;
@@ -107,6 +139,7 @@ export default function VagaDetalheAdmin() {
       return;
     }
     const proxima = colunas[idx + 1];
+    if (tentarMover(candId, proxima)) return;
     setColunasEstado((prev) => ({ ...prev, [candId]: proxima }));
     toast.info(`${cand.nome} avançado para ${proxima}.`);
   }
@@ -132,15 +165,17 @@ export default function VagaDetalheAdmin() {
 
   function handleDrop(coluna: Coluna) {
     if (!draggingId) return;
-    const cand = candidatosVaga.find((c) => c.id === draggingId);
-    setColunasEstado((prev) =>
-      prev[draggingId] === coluna ? prev : { ...prev, [draggingId]: coluna }
-    );
-    if (cand && colunasEstado[draggingId] !== coluna) {
-      toast.info(`${cand.nome} movido para ${coluna}`);
-    }
+    const id = draggingId;
     setDraggingId(null);
     setDragOverCol(null);
+    if (tentarMover(id, coluna)) return;
+    const cand = candidatosVaga.find((c) => c.id === id);
+    setColunasEstado((prev) =>
+      prev[id] === coluna ? prev : { ...prev, [id]: coluna }
+    );
+    if (cand && colunasEstado[id] !== coluna) {
+      toast.info(`${cand.nome} movido para ${coluna}`);
+    }
   }
 
   function handleCliqueEnviar() {
