@@ -56,6 +56,10 @@ import ColaboradorFerias from "./pages/hub/ColaboradorFerias";
 import ColaboradorBeneficios from "./pages/hub/ColaboradorBeneficios";
 import ColaboradorSolicitacoes from "./pages/hub/ColaboradorSolicitacoes";
 import CeoDashboard from "./pages/hub/CeoDashboard";
+import CeoHeadcount from "./pages/hub/CeoHeadcount";
+import CeoFinanceiro from "./pages/hub/CeoFinanceiro";
+import CeoAvaliacoes from "./pages/hub/CeoAvaliacoes";
+import CeoTurnover from "./pages/hub/CeoTurnover";
 
 const queryClient = new QueryClient();
 
