@@ -56,6 +56,10 @@ import ColaboradorFerias from "./pages/hub/ColaboradorFerias";
 import ColaboradorBeneficios from "./pages/hub/ColaboradorBeneficios";
 import ColaboradorSolicitacoes from "./pages/hub/ColaboradorSolicitacoes";
 import CeoDashboard from "./pages/hub/CeoDashboard";
+import CeoHeadcount from "./pages/hub/CeoHeadcount";
+import CeoFinanceiro from "./pages/hub/CeoFinanceiro";
+import CeoAvaliacoes from "./pages/hub/CeoAvaliacoes";
+import CeoTurnover from "./pages/hub/CeoTurnover";
 
 const queryClient = new QueryClient();
 
@@ -184,10 +188,10 @@ const AppRoutes = () => (
     {/* Hub CEO */}
     <Route element={<HubLayout profile="ceo" />}>
       <Route path="/hub/ceo/dashboard" element={<CeoDashboard />} />
-      <Route path="/hub/ceo/headcount" element={<Stub title="Headcount por departamento" />} />
-      <Route path="/hub/ceo/financeiro" element={<Stub title="Financeiro de RH" subtitle="Folha, benefícios, ROI, budget" />} />
-      <Route path="/hub/ceo/avaliacoes" element={<Stub title="Avaliação de desempenho" />} />
-      <Route path="/hub/ceo/turnover" element={<Stub title="Turnover e retenção" />} />
+      <Route path="/hub/ceo/headcount" element={<CeoHeadcount />} />
+      <Route path="/hub/ceo/financeiro" element={<CeoFinanceiro />} />
+      <Route path="/hub/ceo/avaliacoes" element={<CeoAvaliacoes />} />
+      <Route path="/hub/ceo/turnover" element={<CeoTurnover />} />
     </Route>
 
     {/* Portal do Cliente */}
