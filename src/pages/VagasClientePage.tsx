@@ -202,6 +202,12 @@ export default function VagasClientePage() {
   );
   const [filtro, setFiltro] = useState<StatusVaga | "todas">("todas");
   const [vagaSelecionadaId, setVagaSelecionadaId] = useState<string | null>(null);
+  const [feedbacks, setFeedbacks] = useState<Record<string, FeedbackAcao>>({});
+  const [confirmacao, setConfirmacao] = useState<{
+    candidatoId: string;
+    nome: string;
+    acao: FeedbackAcao;
+  } | null>(null);
 
   const lista = useMemo(() => {
     const base = filtro === "todas" ? vagas : vagas.filter((v) => v.status === filtro);
