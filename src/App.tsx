@@ -188,10 +188,10 @@ const AppRoutes = () => (
     {/* Hub CEO */}
     <Route element={<HubLayout profile="ceo" />}>
       <Route path="/hub/ceo/dashboard" element={<CeoDashboard />} />
-      <Route path="/hub/ceo/headcount" element={<Stub title="Headcount por departamento" />} />
-      <Route path="/hub/ceo/financeiro" element={<Stub title="Financeiro de RH" subtitle="Folha, benefícios, ROI, budget" />} />
-      <Route path="/hub/ceo/avaliacoes" element={<Stub title="Avaliação de desempenho" />} />
-      <Route path="/hub/ceo/turnover" element={<Stub title="Turnover e retenção" />} />
+      <Route path="/hub/ceo/headcount" element={<CeoHeadcount />} />
+      <Route path="/hub/ceo/financeiro" element={<CeoFinanceiro />} />
+      <Route path="/hub/ceo/avaliacoes" element={<CeoAvaliacoes />} />
+      <Route path="/hub/ceo/turnover" element={<CeoTurnover />} />
     </Route>
 
     {/* Portal do Cliente */}
