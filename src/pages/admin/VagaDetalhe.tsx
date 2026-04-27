@@ -514,6 +514,15 @@ export default function VagaDetalheAdmin() {
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-success/15 text-success border border-success/30">
                     Pronto
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/app/horas?task_id=${c.id}&vaga=${vaga.id}`)}
+                    className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border text-[11px] font-medium hover:bg-secondary hover:border-primary/40 transition-colors"
+                    aria-label={`Iniciar timer para ${c.nome}`}
+                    title="Iniciar timer para este candidato"
+                  >
+                    <Play className="h-3 w-3" /> Play
+                  </button>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{c.parecer}</p>
               </li>
