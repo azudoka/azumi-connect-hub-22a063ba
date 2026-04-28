@@ -67,10 +67,10 @@ import TreinamentosColabPage from "./pages/hub/colaborador/TreinamentosColabPage
 import AjudaPage from "./pages/hub/colaborador/AjudaPage";
 import SolicitacoesColabPage from "./pages/hub/colaborador/SolicitacoesColabPage";
 import CeoDashboard from "./pages/hub/CeoDashboard";
-import CeoHeadcount from "./pages/hub/CeoHeadcount";
-import CeoFinanceiro from "./pages/hub/CeoFinanceiro";
-import CeoAvaliacoes from "./pages/hub/CeoAvaliacoes";
-import CeoTurnover from "./pages/hub/CeoTurnover";
+import HeadcountPage from "./pages/hub/ceo/HeadcountPage";
+import FinanceiroRHPage from "./pages/hub/ceo/FinanceiroRHPage";
+import AvaliacoesCeoPage from "./pages/hub/ceo/AvaliacoesCeoPage";
+import TurnoverPage from "./pages/hub/ceo/TurnoverPage";
 
 const queryClient = new QueryClient();
 
