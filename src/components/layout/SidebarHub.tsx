@@ -39,6 +39,55 @@ const TOPO: NavGroup[] = [
   },
 ];
 
+// Grupos fixos por perfil — sempre visíveis (não dependem de hasModulo)
+const FIXOS_POR_PERFIL: Record<HubProfile, NavGroup[]> = {
+  colaborador: [
+    {
+      label: "Minha Área",
+      items: [
+        { to: "/hub/colaborador/inicio", icon: LayoutDashboard, label: "Início" },
+        { to: "/hub/colaborador/sobre-voce", icon: UserCircle2, label: "Sobre Você" },
+        { to: "/hub/colaborador/solicitacoes", icon: ClipboardList, label: "Minhas Solicitações" },
+        { to: "/hub/colaborador/holerites", icon: Wallet, label: "Holerites" },
+        { to: "/hub/colaborador/ferias", icon: Plane, label: "Férias" },
+        { to: "/hub/colaborador/beneficios", icon: Gift, label: "Benefícios" },
+        { to: "/hub/colaborador/politicas", icon: BookOpen, label: "Políticas" },
+        { to: "/hub/colaborador/treinamentos", icon: GraduationCap, label: "Treinamentos" },
+        { to: "/hub/colaborador/ajuda", icon: ShieldQuestion, label: "Ajuda & Denúncia" },
+      ],
+    },
+  ],
+  lider: [
+    {
+      label: "Gestão do Time",
+      items: [
+        { to: "/hub/lider/painel", icon: LayoutDashboard, label: "Painel" },
+        { to: "/hub/lider/meu-time", icon: Users, label: "Meu Time" },
+        { to: "/hub/lider/onboarding", icon: Route, label: "Onboarding" },
+        { to: "/hub/lider/feedback", icon: MessagesSquare, label: "Feedback" },
+        { to: "/hub/lider/avaliacoes", icon: Award, label: "Avaliações" },
+        { to: "/hub/lider/solicitacoes", icon: ClipboardList, label: "Solicitações do Time" },
+        { to: "/hub/lider/politicas", icon: BookOpen, label: "Políticas" },
+        { to: "/hub/lider/treinamentos", icon: GraduationCap, label: "Treinamentos" },
+        { to: "/hub/lider/calendario", icon: Calendar, label: "Calendário" },
+        { to: "/hub/lider/comunicados", icon: Megaphone, label: "Comunicados" },
+      ],
+    },
+  ],
+  ceo: [
+    {
+      label: "Visão Executiva",
+      items: [
+        { to: "/hub/ceo/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+        { to: "/hub/ceo/headcount", icon: Users, label: "Headcount" },
+        { to: "/hub/ceo/financeiro", icon: BarChart3, label: "Financeiro RH" },
+        { to: "/hub/ceo/avaliacoes", icon: Award, label: "Avaliações" },
+        { to: "/hub/ceo/turnover", icon: TrendingUp, label: "Turnover" },
+      ],
+    },
+  ],
+};
+
 // 10 módulos do Hub
 const MODULOS: NavGroup[] = [
   {
