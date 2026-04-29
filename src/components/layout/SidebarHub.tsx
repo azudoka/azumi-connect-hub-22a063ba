@@ -7,6 +7,7 @@ import {
   ChevronLeft, UserCircle2, Award, Grid3x3, Activity, ShieldAlert,
   Scale, ClipboardList, FileSignature, Route, Building2, Sparkles,
   Star, Receipt, Sun, Stethoscope, Gavel, Shield, KeyRound,
+  ThermometerSun, History,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth, type ModuloSlug } from "@/context/AuthContext";
@@ -31,29 +32,23 @@ interface NavGroup {
   items: NavItem[];
 }
 
-// Grupos sempre visíveis (topo)
-const TOPO: NavGroup[] = [
-  {
-    label: "Geral",
-    items: [{ to: "/hub", icon: LayoutDashboard, label: "Início" }],
-  },
-];
-
-// Grupos fixos por perfil — sempre visíveis (não dependem de hasModulo)
+// Menu base por perfil — APENAS estes itens são exibidos no momento.
+// Módulos pagos (DP, Performance, Atração, Governança, etc.) ficam definidos
+// mais abaixo em MODULOS como TODO e NÃO são renderizados ainda.
 const FIXOS_POR_PERFIL: Record<HubProfile, NavGroup[]> = {
   colaborador: [
     {
       label: "Minha Área",
       items: [
         { to: "/hub/colaborador/inicio", icon: LayoutDashboard, label: "Início" },
-        { to: "/hub/colaborador/sobre-voce", icon: UserCircle2, label: "Sobre Você" },
-        { to: "/hub/colaborador/solicitacoes", icon: ClipboardList, label: "Minhas Solicitações" },
-        { to: "/hub/colaborador/holerites", icon: Wallet, label: "Holerites" },
-        { to: "/hub/colaborador/ferias", icon: Plane, label: "Férias" },
-        { to: "/hub/colaborador/beneficios", icon: Gift, label: "Benefícios" },
+        { to: "/hub/colaborador/sobre-voce", icon: UserCircle2, label: "Sobre você" },
         { to: "/hub/colaborador/politicas", icon: BookOpen, label: "Políticas" },
-        { to: "/hub/colaborador/treinamentos", icon: GraduationCap, label: "Treinamentos" },
-        { to: "/hub/colaborador/ajuda", icon: ShieldQuestion, label: "Ajuda & Denúncia" },
+        { to: "/hub/colaborador/beneficios", icon: Gift, label: "Benefícios" },
+        { to: "/hub/colaborador/termometro", icon: ThermometerSun, label: "Termômetro" },
+        { to: "/hub/colaborador/solicitacoes", icon: ClipboardList, label: "Solicitações" },
+        { to: "/hub/colaborador/ajuda", icon: ShieldQuestion, label: "Ajuda" },
+        { to: "/hub/colaborador/mural", icon: Sparkles, label: "Mural" },
+        { to: "/hub/colaborador/onboarding", icon: Route, label: "Onboarding" },
       ],
     },
   ],
@@ -62,15 +57,15 @@ const FIXOS_POR_PERFIL: Record<HubProfile, NavGroup[]> = {
       label: "Gestão do Time",
       items: [
         { to: "/hub/lider/painel", icon: LayoutDashboard, label: "Painel" },
-        { to: "/hub/lider/meu-time", icon: Users, label: "Meu Time" },
-        { to: "/hub/lider/onboarding", icon: Route, label: "Onboarding" },
-        { to: "/hub/lider/feedback", icon: MessagesSquare, label: "Feedback" },
-        { to: "/hub/lider/avaliacoes", icon: Award, label: "Avaliações" },
-        { to: "/hub/lider/solicitacoes", icon: ClipboardList, label: "Solicitações do Time" },
+        { to: "/hub/lider/sobre-voce", icon: UserCircle2, label: "Sobre você" },
+        { to: "/hub/lider/meu-time", icon: Users, label: "Meu time" },
         { to: "/hub/lider/politicas", icon: BookOpen, label: "Políticas" },
-        { to: "/hub/lider/treinamentos", icon: GraduationCap, label: "Treinamentos" },
-        { to: "/hub/lider/calendario", icon: Calendar, label: "Calendário" },
-        { to: "/hub/lider/comunicados", icon: Megaphone, label: "Comunicados" },
+        { to: "/hub/lider/beneficios", icon: Gift, label: "Benefícios" },
+        { to: "/hub/lider/termometro", icon: ThermometerSun, label: "Termômetro" },
+        { to: "/hub/lider/solicitacoes", icon: ClipboardList, label: "Solicitações" },
+        { to: "/hub/lider/ajuda", icon: ShieldQuestion, label: "Ajuda" },
+        { to: "/hub/lider/mural", icon: Sparkles, label: "Mural" },
+        { to: "/hub/lider/onboarding", icon: Route, label: "Onboarding" },
       ],
     },
   ],
@@ -79,10 +74,14 @@ const FIXOS_POR_PERFIL: Record<HubProfile, NavGroup[]> = {
       label: "Visão Executiva",
       items: [
         { to: "/hub/ceo/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+        { to: "/hub/ceo/clima", icon: ThermometerSun, label: "Clima" },
         { to: "/hub/ceo/headcount", icon: Users, label: "Headcount" },
-        { to: "/hub/ceo/financeiro", icon: BarChart3, label: "Financeiro RH" },
-        { to: "/hub/ceo/avaliacoes", icon: Award, label: "Avaliações" },
-        { to: "/hub/ceo/turnover", icon: TrendingUp, label: "Turnover" },
+        { to: "/hub/ceo/politicas", icon: BookOpen, label: "Políticas" },
+        { to: "/hub/ceo/mini-empresa", icon: Building2, label: "Mini empresa" },
+        { to: "/hub/ceo/beneficios", icon: Gift, label: "Benefícios" },
+        { to: "/hub/ceo/historico", icon: History, label: "Histórico" },
+        { to: "/hub/ceo/solicitacoes", icon: ClipboardList, label: "Solicitações" },
+        { to: "/hub/ceo/ajuda", icon: ShieldQuestion, label: "Ajuda" },
       ],
     },
   ],
@@ -178,7 +177,9 @@ export function SidebarHub({ profile }: { profile: HubProfile }) {
   const { hasModulo, podeOperar, usuario, logout } = useAuth();
 
   // Mostra grupo se: não tem guard OU usuário tem o módulo
-  const visiveis = MODULOS.filter((g) => !g.modulo || hasModulo(g.modulo));
+  // TODO: quando os módulos pagos forem ativados, voltar a usar:
+  // const visiveis = MODULOS.filter((g) => !g.modulo || hasModulo(g.modulo));
+  void hasModulo; // mantém import enquanto MODULOS está como TODO
 
   // Permissões mostra apenas para quem opera algo administrativo (admin)
   const mostrarPermissoes =
@@ -215,7 +216,7 @@ export function SidebarHub({ profile }: { profile: HubProfile }) {
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-5">
-        {[...TOPO, ...FIXOS_POR_PERFIL[profile], ...visiveis].map((g) => (
+        {FIXOS_POR_PERFIL[profile].map((g) => (
           <div key={g.label}>
             {!collapsed && (
               <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{g.label}</div>
