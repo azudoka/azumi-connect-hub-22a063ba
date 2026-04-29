@@ -284,15 +284,25 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
                   <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-card animate-soft-pulse" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Seu consultor</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Seu consultor Azumi</div>
                   <div className="text-sm font-medium truncate">Ana Beatriz</div>
                 </div>
               </div>
             )}
             <div className={cn("flex items-center gap-2", user?.papel === "cliente" && "mt-3")}>
-              <NavLink to="/app/configuracoes" className="flex-1 text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 px-2 py-1.5 rounded-md hover:bg-secondary">
-                <Settings className="h-3.5 w-3.5" /> Config.
-              </NavLink>
+              {user?.papel === "cliente" ? (
+                <button
+                  type="button"
+                  onClick={() => setConsultorOpen(true)}
+                  className="flex-1 text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 px-2 py-1.5 rounded-md hover:bg-secondary"
+                >
+                  <Mail className="h-3.5 w-3.5" /> Falar com consultor
+                </button>
+              ) : (
+                <NavLink to="/app/configuracoes" className="flex-1 text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 px-2 py-1.5 rounded-md hover:bg-secondary">
+                  <Settings className="h-3.5 w-3.5" /> Config.
+                </NavLink>
+              )}
               <button
                 type="button"
                 onClick={handleLogout}
