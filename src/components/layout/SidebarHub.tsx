@@ -177,7 +177,9 @@ export function SidebarHub({ profile }: { profile: HubProfile }) {
   const { hasModulo, podeOperar, usuario, logout } = useAuth();
 
   // Mostra grupo se: não tem guard OU usuário tem o módulo
-  const visiveis = MODULOS.filter((g) => !g.modulo || hasModulo(g.modulo));
+  // TODO: quando os módulos pagos forem ativados, voltar a usar:
+  // const visiveis = MODULOS.filter((g) => !g.modulo || hasModulo(g.modulo));
+  void hasModulo; // mantém import enquanto MODULOS está como TODO
 
   // Permissões mostra apenas para quem opera algo administrativo (admin)
   const mostrarPermissoes =
