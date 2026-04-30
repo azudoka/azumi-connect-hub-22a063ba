@@ -1927,3 +1927,422 @@ function renderMensagemFormatada(texto: string) {
   });
 }
 
+// ────────────────────────────────────────────────────────────────────
+// CandidatoDetailSheet — ficha completa do candidato (painel lateral)
+// Reutiliza modais existentes via callbacks; não duplica lógica.
+// ────────────────────────────────────────────────────────────────────
+type CandidatoBase = {
+  id: string;
+  nome: string;
+  cargo: string;
+  disc?: { D: number; I: number; S: number; C: number };
+  perfilDom?: string;
+  parecer?: string;
+  status?: string;
+  enviado?: boolean;
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  novo: "Novo",
+  em_analise: "Em análise",
+  aprovado: "Aprovado",
+  standby: "Standby",
+  reprovado: "Reprovado",
+  contratado: "Contratado",
+};
+
+// Dados complementares mock (no futuro virão do backend)
+const DADOS_EXTRA_MOCK: Record<string, {
+  email: string; telefone: string; cidade: string; origem: string; pretensao: string;
+  resumo: string; experiencias: { empresa: string; cargo: string; periodo: string }[];
+  discStatus: "nao_solicitado" | "solicitado" | "concluido";
+}> = {
+  c1: {
+    email: "pedro.alves@email.com", telefone: "(11) 99876-1122", cidade: "São Paulo / SP",
+    origem: "LinkedIn", pretensao: "R$ 18.000",
+    resumo: "Gerente de TI com 12 anos de experiência em transformação digital e liderança de squads multidisciplinares.",
+    experiencias: [
+      { empresa: "TechCorp", cargo: "Gerente de TI", periodo: "2021 — atual" },
+      { empresa: "InovaSoft", cargo: "Coordenador de Sistemas", periodo: "2018 — 2021" },
+      { empresa: "DataPlus", cargo: "Analista Sênior", periodo: "2014 — 2018" },
+    ],
+    discStatus: "concluido",
+  },
+};
+
+function CandidatoDetailSheet({
+  open,
+  candidato,
+  candidatoExtra,
+  tituloVaga,
+  etapaAtual,
+  eventos,
+  declinio,
+  questionariosVaga,
+  mensagensVaga,
+  onClose,
+  onSolicitarDisc,
+  onVerResumo,
+  onAssociarQuestionario,
+  onDeclinar,
+  onAgendar,
+}: {
+  open: boolean;
+  candidato: CandidatoBase | null;
+  candidatoExtra: CandidatoExtra | null;
+  tituloVaga: string;
+  etapaAtual?: string;
+  eventos: EventoEntrevista[];
+  declinio?: { motivo: string; quem: "candidato" | "azumi" };
+  questionariosVaga: QuestionarioVaga[];
+  mensagensVaga: MensagemVaga[];
+  onClose: () => void;
+  onSolicitarDisc: (id: string) => void;
+  onVerResumo: (id: string) => void;
+  onAssociarQuestionario: (id: string) => void;
+  onDeclinar: (id: string) => void;
+  onAgendar: (id: string) => void;
+}) {
+  if (!open) return null;
+
+  // Aceita tanto candidato "oficial" quanto extra (manual/convidado)
+  const cand: CandidatoBase | null =
+    candidato ??
+    (candidatoExtra
+      ? { id: candidatoExtra.id, nome: candidatoExtra.nome, cargo: candidatoExtra.cargo, status: "novo" }
+      : null);
+  if (!cand) return null;
+
+  const iniciais = cand.nome.split(" ").map((n) => n[0]).join("").slice(0, 2);
+  const dados = DADOS_EXTRA_MOCK[cand.id] ?? {
+    email: candidatoExtra?.email ?? "—",
+    telefone: candidatoExtra?.telefone ?? "—",
+    cidade: "—",
+    origem: candidatoExtra?.origem === "manual" ? "Adicionado manualmente"
+          : candidatoExtra?.origem === "convite" ? "Convite por link" : "—",
+    pretensao: "—",
+    resumo: cand.parecer ?? "Sem resumo disponível.",
+    experiencias: [],
+    discStatus: "nao_solicitado" as const,
+  };
+
+  const etapaPodeAgendar = etapaAtual === "Entrevista" || etapaAtual === "Quest/Entrevista";
+  const ultimasMensagens = mensagensVaga.slice(-2);
+  const questsDoCandidato = questionariosVaga.map((q) => ({
+    ...q,
+    statusCand: q.candidatosRespostas[cand.id] ?? "nao_associado",
+  }));
+
+  // Timeline simulada por etapa
+  const ETAPAS_TL = ["Triagem", "Quest/Entrevista", "Entrevista", "Perfis enviados", "Decisão"];
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm animate-fade-in"
+      />
+
+      {/* Sheet */}
+      <aside
+        className="fixed top-2 right-2 bottom-2 z-50 w-[min(640px,calc(100vw-1rem))] bg-card border border-border rounded-2xl shadow-elevated flex flex-col animate-scale-in overflow-hidden"
+        role="dialog"
+        aria-label={`Ficha de ${cand.nome}`}
+      >
+        {/* Header fixo */}
+        <header className="px-5 pt-5 pb-4 border-b border-border bg-card">
+          <div className="flex items-start gap-3">
+            <div className="h-12 w-12 rounded-full bg-gradient-brand flex items-center justify-center text-sm font-semibold text-white shrink-0">
+              {iniciais}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="font-display text-xl font-semibold truncate">{cand.nome}</h2>
+                {etapaAtual && (
+                  <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                    {etapaAtual}
+                  </span>
+                )}
+                {cand.status && STATUS_LABEL[cand.status] && (
+                  <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-secondary text-foreground/70 border border-border">
+                    {STATUS_LABEL[cand.status]}
+                  </span>
+                )}
+                {declinio && (
+                  <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/30">
+                    Declinado
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                Candidato para <strong className="text-foreground/80">{tituloVaga}</strong>
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              aria-label="Fechar ficha"
+              className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-secondary shrink-0"
+            >
+              <XIcon className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Ações principais */}
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            <button
+              onClick={() => onSolicitarDisc(cand.id)}
+              className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-border hover:bg-secondary text-xs font-medium"
+            >
+              <MessageCircle className="h-3.5 w-3.5" /> Solicitar DISC
+            </button>
+            <button
+              onClick={() => onVerResumo(cand.id)}
+              className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-border hover:bg-secondary text-xs font-medium"
+            >
+              <FileText className="h-3.5 w-3.5" /> Ver resumo
+            </button>
+            {etapaPodeAgendar && (
+              <button
+                onClick={() => onAgendar(cand.id)}
+                className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-border hover:bg-secondary text-xs font-medium"
+              >
+                <CalendarPlus className="h-3.5 w-3.5" /> Agendar entrevista
+              </button>
+            )}
+            <button
+              onClick={() => onDeclinar(cand.id)}
+              className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-destructive/30 text-destructive hover:bg-destructive/10 text-xs font-medium ml-auto"
+            >
+              <ThumbsDown className="h-3.5 w-3.5" /> Registrar declínio
+            </button>
+          </div>
+        </header>
+
+        {/* Conteúdo com scroll */}
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
+          {/* Bloco: Dados */}
+          <section>
+            <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">Dados do candidato</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <DadoLinha icon={<Mail className="h-3.5 w-3.5" />} label="E-mail" value={dados.email} />
+              <DadoLinha icon={<Phone className="h-3.5 w-3.5" />} label="Telefone" value={dados.telefone} />
+              <DadoLinha icon={<MapPin className="h-3.5 w-3.5" />} label="Cidade / UF" value={dados.cidade} />
+              <DadoLinha icon={<Briefcase className="h-3.5 w-3.5" />} label="Cargo pretendido" value={cand.cargo} />
+              <DadoLinha icon={<Users className="h-3.5 w-3.5" />} label="Origem" value={dados.origem} />
+              <DadoLinha icon={<Globe className="h-3.5 w-3.5" />} label="Pretensão salarial" value={dados.pretensao} />
+            </div>
+          </section>
+
+          {/* Bloco: Resumo e experiência */}
+          <section>
+            <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">Resumo e experiência</h3>
+            <p className="text-sm text-foreground/90 leading-relaxed mb-3">{dados.resumo}</p>
+            {dados.experiencias.length > 0 && (
+              <ul className="space-y-2">
+                {dados.experiencias.slice(0, 3).map((e, i) => (
+                  <li key={i} className="rounded-md border border-border bg-background/40 px-3 py-2">
+                    <div className="text-sm font-medium">{e.cargo} <span className="text-muted-foreground font-normal">— {e.empresa}</span></div>
+                    <div className="text-[11px] text-muted-foreground font-data">{e.periodo}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {/* Bloco: DISC e questionários */}
+          <section>
+            <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">DISC e questionários</h3>
+
+            <div className="rounded-lg border border-border p-3 mb-3">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div className="text-sm font-medium">DISC</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    Status: {dados.discStatus === "concluido" ? "Concluído"
+                          : dados.discStatus === "solicitado" ? "Solicitado"
+                          : "Não solicitado"}
+                    {cand.perfilDom && ` · Perfil dominante: ${cand.perfilDom}`}
+                  </div>
+                </div>
+              </div>
+              {cand.disc && <DiscBars values={cand.disc} compact />}
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => onSolicitarDisc(cand.id)}
+                  className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border text-[11px] font-medium hover:bg-secondary"
+                >
+                  <MessageCircle className="h-3 w-3" /> Solicitar DISC via WhatsApp
+                </button>
+                <button
+                  onClick={() => toast.info(`PDF DISC de ${cand.nome} (mock).`)}
+                  disabled={dados.discStatus !== "concluido"}
+                  className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border text-[11px] font-medium hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Download className="h-3 w-3" /> Baixar PDF DISC
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-border p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-medium">Questionários da vaga</div>
+                <button
+                  onClick={() => onAssociarQuestionario(cand.id)}
+                  className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border text-[11px] font-medium hover:bg-secondary"
+                >
+                  <ListChecks className="h-3 w-3" /> Associar
+                </button>
+              </div>
+              {questsDoCandidato.length === 0 ? (
+                <div className="text-xs text-muted-foreground py-2">Nenhum questionário criado para esta vaga.</div>
+              ) : (
+                <ul className="space-y-1.5">
+                  {questsDoCandidato.map((q) => (
+                    <li key={q.id} className="flex items-center justify-between text-xs">
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{q.nome}</div>
+                        <div className="text-muted-foreground text-[11px]">{q.tipo} · {q.questoes} questões</div>
+                      </div>
+                      <span className={cn(
+                        "px-2 py-0.5 rounded-full text-[10px] font-medium border shrink-0",
+                        q.statusCand === "respondido" && "bg-success/10 text-success border-success/30",
+                        q.statusCand === "pendente" && "bg-warning/10 text-warning border-warning/30",
+                        q.statusCand === "nao_associado" && "bg-secondary text-muted-foreground border-border",
+                      )}>
+                        {q.statusCand === "respondido" ? "Respondido"
+                          : q.statusCand === "pendente" ? "Pendente"
+                          : "Não associado"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </section>
+
+          {/* Bloco: Linha do tempo no processo */}
+          <section>
+            <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">Linha do tempo no processo</h3>
+            <ol className="relative border-l border-border pl-5 space-y-3">
+              {ETAPAS_TL.map((et) => {
+                const atual = et === etapaAtual;
+                const idxAtual = ETAPAS_TL.indexOf(etapaAtual ?? "");
+                const idxEt = ETAPAS_TL.indexOf(et);
+                const passada = idxAtual >= 0 && idxEt < idxAtual;
+                return (
+                  <li key={et} className="relative">
+                    <span className={cn(
+                      "absolute -left-[27px] top-1 h-3 w-3 rounded-full border-2",
+                      atual ? "bg-primary border-primary" : passada ? "bg-success border-success" : "bg-card border-border",
+                    )} />
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={cn("text-sm", atual ? "font-semibold text-foreground" : passada ? "text-foreground/80" : "text-muted-foreground")}>
+                        {et}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground font-data">
+                        {atual ? "Em andamento" : passada ? "Concluído" : "—"}
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+
+          {/* Bloco: Histórico de interações */}
+          <section>
+            <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">Histórico de interações</h3>
+            {(() => {
+              type Interacao = { quando: string; icon: React.ReactNode; texto: string };
+              const itens: Interacao[] = [];
+              eventos.forEach((ev) => itens.push({
+                quando: `${ev.data} ${ev.hora}`,
+                icon: <CalendarDays className="h-3.5 w-3.5 text-primary" />,
+                texto: `${ev.tipo} agendada para ${ev.data} às ${ev.hora} (${ev.local}).`,
+              }));
+              if (declinio) itens.push({
+                quando: "Recente",
+                icon: <ThumbsDown className="h-3.5 w-3.5 text-destructive" />,
+                texto: `Declínio registrado (${declinio.quem}): ${declinio.motivo}`,
+              });
+              if (cand.enviado) itens.push({
+                quando: "—",
+                icon: <CheckCircle2 className="h-3.5 w-3.5 text-success" />,
+                texto: "Perfil enviado ao cliente.",
+              });
+              if (itens.length === 0) {
+                return <div className="text-xs text-muted-foreground py-2">Sem interações registradas ainda.</div>;
+              }
+              return (
+                <ul className="space-y-2">
+                  {itens.map((it, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs rounded-md border border-border bg-background/40 px-3 py-2">
+                      <span className="mt-0.5 shrink-0">{it.icon}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-foreground">{it.texto}</div>
+                        <div className="text-[10px] text-muted-foreground font-data">{it.quando}</div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              );
+            })()}
+          </section>
+
+          {/* Bloco: Conversas (link p/ chat da vaga) */}
+          <section>
+            <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">Conversas da vaga</h3>
+            {/* TODO: numa próxima fase, filtrar histórico de chat por candidato. */}
+            {ultimasMensagens.length === 0 ? (
+              <div className="text-xs text-muted-foreground py-2">Sem mensagens ainda na vaga.</div>
+            ) : (
+              <ul className="space-y-2 mb-2">
+                {ultimasMensagens.map((m) => (
+                  <li key={m.id} className="rounded-md border border-border bg-background/40 px-3 py-2 text-xs">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="font-medium">{m.autor}</span>
+                      <span className="text-[10px] text-muted-foreground">{m.quando}</span>
+                      <span className={cn(
+                        "ml-auto text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded border",
+                        m.canal === "interno"
+                          ? "bg-muted/40 text-muted-foreground border-border"
+                          : "bg-warning/10 text-warning border-warning/30",
+                      )}>
+                        {m.canal === "interno" ? "Interno" : "Cliente"}
+                      </span>
+                    </div>
+                    <p className="text-foreground/80 line-clamp-2">{m.texto}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <button
+              onClick={() => {
+                onClose();
+                setTimeout(() => {
+                  document.querySelector('[data-vaga-chat]')?.scrollIntoView({ behavior: "smooth" });
+                }, 200);
+              }}
+              className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline"
+            >
+              <MessageSquare className="h-3.5 w-3.5" /> Ver todas as conversas da vaga
+            </button>
+          </section>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+function DadoLinha({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-2 rounded-md border border-border bg-background/40 px-3 py-2">
+      <span className="text-muted-foreground mt-0.5">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+        <div className="text-sm truncate">{value}</div>
+      </div>
+    </div>
+  );
+}
