@@ -285,7 +285,7 @@ export default function VagaDetalheAdmin() {
   // ── Modais novos ─────────────────────────────────────────────────
   const [novoCandOpen, setNovoCandOpen] = useState(false);
   const [convidarOpen, setConvidarOpen] = useState(false);
-  const [novoQuestOpen, setNovoQuestOpen] = useState(false);
+  // (legado removido — substituído por editorQuestId)
   /** Quando aberto: id do questionário a editar; "novo" → criar do zero. */
   const [editorQuestId, setEditorQuestId] = useState<string | "novo" | null>(null);
   /** Confirmação de exclusão de questionário. */
