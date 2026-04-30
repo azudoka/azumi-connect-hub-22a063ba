@@ -1446,7 +1446,41 @@ export default function VagaDetalheAdmin() {
         onAssociarQuestionario={(id) => setAssociarQuestOpen(id)}
         onDeclinar={(id) => setDeclinarOpen(id)}
         onAgendar={(id) => setAgendarOpen(id)}
+        onAbrirRelatorio={(id) => setRelatorioOpenId(id)}
+        relatorioStatus={fichaCandidatoId ? relatoriosPorCandidato[fichaCandidatoId]?.status : undefined}
       />
+
+      {/* ── Editor de relatório do candidato (modal grande) ─────── */}
+      {relatorioOpenId && (() => {
+        const cand = candidatosVaga.find((c) => c.id === relatorioOpenId)
+          ?? (() => {
+            const ex = candidatosExtras.find((c) => c.id === relatorioOpenId);
+            return ex ? { id: ex.id, nome: ex.nome, cargo: ex.cargo, status: "novo" as const, disc: undefined, perfilDom: undefined } as CandidatoBase : null;
+          })();
+        if (!cand) return null;
+        return (
+          <RelatorioCandidatoModal
+            candidato={cand}
+            vagaTitulo={vaga.titulo}
+            empresa={vaga.empresa}
+            questionariosVaga={questionariosVaga}
+            draft={relatoriosPorCandidato[relatorioOpenId]}
+            onClose={() => setRelatorioOpenId(null)}
+            onSaveDraft={(data) => {
+              setRelatoriosPorCandidato((prev) => ({
+                ...prev,
+                [cand.id]: { ...data, status: prev[cand.id]?.status === "enviado" ? "enviado" : "rascunho" },
+              }));
+              toast.success("Rascunho do relatório salvo.");
+            }}
+            onMarkSent={(data) => {
+              setRelatoriosPorCandidato((prev) => ({ ...prev, [cand.id]: { ...data, status: "enviado" } }));
+              toast.success(`Relatório de ${cand.nome} enviado ao cliente (mock).`);
+              setRelatorioOpenId(null);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
