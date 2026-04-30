@@ -5,8 +5,11 @@ import { ptBR } from "date-fns/locale";
 import {
   ArrowLeft, Plus, LayoutGrid, List as ListIcon, Play, MoreHorizontal,
   CalendarIcon, Clock, History, Pencil, GitBranch, UserPlus, XCircle,
-  CheckCircle2, AlertTriangle, Star, Lock,
+  CheckCircle2, AlertTriangle, Star, Lock, Paperclip, Send, MessageSquare,
+  Trash2, FileText,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/PageHeader";
