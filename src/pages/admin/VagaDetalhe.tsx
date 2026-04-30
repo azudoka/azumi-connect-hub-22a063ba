@@ -360,6 +360,16 @@ export default function VagaDetalheAdmin() {
       setEnviarQuestParaCand(candId);
       return true;
     }
+    if (coluna === "Entrevista") {
+      // Move + abre modal de Entrevista com Gestor (Etapa 5 — Doc Mestre).
+      // Apenas dispara se ainda não houver agendamento ativo p/ este candidato.
+      setColunasEstado((prev) => ({ ...prev, [candId]: coluna }));
+      const existente = getAgendamentoDoCandidato(candId);
+      if (!existente) {
+        setAgendarGestorOpen(candId);
+      }
+      return true;
+    }
     return false;
   }
 
