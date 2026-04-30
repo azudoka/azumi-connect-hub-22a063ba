@@ -1708,6 +1708,8 @@ export default function VagaDetalheAdmin() {
         onAgendar={(id) => setAgendarOpen(id)}
         onAbrirRelatorio={(id) => setRelatorioOpenId(id)}
         relatorioStatus={fichaCandidatoId ? relatoriosPorCandidato[fichaCandidatoId]?.status : undefined}
+        onEnviarWhatsQuestionario={(candidatoId, questionarioId) => setWhatsTemplateOpen({ candidatoId, questionarioId })}
+        onSalvarAvaliacao={salvarAvaliacaoQuestionario}
       />
 
       {/* ── Editor de relatório do candidato (modal grande) ─────── */}
