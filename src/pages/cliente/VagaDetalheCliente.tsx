@@ -379,6 +379,24 @@ export default function VagaDetalheCliente() {
           }}
         />
       )}
+
+      {/* NPS — pop-up automático para cada candidato contratado */}
+      {npsParaCandidato && (() => {
+        const cand = candidatos.find((c) => c.id === npsParaCandidato);
+        if (!cand) return null;
+        return (
+          <NpsClienteModal
+            candidatoNome={cand.nome}
+            vagaTitulo={vaga.titulo}
+            onClose={() => setNpsParaCandidato(null)}
+            onSave={(nota, justificativa) => {
+              registrarNps({ candidatoId: cand.id, vagaId: vaga.id, nota, justificativa });
+              toast.success("Avaliação registrada. Obrigado pelo retorno!");
+              setNpsParaCandidato(null);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
