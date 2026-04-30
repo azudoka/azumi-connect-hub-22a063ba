@@ -752,6 +752,7 @@ export default function ProjetosPage() {
                 </li>
               ))}
             </ul>
+            </>
           )}
         </TabsContent>
       </Tabs>
