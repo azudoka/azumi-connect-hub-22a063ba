@@ -141,10 +141,21 @@ function AdminView() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Solicitações" subtitle="Central de solicitações" />
+      <PageHeader
+        title="Solicitações"
+        subtitle="Central de solicitações"
+        actions={
+          <Button
+            onClick={() => navigate("/app/atracao?new=1")}
+            className="rounded-[100px] bg-[#3B82F6] hover:bg-[#3B82F6]/90 text-white gap-1.5"
+          >
+            <Plus className="h-4 w-4" /> Nova solicitação
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-        <div className="relative md:col-span-5">
+        <div className="relative md:col-span-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por protocolo, título ou empresa…" className="pl-9 rounded-[100px]" />
         </div>
@@ -163,13 +174,22 @@ function AdminView() {
           </SelectContent>
         </Select>
         <Select value={status} onValueChange={(v) => setStatus(v as Status | "all")}>
-          <SelectTrigger className="md:col-span-3 rounded-[100px]"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectTrigger className="md:col-span-2 rounded-[100px]"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os status</SelectItem>
             <SelectItem value="aberta">Aberta</SelectItem>
             <SelectItem value="andamento">Em andamento</SelectItem>
             <SelectItem value="finalizada">Finalizada</SelectItem>
             <SelectItem value="cancelada">Cancelada</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={periodo} onValueChange={(v) => setPeriodo(v as typeof periodo)}>
+          <SelectTrigger className="md:col-span-2 rounded-[100px]"><SelectValue placeholder="Período" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todo o período</SelectItem>
+            <SelectItem value="7">Últimos 7 dias</SelectItem>
+            <SelectItem value="30">Últimos 30 dias</SelectItem>
+            <SelectItem value="90">Últimos 90 dias</SelectItem>
           </SelectContent>
         </Select>
       </div>
