@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -11,8 +12,11 @@ import {
   ThumbsUp,
   AlertCircle,
   ThumbsDown,
+  FileText,
+  ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
+import { candidatosComRelatorioPorVaga } from "@/data/atracaoClienteStore";
 
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
