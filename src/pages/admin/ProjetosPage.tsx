@@ -378,7 +378,7 @@ export default function ProjetosPage() {
         }
       />
 
-      {PERFIL_DEMO === "consultor" && (
+      {isConsultor && (
         <div className="mb-5 rounded-xl border border-info/30 bg-info/10 px-4 py-3 flex items-start gap-3">
           <Briefcase className="h-4 w-4 text-info shrink-0 mt-0.5" />
           <div>
