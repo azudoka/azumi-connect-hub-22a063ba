@@ -35,6 +35,7 @@ import {
   isExpiradaPorTempo,
   msRestantes,
   statusPropostaLabel,
+  jaGerouRelatorioFinal,
   type PropostaCandidato,
   type TipoProposta,
   type CanalProposta,
@@ -374,6 +375,16 @@ export default function VagaDetalheAdmin() {
   );
   const posicoesPreenchidas = idsContratados.length;
   const vagaEncerrada = posicoesPreenchidas >= posicoesVaga;
+
+  // Pop-up automático: "Deseja gerar o Relatório Final?" quando todas as
+  // posições forem preenchidas (apenas 1x por vaga — verifica store).
+  const [relatorioFinalPromptOpen, setRelatorioFinalPromptOpen] = useState(false);
+  useEffect(() => {
+    if (vagaEncerrada && !jaGerouRelatorioFinal(vaga.id)) {
+      setRelatorioFinalPromptOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vagaEncerrada, vaga.id]);
 
   // Re-render quando o store de Entrevista com Gestor muda (cliente / rota pública).
   const [storeVersao, setStoreVersao] = useState(0);
@@ -2004,6 +2015,38 @@ export default function VagaDetalheAdmin() {
           </ModalShell>
         );
       })()}
+
+      {/* ── Pop-up: vaga encerrada → relatório final ─────────────── */}
+      {relatorioFinalPromptOpen && (
+        <ModalShell title="Vaga encerrada 🎉" onClose={() => setRelatorioFinalPromptOpen(false)}>
+          <div className="space-y-4 text-sm">
+            <div className="rounded-md border border-success/30 bg-success/10 p-3 text-success text-xs">
+              Todas as <strong>{posicoesVaga}</strong> posição(ões) desta vaga foram preenchidas.
+            </div>
+            <p>
+              Deseja gerar agora o <strong>Relatório Final de Encerramento da vaga</strong>?
+              Ele reúne contratados, cronologia, tempo médio por etapa e o NPS do cliente.
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setRelatorioFinalPromptOpen(false)}
+                className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm"
+              >
+                Mais tarde
+              </button>
+              <button
+                onClick={() => {
+                  setRelatorioFinalPromptOpen(false);
+                  navigate(`/app/atracao/${vaga.id}/relatorio-final`);
+                }}
+                className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold inline-flex items-center gap-1.5"
+              >
+                <FileText className="h-3.5 w-3.5" /> Abrir relatório final
+              </button>
+            </div>
+          </div>
+        </ModalShell>
+      )}
     </div>
   );
 }
