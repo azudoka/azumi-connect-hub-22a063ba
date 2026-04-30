@@ -1227,29 +1227,10 @@ function RespostaGestorModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const ag = useMemo(
-    () => listarAgendamentosDaVaga("").find((a) => a.id === agendamentoId)
-      ?? listarAgendamentosDaVaga(
-        listarAgendamentosDaVaga("").find((a) => a.id === agendamentoId)?.vagaId ?? ""
-      ).find((a) => a.id === agendamentoId)
-      ?? null,
+  const agendamento = useMemo(
+    () => getAgendamento(agendamentoId),
     [agendamentoId]
   );
-  // Mais simples: pegamos por outro caminho
-  const all = useMemo(() => {
-    const map: Record<string, AgendamentoEntrevistaGestor> = {};
-    return map;
-  }, []);
-  void all;
-
-  // Releitura direta via store helper
-  const agendamento = useMemo(() => {
-    // import local evitando cycle
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const mod = require("@/data/entrevistaGestorStore") as typeof import("@/data/entrevistaGestorStore");
-    return mod.getAgendamento(agendamentoId);
-  }, [agendamentoId]);
-  void ag;
 
   const [modo, setModo] = useState<"escolher" | "sugerir">("escolher");
   const [escolha, setEscolha] = useState<number | null>(null);
