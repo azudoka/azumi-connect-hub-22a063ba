@@ -22,6 +22,24 @@ import {
   type ModoEntrevista,
   type AgendamentoEntrevistaGestor,
 } from "@/data/entrevistaGestorStore";
+import {
+  criarProposta,
+  getPropostaAtiva,
+  aceitarProposta,
+  recusarProposta,
+  expirarProposta,
+  contratadosNaVaga,
+  registrarFeedback,
+  jaTemFeedback,
+  subscribePropostas,
+  isExpiradaPorTempo,
+  msRestantes,
+  statusPropostaLabel,
+  type PropostaCandidato,
+  type TipoProposta,
+  type CanalProposta,
+  type FeedbackCanal,
+} from "@/data/propostaStore";
 
 const BENEFICIO_LABEL: Record<string, string> = {
   vale_transporte: "Vale-transporte",
@@ -224,8 +242,11 @@ export default function VagaDetalheAdmin() {
   const max = Math.max(...funil.map((f) => f.n), 1);
 
   const candidatosVaga = candidatos.filter((c) => c.vagaId === vaga.id);
-  const colunas = ["Triagem", "Quest.", "Entrevista", "Enviados", "Decisão"] as const;
+  const colunas = ["Triagem", "Quest.", "Entrevista", "Enviados", "Decisão", "Proposta", "Reprovados"] as const;
   type Coluna = typeof colunas[number];
+
+  // Posições da vaga (Doc Mestre — Etapa 6: bloquear contratações além do total).
+  const posicoesVaga: number = (vaga as unknown as { posicoes?: number }).posicoes ?? 1;
 
   // Estado do Kanban: candidato -> coluna (todos começam em "Triagem")
   const [colunasEstado, setColunasEstado] = useState<Record<string, Coluna>>(
