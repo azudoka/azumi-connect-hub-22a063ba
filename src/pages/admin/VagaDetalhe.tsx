@@ -2673,6 +2673,7 @@ function CandidatoDetailSheet({
   onSalvarAvaliacao?: (questionarioId: string, candidatoId: string, questoes: Record<string, AvaliacaoQuestao>, salvoComo: "rascunho" | "definitivo") => void;
 }) {
   useScrollLock(open);
+  const { id: vagaIdParam } = useParams();
   if (!open) return null;
 
   // Aceita tanto candidato "oficial" quanto extra (manual/convidado)
