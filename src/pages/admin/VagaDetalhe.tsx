@@ -254,7 +254,19 @@ export default function VagaDetalheAdmin() {
   const [publicacao, setPublicacao] = useState<PublicacaoStatus>("nao_publicada");
   const [candidatosExtras, setCandidatosExtras] = useState<CandidatoExtra[]>([]);
   const [questionariosVaga, setQuestionariosVaga] = useState<QuestionarioVaga[]>([
-    { id: "q-disc", nome: "DISC padrão", tipo: "Comportamental", questoes: 24, candidatosRespostas: {} },
+    {
+      id: "q-disc",
+      nome: "Avaliação técnica padrão",
+      descricao: "Perguntas básicas de fit técnico para a vaga.",
+      perguntas: [
+        { id: "p1", ordem: 1, texto: "Conte uma situação em que você liderou uma mudança importante.", tipo: "texto_livre", obrigatoria: true },
+        { id: "p2", ordem: 2, texto: "Como você lida com prazos apertados?", tipo: "escala_1_5", obrigatoria: true },
+        { id: "p3", ordem: 3, texto: "Modelo de trabalho preferido?", tipo: "multipla_escolha", obrigatoria: false, opcoes: ["Presencial", "Híbrido", "Remoto"] },
+      ],
+      criadoPor: "Patricia Lima",
+      criadoEm: new Date().toLocaleDateString("pt-BR"),
+      respostasPorCandidato: {},
+    },
   ]);
   const [eventos, setEventos] = useState<EventoEntrevista[]>([]);
   const [mensagens, setMensagens] = useState<MensagemVaga[]>([
