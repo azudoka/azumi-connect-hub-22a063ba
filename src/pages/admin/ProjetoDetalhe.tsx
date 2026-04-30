@@ -216,6 +216,8 @@ export default function ProjetoDetalhe() {
   const [editOpen, setEditOpen] = useState<{ open: boolean; entId: string | null }>({ open: false, entId: null });
   const [historicoOpen, setHistoricoOpen] = useState<{ open: boolean; entId: string | null }>({ open: false, entId: null });
   const [cancelarOpen, setCancelarOpen] = useState<{ open: boolean; entId: string | null }>({ open: false, entId: null });
+  const [panelOpen, setPanelOpen] = useState<{ open: boolean; entId: string | null }>({ open: false, entId: null });
+  const [dragOverCol, setDragOverCol] = useState<EntregavelStatus | null>(null);
   const [confirmAvancarOpen, setConfirmAvancarOpen] = useState<{
     open: boolean; entId: string | null; targetStatus: EntregavelStatus | null;
   }>({ open: false, entId: null, targetStatus: null });
