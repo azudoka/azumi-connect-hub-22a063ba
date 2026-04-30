@@ -3070,6 +3070,90 @@ function CandidatoDetailSheet({
   );
 }
 
+function CorrigirQuestionarioInline({
+  perguntas,
+  respostas,
+  avaliacaoInicial,
+  mediaSalva,
+  salvoComo,
+  onSalvar,
+}: {
+  perguntas: PerguntaQuestionario[];
+  respostas: Record<string, string>;
+  avaliacaoInicial: Record<string, AvaliacaoQuestao>;
+  mediaSalva?: number;
+  salvoComo?: "rascunho" | "definitivo";
+  onSalvar: (q: Record<string, AvaliacaoQuestao>, modo: "rascunho" | "definitivo") => void;
+}) {
+  const [estado, setEstado] = useState<Record<string, AvaliacaoQuestao>>(avaliacaoInicial);
+  function setNota(pid: string, nota: 1 | 2 | 3 | 4 | 5) {
+    setEstado((p) => ({ ...p, [pid]: { ...(p[pid] ?? { nota: 3 }), nota } }));
+  }
+  function setJust(pid: string, justificativa: string) {
+    setEstado((p) => ({ ...p, [pid]: { ...(p[pid] ?? { nota: 3 }), justificativa } }));
+  }
+  return (
+    <div className="mt-3 space-y-2">
+      {mediaSalva !== undefined && (
+        <div className="text-[11px] text-muted-foreground">
+          Média atual: <strong className="text-foreground">{mediaSalva.toFixed(1)}/5</strong>
+          {salvoComo && ` · ${salvoComo === "definitivo" ? "Salvo" : "Rascunho"}`}
+        </div>
+      )}
+      <ul className="space-y-2">
+        {perguntas.map((p) => {
+          const av = estado[p.id] ?? { nota: 3 as const };
+          return (
+            <li key={p.id} className="rounded border border-border bg-card p-2">
+              <div className="text-[11px] font-medium">{p.ordem}. {p.texto}</div>
+              <div className="text-[10px] text-foreground/70 bg-secondary/40 rounded px-2 py-1 mt-1">
+                <span className="text-muted-foreground mr-1">Resposta:</span>
+                {respostas[p.id] ?? <em className="text-muted-foreground">— sem resposta —</em>}
+              </div>
+              <div className="flex items-center gap-1 mt-1.5">
+                <span className="text-[10px] text-muted-foreground mr-1">Nota:</span>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setNota(p.id, n as 1 | 2 | 3 | 4 | 5)}
+                    className={cn(
+                      "h-6 w-6 rounded border text-[10px] font-semibold",
+                      av.nota === n ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-secondary",
+                    )}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <input
+                value={av.justificativa ?? ""}
+                onChange={(e) => setJust(p.id, e.target.value)}
+                placeholder="Nota interna / justificativa"
+                className="mt-1.5 w-full h-7 px-2 rounded-md border border-border bg-card text-[10px]"
+              />
+            </li>
+          );
+        })}
+      </ul>
+      <div className="flex justify-end gap-1.5">
+        <button
+          onClick={() => onSalvar(estado, "rascunho")}
+          className="h-7 px-2 rounded-md border border-border hover:bg-secondary text-[10px] font-medium"
+        >
+          Salvar rascunho
+        </button>
+        <button
+          onClick={() => onSalvar(estado, "definitivo")}
+          className="h-7 px-2 rounded-md bg-primary text-primary-foreground text-[10px] font-semibold"
+        >
+          Salvar avaliação
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function DadoLinha({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-start gap-2 rounded-md border border-border bg-background/40 px-3 py-2">
