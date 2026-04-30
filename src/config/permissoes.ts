@@ -1,4 +1,4 @@
-import { useAuth, type Papel } from "../context/AuthContext";
+import { useAuth, type Papel } from "@/context/AuthContext";
 
 export type Permissao =
   | "dashboard.ver"
