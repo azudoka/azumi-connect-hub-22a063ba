@@ -136,6 +136,7 @@ const AppRoutes = () => (
     <Route path="/" element={<RootRedirect />} />
     <Route path="/login" element={<Login />} />
     <Route path="/selecao-perfil" element={<SelecaoPerfil />} />
+    <Route path="/confirmar-entrevista/:agendamentoId" element={<ConfirmarEntrevistaPage />} />
 
     {/* Admin / Consultor */}
     <Route
