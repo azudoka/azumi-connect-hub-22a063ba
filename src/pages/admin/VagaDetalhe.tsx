@@ -26,10 +26,12 @@ const BENEFICIO_LABEL: Record<string, string> = {
 import {
   ArrowLeft, Building2, MapPin, Send, MessageSquare, CheckCircle2, Clock,
   Users, FileQuestion, History, Filter, Loader2, AlertTriangle, Bot, User,
-  MoreVertical, Eye, StickyNote, ChevronRight, UserX, Play,
+  MoreVertical, Eye, StickyNote, ChevronRight, UserX, Play, UserPlus, Link2,
+  Copy, FileText, MessageCircle, Download, ListChecks, ThumbsDown, CalendarPlus,
+  CalendarDays, Globe, Paperclip, X as XIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 const tabs = [
