@@ -315,9 +315,20 @@ export default function VagaDetalheAdmin() {
   const [associarQuestOpen, setAssociarQuestOpen] = useState<string | null>(null);
   const [declinarOpen, setDeclinarOpen] = useState<string | null>(null);
   const [agendarOpen, setAgendarOpen] = useState<string | null>(null);
+  /** Modal específico de Entrevista com Gestor (Etapa 5 — Doc Mestre). */
+  const [agendarGestorOpen, setAgendarGestorOpen] = useState<string | null>(null);
   const [fichaCandidatoId, setFichaCandidatoId] = useState<string | null>(null);
   const [relatorioOpenId, setRelatorioOpenId] = useState<string | null>(null);
   const [relatoriosPorCandidato, setRelatoriosPorCandidato] = useState<Record<string, RelatorioCandidato>>({});
+
+  // Re-render quando o store de Entrevista com Gestor muda (cliente / rota pública).
+  const [storeVersao, setStoreVersao] = useState(0);
+  useEffect(() => subscribeEntrevistaGestor(() => setStoreVersao((v) => v + 1)), []);
+  const agendamentosDaVaga = useMemo(
+    () => listarAgendamentosDaVaga(vaga.id),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [vaga.id, storeVersao]
+  );
 
   // Link público da vaga (mock)
   const linkPublico = `https://azumi.jobs/vaga/${vaga.id}`;
