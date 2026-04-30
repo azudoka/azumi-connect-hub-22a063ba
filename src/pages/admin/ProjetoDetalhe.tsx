@@ -814,6 +814,15 @@ export default function ProjetoDetalhe() {
           });
         }}
       />
+
+      {/* ─────────── Painel do entregável (subtarefas, consultor, chat) ─────────── */}
+      <EntregavelPanelSheet
+        open={panelOpen.open}
+        entregavel={entregaveis.find((e) => e.id === panelOpen.entId) ?? null}
+        onClose={() => setPanelOpen({ open: false, entId: null })}
+        onPatch={(patch) => panelOpen.entId && patchEntregavel(panelOpen.entId, patch)}
+        onAbrirHoras={(codigo) => navigate(`/app/horas?task_id=${codigo}`)}
+      />
     </div>
   );
 }
