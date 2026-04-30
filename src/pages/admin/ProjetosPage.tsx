@@ -29,6 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 
 import { empresas, consultores } from "@/data/mock";
+import { useAuth } from "@/context/AuthContext";
 
 // ────────────────────────────────────────────────────────────────────
 // Tipos / mocks locais
