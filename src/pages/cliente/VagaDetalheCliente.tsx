@@ -50,12 +50,13 @@ export default function VagaDetalheCliente() {
     setVersao((v) => v + 1);
   }
 
-  // Apenas candidatos com relatório enviado aparecem para o cliente.
+  // Apenas candidatos com relatório enviado para esta vaga aparecem ao cliente.
+  // O vínculo cand→vaga vem do store (relatório enviado), não do mock.
   const candidatosVisiveis = useMemo(() => {
     const idsComRelatorio = candidatosComRelatorioPorVaga(vaga.id);
-    return candidatos.filter(
-      (c) => c.vagaId === vaga.id && idsComRelatorio.includes(c.id)
-    );
+    return idsComRelatorio
+      .map((cid) => candidatos.find((c) => c.id === cid))
+      .filter((c): c is (typeof candidatos)[number] => !!c);
     // versao força recomputo após salvar parecer/feedback
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vaga.id, versao]);
