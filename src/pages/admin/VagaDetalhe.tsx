@@ -87,6 +87,29 @@ interface MensagemVaga {
   anexo?: string;
 }
 
+interface RelatorioQuestaoNota {
+  nota: number; // 1..5
+  justificativa: string;
+}
+
+interface RelatorioCandidato {
+  protocolo: string;
+  data: string; // dd/mm/yyyy
+  cidadeUf: string;
+  cargoAtual: string;
+  experienciaResumida: string;
+  sintese: string;
+  pontosPositivos: string;
+  pontosAtencao: string;
+  discResumo: string;
+  questoes: Record<string, RelatorioQuestaoNota>;
+  recomendacao: string;
+  movimento: "Avançar" | "Stand by" | "Desclassificar" | "";
+  consultorNome: string;
+  consultorCargo: string;
+  status: "rascunho" | "enviado";
+}
+
 const PESSOAS_MENCAO_VAGA = [
   "Ana Beatriz",
   "Rafael Moura",
@@ -216,6 +239,8 @@ export default function VagaDetalheAdmin() {
   const [declinarOpen, setDeclinarOpen] = useState<string | null>(null);
   const [agendarOpen, setAgendarOpen] = useState<string | null>(null);
   const [fichaCandidatoId, setFichaCandidatoId] = useState<string | null>(null);
+  const [relatorioOpenId, setRelatorioOpenId] = useState<string | null>(null);
+  const [relatoriosPorCandidato, setRelatoriosPorCandidato] = useState<Record<string, RelatorioCandidato>>({});
 
   // Link público da vaga (mock)
   const linkPublico = `https://azumi.jobs/vaga/${vaga.id}`;
@@ -1421,7 +1446,41 @@ export default function VagaDetalheAdmin() {
         onAssociarQuestionario={(id) => setAssociarQuestOpen(id)}
         onDeclinar={(id) => setDeclinarOpen(id)}
         onAgendar={(id) => setAgendarOpen(id)}
+        onAbrirRelatorio={(id) => setRelatorioOpenId(id)}
+        relatorioStatus={fichaCandidatoId ? relatoriosPorCandidato[fichaCandidatoId]?.status : undefined}
       />
+
+      {/* ── Editor de relatório do candidato (modal grande) ─────── */}
+      {relatorioOpenId && (() => {
+        const cand = candidatosVaga.find((c) => c.id === relatorioOpenId)
+          ?? (() => {
+            const ex = candidatosExtras.find((c) => c.id === relatorioOpenId);
+            return ex ? { id: ex.id, nome: ex.nome, cargo: ex.cargo, status: "novo" as const, disc: undefined, perfilDom: undefined } as CandidatoBase : null;
+          })();
+        if (!cand) return null;
+        return (
+          <RelatorioCandidatoModal
+            candidato={cand}
+            vagaTitulo={vaga.titulo}
+            empresa={vaga.empresa}
+            questionariosVaga={questionariosVaga}
+            draft={relatoriosPorCandidato[relatorioOpenId]}
+            onClose={() => setRelatorioOpenId(null)}
+            onSaveDraft={(data) => {
+              setRelatoriosPorCandidato((prev) => ({
+                ...prev,
+                [cand.id]: { ...data, status: prev[cand.id]?.status === "enviado" ? "enviado" : "rascunho" },
+              }));
+              toast.success("Rascunho do relatório salvo.");
+            }}
+            onMarkSent={(data) => {
+              setRelatoriosPorCandidato((prev) => ({ ...prev, [cand.id]: { ...data, status: "enviado" } }));
+              toast.success(`Relatório de ${cand.nome} enviado ao cliente (mock).`);
+              setRelatorioOpenId(null);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
@@ -1986,6 +2045,8 @@ function CandidatoDetailSheet({
   onAssociarQuestionario,
   onDeclinar,
   onAgendar,
+  onAbrirRelatorio,
+  relatorioStatus,
 }: {
   open: boolean;
   candidato: CandidatoBase | null;
@@ -2002,6 +2063,8 @@ function CandidatoDetailSheet({
   onAssociarQuestionario: (id: string) => void;
   onDeclinar: (id: string) => void;
   onAgendar: (id: string) => void;
+  onAbrirRelatorio: (id: string) => void;
+  relatorioStatus?: "rascunho" | "enviado";
 }) {
   if (!open) return null;
 
@@ -2038,15 +2101,15 @@ function CandidatoDetailSheet({
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — z-30 para ficar abaixo dos modais (z-50) */}
       <div
         onClick={onClose}
-        className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm animate-fade-in"
+        className="fixed inset-0 z-30 bg-background/60 backdrop-blur-sm animate-fade-in"
       />
 
-      {/* Sheet */}
+      {/* Sheet — z-40 (modais flutuantes z-50 ficam acima) */}
       <aside
-        className="fixed top-2 right-2 bottom-2 z-50 w-[min(640px,calc(100vw-1rem))] bg-card border border-border rounded-2xl shadow-elevated flex flex-col animate-scale-in overflow-hidden"
+        className="fixed top-2 right-2 bottom-2 z-40 w-[min(640px,calc(100vw-1rem))] bg-card border border-border rounded-2xl shadow-elevated flex flex-col animate-scale-in overflow-hidden"
         role="dialog"
         aria-label={`Ficha de ${cand.nome}`}
       >
@@ -2072,6 +2135,16 @@ function CandidatoDetailSheet({
                 {declinio && (
                   <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/30">
                     Declinado
+                  </span>
+                )}
+                {relatorioStatus && (
+                  <span className={cn(
+                    "text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border",
+                    relatorioStatus === "enviado"
+                      ? "bg-success/10 text-success border-success/30"
+                      : "bg-info/10 text-info border-info/30",
+                  )}>
+                    {relatorioStatus === "enviado" ? "Relatório enviado" : "Relatório em rascunho"}
                   </span>
                 )}
               </div>
@@ -2101,6 +2174,12 @@ function CandidatoDetailSheet({
               className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-border hover:bg-secondary text-xs font-medium"
             >
               <FileText className="h-3.5 w-3.5" /> Ver resumo
+            </button>
+            <button
+              onClick={() => onAbrirRelatorio(cand.id)}
+              className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium"
+            >
+              <FileText className="h-3.5 w-3.5" /> Relatório para cliente
             </button>
             {etapaPodeAgendar && (
               <button
@@ -2271,6 +2350,11 @@ function CandidatoDetailSheet({
                 icon: <CheckCircle2 className="h-3.5 w-3.5 text-success" />,
                 texto: "Perfil enviado ao cliente.",
               });
+              if (relatorioStatus === "enviado") itens.push({
+                quando: new Date().toLocaleDateString("pt-BR"),
+                icon: <FileText className="h-3.5 w-3.5 text-primary" />,
+                texto: "Relatório enviado ao cliente.",
+              });
               if (itens.length === 0) {
                 return <div className="text-xs text-muted-foreground py-2">Sem interações registradas ainda.</div>;
               }
@@ -2344,5 +2428,409 @@ function DadoLinha({ icon, label, value }: { icon: React.ReactNode; label: strin
         <div className="text-sm truncate">{value}</div>
       </div>
     </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────
+// RelatorioCandidatoModal — editor de relatório para envio ao cliente
+// (z-50 → garante render acima da CandidatoDetailSheet em z-40)
+// ────────────────────────────────────────────────────────────────────
+function RelatorioCandidatoModal({
+  candidato,
+  vagaTitulo,
+  empresa,
+  questionariosVaga,
+  draft,
+  onClose,
+  onSaveDraft,
+  onMarkSent,
+}: {
+  candidato: CandidatoBase;
+  vagaTitulo: string;
+  empresa: string;
+  questionariosVaga: QuestionarioVaga[];
+  draft?: RelatorioCandidato;
+  onClose: () => void;
+  onSaveDraft: (data: RelatorioCandidato) => void;
+  onMarkSent: (data: RelatorioCandidato) => void;
+}) {
+  const protocoloAuto = useMemo(
+    () => `REL-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`,
+    [candidato.id],
+  );
+  const hojeBR = new Date().toLocaleDateString("pt-BR");
+
+  // Mock de questões da primeira questionário associado (fonte do conteúdo no relatório)
+  const questoesMock = useMemo(() => {
+    const q = questionariosVaga[0];
+    if (!q) return [] as { id: string; pergunta: string; resposta: string }[];
+    return Array.from({ length: Math.min(q.questoes, 4) }).map((_, i) => ({
+      id: `${q.id}-q${i + 1}`,
+      pergunta: `Pergunta ${i + 1} — ${q.tipo} (${q.nome})`,
+      resposta: `Resposta do candidato à pergunta ${i + 1} (mock).`,
+    }));
+  }, [questionariosVaga]);
+
+  const [form, setForm] = useState<RelatorioCandidato>(() => draft ?? {
+    protocolo: protocoloAuto,
+    data: hojeBR,
+    cidadeUf: "—",
+    cargoAtual: candidato.cargo,
+    experienciaResumida: "",
+    sintese: candidato.parecer ?? "",
+    pontosPositivos: "",
+    pontosAtencao: "",
+    discResumo: candidato.perfilDom
+      ? `Perfil dominante ${candidato.perfilDom}.`
+      : "Perfil DISC ainda não disponível.",
+    questoes: Object.fromEntries(questoesMock.map((q) => [q.id, { nota: 3, justificativa: "" }])),
+    recomendacao: "",
+    movimento: "",
+    consultorNome: "Ana Beatriz",
+    consultorCargo: "Consultora Sênior — Azumi",
+    status: "rascunho",
+  });
+
+  const [preview, setPreview] = useState(false);
+
+  const upd = <K extends keyof RelatorioCandidato>(k: K, v: RelatorioCandidato[K]) =>
+    setForm((p) => ({ ...p, [k]: v }));
+
+  const updQuestao = (id: string, patch: Partial<RelatorioQuestaoNota>) =>
+    setForm((p) => ({
+      ...p,
+      questoes: { ...p.questoes, [id]: { ...(p.questoes[id] ?? { nota: 3, justificativa: "" }), ...patch } },
+    }));
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+      <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-5xl max-h-[92vh] flex flex-col animate-scale-in overflow-hidden">
+        {/* Header */}
+        <header className="px-6 py-4 border-b border-border flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-display text-lg font-semibold">Relatório do candidato</h3>
+              <span className={cn(
+                "text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border",
+                form.status === "enviado"
+                  ? "bg-success/10 text-success border-success/30"
+                  : "bg-info/10 text-info border-info/30",
+              )}>
+                {form.status === "enviado" ? "Enviado" : "Rascunho"}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Versão preparada para envio ao cliente · <span className="font-data">{form.protocolo}</span> · {form.data}
+            </p>
+          </div>
+          <button
+            onClick={() => setPreview((p) => !p)}
+            className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-border hover:bg-secondary text-xs font-medium"
+          >
+            <Eye className="h-3.5 w-3.5" /> {preview ? "Editar" : "Pré-visualizar"}
+          </button>
+          <button
+            onClick={onClose}
+            aria-label="Fechar"
+            className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-secondary"
+          >
+            <XIcon className="h-4 w-4" />
+          </button>
+        </header>
+
+        {/* Corpo */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          {preview ? (
+            <RelatorioPreview form={form} candidato={candidato} vagaTitulo={vagaTitulo} empresa={empresa} questoesMock={questoesMock} />
+          ) : (
+            <div className="space-y-6">
+              {/* Cabeçalho */}
+              <SecaoEditor titulo="Cabeçalho">
+                <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                  <CampoTexto label="Protocolo" value={form.protocolo} onChange={(v) => upd("protocolo", v)} />
+                  <CampoTexto label="Data" value={form.data} onChange={(v) => upd("data", v)} />
+                  <div className="text-xs text-muted-foreground sm:col-span-2">
+                    Candidato: <strong className="text-foreground">{candidato.nome}</strong> · Vaga: <strong className="text-foreground">{vagaTitulo}</strong> · Empresa: <strong className="text-foreground">{empresa}</strong>
+                  </div>
+                </div>
+              </SecaoEditor>
+
+              {/* Dados essenciais (sem contatos) */}
+              <SecaoEditor titulo="Dados essenciais (versão cliente — sem contatos)">
+                <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                  <CampoTexto label="Cidade / UF" value={form.cidadeUf} onChange={(v) => upd("cidadeUf", v)} />
+                  <CampoTexto label="Cargo atual / último cargo" value={form.cargoAtual} onChange={(v) => upd("cargoAtual", v)} />
+                </div>
+                <CampoTextarea label="Experiência resumida" value={form.experienciaResumida} onChange={(v) => upd("experienciaResumida", v)} rows={3} />
+              </SecaoEditor>
+
+              <SecaoEditor titulo="Síntese do currículo">
+                <CampoTextarea label="Resumo profissional" value={form.sintese} onChange={(v) => upd("sintese", v)} rows={4} />
+              </SecaoEditor>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <SecaoEditor titulo="Pontos positivos">
+                  <CampoTextarea label="Forças e conquistas" value={form.pontosPositivos} onChange={(v) => upd("pontosPositivos", v)} rows={5} />
+                </SecaoEditor>
+                <SecaoEditor titulo="Pontos de atenção">
+                  <CampoTextarea label="Riscos / gaps" value={form.pontosAtencao} onChange={(v) => upd("pontosAtencao", v)} rows={5} />
+                </SecaoEditor>
+              </div>
+
+              <SecaoEditor titulo="DISC / Perfil comportamental">
+                {candidato.disc && <div className="mb-3"><DiscBars values={candidato.disc} compact /></div>}
+                <CampoTextarea label="Resumo DISC (texto curto que vai ao cliente)" value={form.discResumo} onChange={(v) => upd("discResumo", v)} rows={3} />
+              </SecaoEditor>
+
+              <SecaoEditor titulo="Questionário — respostas e notas">
+                {questoesMock.length === 0 ? (
+                  <div className="text-xs text-muted-foreground">Nenhum questionário associado a esta vaga.</div>
+                ) : (
+                  <ul className="space-y-3">
+                    {questoesMock.map((q) => {
+                      const nota = form.questoes[q.id]?.nota ?? 3;
+                      const just = form.questoes[q.id]?.justificativa ?? "";
+                      return (
+                        <li key={q.id} className="rounded-md border border-border p-3">
+                          <div className="text-sm font-medium">{q.pergunta}</div>
+                          <div className="text-xs text-foreground/80 bg-secondary/40 rounded px-2 py-1 mt-1.5">
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">Resposta:</span>
+                            {q.resposta}
+                          </div>
+                          <div className="grid sm:grid-cols-[140px_1fr] gap-3 mt-3">
+                            <div>
+                              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Nota (1–5)</label>
+                              <div className="flex items-center gap-1 mt-1">
+                                {[1, 2, 3, 4, 5].map((n) => (
+                                  <button
+                                    key={n}
+                                    type="button"
+                                    onClick={() => updQuestao(q.id, { nota: n })}
+                                    className={cn(
+                                      "h-7 w-7 rounded-md border text-xs font-semibold",
+                                      nota === n
+                                        ? "bg-primary text-primary-foreground border-primary"
+                                        : "border-border hover:bg-secondary",
+                                    )}
+                                  >
+                                    {n}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <CampoTextarea
+                              label="Justificativa curta"
+                              value={just}
+                              onChange={(v) => updQuestao(q.id, { justificativa: v })}
+                              rows={2}
+                            />
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </SecaoEditor>
+
+              <SecaoEditor titulo="Recomendação do consultor">
+                <CampoTextarea label="Recomendação" value={form.recomendacao} onChange={(v) => upd("recomendacao", v)} rows={3} />
+              </SecaoEditor>
+
+              <SecaoEditor titulo="Movimento proposto">
+                <div className="flex flex-wrap gap-2">
+                  {(["Avançar", "Stand by", "Desclassificar"] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => upd("movimento", m)}
+                      className={cn(
+                        "h-8 px-3 rounded-md border text-xs font-medium",
+                        form.movimento === m
+                          ? m === "Avançar"
+                            ? "bg-success text-success-foreground border-success"
+                            : m === "Stand by"
+                            ? "bg-warning text-warning-foreground border-warning"
+                            : "bg-destructive text-destructive-foreground border-destructive"
+                          : "border-border hover:bg-secondary",
+                      )}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </SecaoEditor>
+
+              <SecaoEditor titulo="Assinatura">
+                <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                  <CampoTexto label="Consultor" value={form.consultorNome} onChange={(v) => upd("consultorNome", v)} />
+                  <CampoTexto label="Cargo" value={form.consultorCargo} onChange={(v) => upd("consultorCargo", v)} />
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-2">
+                  Azumi Connect · Protocolo {form.protocolo} · Emitido em {form.data}
+                </p>
+              </SecaoEditor>
+            </div>
+          )}
+        </div>
+
+        {/* Rodapé */}
+        <footer className="px-6 py-3 border-t border-border flex items-center justify-end gap-2">
+          <button
+            onClick={() => onSaveDraft(form)}
+            className="inline-flex items-center gap-1 h-9 px-3 rounded-md border border-border hover:bg-secondary text-xs font-medium"
+          >
+            <FileText className="h-3.5 w-3.5" /> Salvar rascunho
+          </button>
+          <button
+            onClick={() => toast.success("PDF gerado (mock).")}
+            className="inline-flex items-center gap-1 h-9 px-3 rounded-md border border-border hover:bg-secondary text-xs font-medium"
+          >
+            <Download className="h-3.5 w-3.5" /> Gerar PDF
+          </button>
+          <button
+            onClick={() => onMarkSent(form)}
+            className="inline-flex items-center gap-1 h-9 px-4 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold"
+          >
+            <Send className="h-3.5 w-3.5" /> Enviar para cliente
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+function SecaoEditor({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-lg border border-border p-4 bg-background/40">
+      <h4 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">{titulo}</h4>
+      <div className="space-y-3">{children}</div>
+    </section>
+  );
+}
+
+function CampoTexto({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="block">
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full h-9 px-3 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+      />
+    </label>
+  );
+}
+
+function CampoTextarea({
+  label, value, onChange, rows = 3,
+}: { label: string; value: string; onChange: (v: string) => void; rows?: number }) {
+  return (
+    <label className="block">
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={rows}
+        className="mt-1 w-full px-3 py-2 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y"
+      />
+    </label>
+  );
+}
+
+function RelatorioPreview({
+  form, candidato, vagaTitulo, empresa, questoesMock,
+}: {
+  form: RelatorioCandidato;
+  candidato: CandidatoBase;
+  vagaTitulo: string;
+  empresa: string;
+  questoesMock: { id: string; pergunta: string; resposta: string }[];
+}) {
+  return (
+    <article className="mx-auto max-w-3xl bg-card border border-border rounded-lg p-8 shadow-sm">
+      <header className="border-b border-border pb-4 mb-5">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-2xl font-semibold">Relatório do Candidato</h2>
+          <span className="text-xs text-muted-foreground font-data">{form.protocolo}</span>
+        </div>
+        <p className="text-sm text-muted-foreground mt-1">
+          {candidato.nome} · {vagaTitulo} · {empresa} · {form.data}
+        </p>
+      </header>
+
+      <BlocoPreview titulo="Dados essenciais">
+        <p><strong>Cargo:</strong> {form.cargoAtual}</p>
+        <p><strong>Cidade / UF:</strong> {form.cidadeUf}</p>
+        <p className="mt-2">{form.experienciaResumida || <em className="text-muted-foreground">— sem experiência preenchida —</em>}</p>
+      </BlocoPreview>
+
+      <BlocoPreview titulo="Síntese do currículo">
+        <p>{form.sintese || <em className="text-muted-foreground">— sem síntese preenchida —</em>}</p>
+      </BlocoPreview>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <BlocoPreview titulo="Pontos positivos">
+          <p className="whitespace-pre-line">{form.pontosPositivos || <em className="text-muted-foreground">—</em>}</p>
+        </BlocoPreview>
+        <BlocoPreview titulo="Pontos de atenção">
+          <p className="whitespace-pre-line">{form.pontosAtencao || <em className="text-muted-foreground">—</em>}</p>
+        </BlocoPreview>
+      </div>
+
+      <BlocoPreview titulo="Perfil comportamental (DISC)">
+        {candidato.disc && <div className="mb-2"><DiscBars values={candidato.disc} compact /></div>}
+        <p>{form.discResumo}</p>
+      </BlocoPreview>
+
+      {questoesMock.length > 0 && (
+        <BlocoPreview titulo="Questionário — respostas e notas">
+          <ul className="space-y-3">
+            {questoesMock.map((q) => {
+              const nota = form.questoes[q.id]?.nota ?? "—";
+              const just = form.questoes[q.id]?.justificativa ?? "";
+              return (
+                <li key={q.id} className="rounded border border-border p-3">
+                  <p className="font-medium">{q.pergunta}</p>
+                  <p className="text-foreground/80 mt-1"><span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">Resposta:</span>{q.resposta}</p>
+                  <p className="text-xs mt-1"><strong>Nota:</strong> {nota}/5 {just && <>· <em>{just}</em></>}</p>
+                </li>
+              );
+            })}
+          </ul>
+        </BlocoPreview>
+      )}
+
+      <BlocoPreview titulo="Recomendação do consultor">
+        <p>{form.recomendacao || <em className="text-muted-foreground">—</em>}</p>
+      </BlocoPreview>
+
+      {form.movimento && (
+        <BlocoPreview titulo="Movimento proposto">
+          <span className={cn(
+            "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold",
+            form.movimento === "Avançar" && "bg-success/10 text-success border border-success/30",
+            form.movimento === "Stand by" && "bg-warning/10 text-warning border border-warning/30",
+            form.movimento === "Desclassificar" && "bg-destructive/10 text-destructive border border-destructive/30",
+          )}>
+            {form.movimento}
+          </span>
+        </BlocoPreview>
+      )}
+
+      <footer className="border-t border-border pt-4 mt-6 text-sm">
+        <p className="font-medium">{form.consultorNome}</p>
+        <p className="text-muted-foreground text-xs">{form.consultorCargo}</p>
+        <p className="text-[11px] text-muted-foreground font-data mt-2">Azumi Connect · {form.protocolo} · {form.data}</p>
+      </footer>
+    </article>
+  );
+}
+
+function BlocoPreview({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <section className="mb-5">
+      <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2">{titulo}</h3>
+      <div className="text-sm text-foreground/90 leading-relaxed">{children}</div>
+    </section>
   );
 }
