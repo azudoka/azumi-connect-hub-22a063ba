@@ -517,7 +517,11 @@ export default function VagaDetalheAdmin() {
               </div>
               <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {candidatosExtras.map((c) => (
-                  <li key={c.id} className="border border-border rounded-md p-2 flex items-center gap-2 bg-background/40">
+                  <li
+                    key={c.id}
+                    onClick={() => setFichaCandidatoId(c.id)}
+                    className="border border-border rounded-md p-2 flex items-center gap-2 bg-background/40 cursor-pointer hover:border-primary/50 hover:bg-secondary/40 transition-colors"
+                  >
                     <div className="h-7 w-7 rounded-full bg-gradient-brand flex items-center justify-center text-[10px] font-semibold text-white">
                       {c.nome.split(" ").map((n) => n[0]).join("").slice(0, 2)}
                     </div>
