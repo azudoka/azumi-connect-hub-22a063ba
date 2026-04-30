@@ -777,7 +777,19 @@ export default function VagaDetalheAdmin() {
             >
               <FileQuestion className="h-3.5 w-3.5" /> Criar questionário
             </button>
-            <span className="text-xs text-muted-foreground ml-auto">Arraste candidatos entre etapas</span>
+            <span className="text-xs text-muted-foreground ml-auto inline-flex items-center gap-2">
+              <span className={cn(
+                "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border",
+                vagaEncerrada
+                  ? "bg-success/15 text-success border-success/30"
+                  : "bg-muted text-muted-foreground border-border"
+              )}>
+                <Briefcase className="h-3 w-3" />
+                Posições: {posicoesPreenchidas}/{posicoesVaga}
+                {vagaEncerrada && " — encerrada"}
+              </span>
+              <span>Arraste candidatos entre etapas</span>
+            </span>
           </div>
 
           {/* Candidatos adicionados manualmente / convidados (mock — não entram no kanban ainda) */}
