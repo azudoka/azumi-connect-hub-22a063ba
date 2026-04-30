@@ -992,7 +992,7 @@ export default function VagaDetalheAdmin() {
                             );
                           })()}
 
-                          {/* Etapa 6 — badge de proposta no card */}
+                          {/* Etapa 6 — badge de proposta (rodapé) */}
                           {colunasEstado[c.id] === "Proposta" && (() => {
                             const p = getPropostaAtiva(c.id);
                             if (!p) return null;
@@ -1004,19 +1004,19 @@ export default function VagaDetalheAdmin() {
                               ? "bg-muted text-muted-foreground border-border"
                               : "bg-warning/15 text-warning border-warning/30";
                             return (
-                              <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border max-w-full truncate" title={statusPropostaLabel(p.status)}>
-                                <span className={cn("inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border truncate", cls)}>
+                              <div className="border-t border-border bg-muted/40 px-3 py-2">
+                                <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border max-w-full truncate", cls)}>
                                   <Send className="h-2.5 w-2.5" /> {statusPropostaLabel(p.status)}
                                 </span>
                               </div>
                             );
                           })()}
 
-                          {/* Etapa 7 — botão Enviar feedback no card de Reprovados */}
+                          {/* Etapa 7 — botão Enviar feedback (rodapé) */}
                           {colunasEstado[c.id] === "Reprovados" && (
-                            <div className="mt-2 flex items-center gap-1.5">
+                            <div className="border-t border-border bg-muted/40 px-3 py-2 flex items-center gap-1.5">
                               {jaTemFeedback(c.id) ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                                <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                                   <CheckCircle2 className="h-3 w-3 text-success" /> Feedback enviado
                                 </span>
                               ) : (
@@ -1024,7 +1024,7 @@ export default function VagaDetalheAdmin() {
                                   type="button"
                                   onClick={(e) => { e.stopPropagation(); setEnviarFeedbackPara(c.id); }}
                                   onMouseDown={(e) => e.stopPropagation()}
-                                  className="inline-flex items-center gap-1 h-6 px-2 rounded-md border border-border hover:bg-secondary text-[10px] font-medium"
+                                  className="inline-flex items-center gap-1 h-6 px-2 rounded-md border border-border hover:bg-secondary text-[11px] font-medium"
                                 >
                                   <MessageCircle className="h-3 w-3" /> Enviar feedback
                                 </button>
