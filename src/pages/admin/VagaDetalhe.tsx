@@ -29,6 +29,7 @@ import {
   MoreVertical, Eye, StickyNote, ChevronRight, UserX, Play, UserPlus, Link2,
   Copy, FileText, MessageCircle, Download, ListChecks, ThumbsDown, CalendarPlus,
   CalendarDays, Globe, Paperclip, X as XIcon, Plus, Mail, Phone, Briefcase, Circle,
+  Pencil, Trash2, GripVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useMemo, useRef, useState } from "react";
