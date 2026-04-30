@@ -2078,7 +2078,16 @@ function CandidatoDetailSheet({
                     Declinado
                   </span>
                 )}
-              </div>
+                {relatorioStatus && (
+                  <span className={cn(
+                    "text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border",
+                    relatorioStatus === "enviado"
+                      ? "bg-success/10 text-success border-success/30"
+                      : "bg-info/10 text-info border-info/30",
+                  )}>
+                    {relatorioStatus === "enviado" ? "Relatório enviado" : "Relatório em rascunho"}
+                  </span>
+                )}
               <p className="text-xs text-muted-foreground mt-0.5 truncate">
                 Candidato para <strong className="text-foreground/80">{tituloVaga}</strong>
               </p>
