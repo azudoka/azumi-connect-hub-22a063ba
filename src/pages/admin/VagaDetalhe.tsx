@@ -5,8 +5,23 @@ import { SlaBar } from "@/components/SlaBar";
 import { DiscBars } from "@/components/DiscBars";
 import { Timer } from "@/components/Timer";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { vagas, candidatos, etapasVaga, comentariosVaga } from "@/data/mock";
+import { vagas, candidatos, etapasVaga, comentariosVaga, getGestorDaVaga, type JanelaDisponibilidade } from "@/data/mock";
 import { getParecerCliente, getFeedback1aLeva } from "@/data/atracaoClienteStore";
+import {
+  criarAgendamento,
+  enviarParaCandidatoConfirmar,
+  candidatoConfirmar,
+  getAgendamentoDoCandidato,
+  listarAgendamentosDaVaga,
+  formatarSugestao,
+  statusAgendamentoLabel,
+  subscribeEntrevistaGestor,
+  getParecerGestor,
+  getRealinhamento,
+  type SugestaoHorario,
+  type ModoEntrevista,
+  type AgendamentoEntrevistaGestor,
+} from "@/data/entrevistaGestorStore";
 
 const BENEFICIO_LABEL: Record<string, string> = {
   vale_transporte: "Vale-transporte",
