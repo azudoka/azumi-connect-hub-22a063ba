@@ -1946,6 +1946,64 @@ export default function VagaDetalheAdmin() {
           />
         );
       })()}
+
+      {/* ── Etapa 6 — Modal de envio de proposta ─────────────────── */}
+      {enviarPropostaPara && (() => {
+        const c = candidatosVaga.find((x) => x.id === enviarPropostaPara);
+        if (!c) return null;
+        return (
+          <ModalShell title="Enviar proposta" onClose={() => setEnviarPropostaPara(null)} size="lg">
+            <EnviarPropostaForm
+              candidatoNome={c.nome}
+              vagaTitulo={vaga.titulo}
+              empresaNome={vaga.empresa}
+              onCancel={() => setEnviarPropostaPara(null)}
+              onConfirm={(dados) => {
+                criarProposta({
+                  candidatoId: c.id,
+                  vagaId: vaga.id,
+                  ...dados,
+                });
+                setEnviarPropostaPara(null);
+                toast.success(`Proposta enviada a ${c.nome}. Prazo de 24h para resposta.`);
+              }}
+            />
+          </ModalShell>
+        );
+      })()}
+
+      {/* ── Etapa 7 — Modal de envio de feedback p/ reprovado ────── */}
+      {enviarFeedbackPara && (() => {
+        const c = candidatosVaga.find((x) => x.id === enviarFeedbackPara);
+        if (!c) return null;
+        const dadosExtra = DADOS_EXTRA_MOCK[c.id];
+        return (
+          <ModalShell title="Enviar feedback" onClose={() => setEnviarFeedbackPara(null)} size="lg">
+            <EnviarFeedbackForm
+              candidatoNome={c.nome}
+              vagaTitulo={vaga.titulo}
+              telefone={dadosExtra?.telefone ?? ""}
+              email={dadosExtra?.email ?? ""}
+              onCancel={() => setEnviarFeedbackPara(null)}
+              onConfirm={({ canal, templateKey, mensagem }) => {
+                registrarFeedback({
+                  candidatoId: c.id,
+                  vagaId: vaga.id,
+                  canal,
+                  templateKey,
+                  mensagem,
+                });
+                if (canal === "whatsapp" || canal === "ambos") {
+                  const tel = (dadosExtra?.telefone ?? "").replace(/\D/g, "");
+                  if (tel) window.open(`https://wa.me/55${tel}?text=${encodeURIComponent(mensagem)}`, "_blank");
+                }
+                setEnviarFeedbackPara(null);
+                toast.success(`Feedback enviado a ${c.nome} via ${canal === "ambos" ? "e-mail e WhatsApp" : canal}.`);
+              }}
+            />
+          </ModalShell>
+        );
+      })()}
     </div>
   );
 }
