@@ -141,6 +141,14 @@ const projetosIniciais: Projeto[] = [
     frente: "consultoria", status: "encerrado", conclusao: 100, prazoFinal: "2025-12-15",
     encerradoEm: "2025-12-12",
   },
+  {
+    id: "p8", codigo: "PROJ-2025-0043", titulo: "Reestruturação comercial",
+    empresaId: "alvo", empresaNome: "Alvo Digital", filial: "São Paulo",
+    consultorId: "rm", consultorNome: "Rafael Moura", consultorIniciais: "RM",
+    assignedConsultorId: "rm",
+    frente: "estrategia", status: "encerrado", conclusao: 82, prazoFinal: "2025-11-30",
+    encerradoEm: "2025-12-05",
+  },
 ];
 
 const cronogramasIniciais: CronogramaPendente[] = [
