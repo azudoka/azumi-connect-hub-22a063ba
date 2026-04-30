@@ -347,7 +347,10 @@ export default function VagaDetalheAdmin() {
   const [enviarPropostaPara, setEnviarPropostaPara] = useState<string | null>(null);
   /** Sub p/ rerender quando o store de propostas mudar. */
   const [propostaTick, setPropostaTick] = useState(0);
-  useEffect(() => subscribePropostas(() => setPropostaTick((v) => v + 1)), []);
+  useEffect(() => {
+    const off = subscribePropostas(() => setPropostaTick((v) => v + 1));
+    return () => { off(); };
+  }, []);
   // Cron leve: a cada 30s, se houver proposta enviada com tempo expirado, marca como expirada.
   useEffect(() => {
     const id = window.setInterval(() => {
