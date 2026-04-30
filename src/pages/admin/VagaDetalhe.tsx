@@ -825,31 +825,32 @@ export default function VagaDetalheAdmin() {
               </ul>
             </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-3">
-            {colunas.map((col) => {
-              const candidatosNaColuna = candidatosVaga.filter(
-                (c) => colunasEstado[c.id] === col && !desclassificados.has(c.id)
-              );
-              const isOver = dragOverCol === col;
-              return (
-                <div
-                  key={col}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    if (dragOverCol !== col) setDragOverCol(col);
-                  }}
-                  onDragLeave={() => {
-                    if (dragOverCol === col) setDragOverCol(null);
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    handleDrop(col);
-                  }}
-                  className={cn(
-                    "bg-card border rounded-xl p-3 min-h-[280px] transition-colors",
-                    isOver ? "border-primary bg-primary/5" : "border-border"
-                  )}
-                >
+          <div className="-mx-2 overflow-x-auto pb-3 kanban-scroll">
+            <div className="flex gap-3 px-2 min-w-max">
+              {colunas.map((col) => {
+                const candidatosNaColuna = candidatosVaga.filter(
+                  (c) => colunasEstado[c.id] === col && !desclassificados.has(c.id)
+                );
+                const isOver = dragOverCol === col;
+                return (
+                  <div
+                    key={col}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      if (dragOverCol !== col) setDragOverCol(col);
+                    }}
+                    onDragLeave={() => {
+                      if (dragOverCol === col) setDragOverCol(null);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      handleDrop(col);
+                    }}
+                    className={cn(
+                      "bg-card border rounded-xl p-3 min-h-[280px] w-[300px] shrink-0 transition-colors",
+                      isOver ? "border-primary bg-primary/5" : "border-border"
+                    )}
+                  >
                   <div className="flex items-center justify-between mb-3 px-1">
                     <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{col}</span>
                     <span className="font-data text-xs text-muted-foreground">{candidatosNaColuna.length}</span>
