@@ -1678,3 +1678,77 @@ function ParecerGestorModal({
 // Suprime warning de import não usado quando módulo é tree-shaken
 void ClipboardList;
 void getGestorDaVaga;
+
+// ────────────────────────────────────────────────────────────────────
+// NPS do cliente — pop-up automático ao aprovar/contratar candidato.
+// 1–3 estrelas: justificativa obrigatória. 4–5: opcional.
+// ────────────────────────────────────────────────────────────────────
+function NpsClienteModal({
+  candidatoNome,
+  vagaTitulo,
+  onClose,
+  onSave,
+}: {
+  candidatoNome: string;
+  vagaTitulo: string;
+  onClose: () => void;
+  onSave: (nota: NotaNps, justificativa?: string) => void;
+}) {
+  const [nota, setNota] = useState<NotaNps | 0>(0);
+  const [just, setJust] = useState("");
+  const exigeJust = nota >= 1 && nota <= 3;
+  const podeSalvar = nota > 0 && (!exigeJust || just.trim().length >= 10);
+
+  return (
+    <ModalShell
+      title="Como você avalia este processo de contratação?"
+      subtitle={`${candidatoNome} — ${vagaTitulo}`}
+      onClose={onClose}
+      maxWidth="max-w-lg"
+      footer={
+        <>
+          <button onClick={onClose} className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm">
+            Mais tarde
+          </button>
+          <button
+            disabled={!podeSalvar}
+            onClick={() => onSave(nota as NotaNps, just.trim() || undefined)}
+            className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
+          >
+            Enviar avaliação
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div className="flex flex-col items-center gap-2 py-2">
+          <StarRating value={nota} onChange={(v) => setNota(v as NotaNps)} size={36} />
+          <div className="text-xs text-muted-foreground">
+            {nota === 0 ? "Toque em uma estrela para avaliar"
+              : nota <= 2 ? "Pouco satisfeito"
+              : nota === 3 ? "Neutro"
+              : nota === 4 ? "Satisfeito"
+              : "Muito satisfeito"}
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-medium mb-1">
+            Justificativa{" "}
+            {exigeJust ? (
+              <span className="text-destructive">(obrigatória — mínimo 10 caracteres)</span>
+            ) : (
+              <span className="text-muted-foreground">(opcional)</span>
+            )}
+          </label>
+          <textarea
+            rows={4}
+            value={just}
+            onChange={(e) => setJust(e.target.value)}
+            placeholder={exigeJust ? "Conte rapidamente o que poderíamos ter feito melhor…" : "Comentário opcional"}
+            className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm resize-y"
+          />
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
