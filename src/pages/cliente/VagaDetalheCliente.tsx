@@ -182,6 +182,22 @@ export default function VagaDetalheCliente() {
         </div>
       </div>
 
+      {/* Painel: Entrevistas com gestor pendentes (Etapa 5) */}
+      {agendamentos.length > 0 && (
+        <>
+          <SectionDivider>Entrevistas com gestor</SectionDivider>
+          <div className="mb-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {agendamentos.map((ag) => (
+              <AgendamentoGestorCard
+                key={ag.id}
+                ag={ag}
+                onResponder={() => setRespostaGestorAgId(ag.id)}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
       <SectionDivider>Candidatos enviados</SectionDivider>
 
       {candidatosVisiveis.length === 0 ? (
