@@ -572,7 +572,21 @@ export default function ProjetoDetalhe() {
         </div>
       </div>
 
-      {/* KPIs */}
+      {/* Alerta: entregáveis cancelados com horas registradas */}
+      {canceladosComHoras.length > 0 && (
+        <div className="mb-6 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 flex items-start gap-3">
+          <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+          <div className="text-xs">
+            <div className="font-semibold text-warning">
+              Há entregáveis cancelados com horas consumidas.
+            </div>
+            <div className="text-muted-foreground mt-0.5">
+              {canceladosComHoras.map((e) => `${e.codigo} (${e.horasGastas}h)`).join(" · ")}.
+              Revise com o cliente em <Link to="/app/clientes" className="underline hover:text-foreground">Gestão de conta</Link>.
+            </div>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <KpiCard label="Entregáveis" value={kpis.total} icon={Briefcase} />
         <KpiCard label="Aprovados" value={kpis.aprovados} icon={CheckCircle2} />
