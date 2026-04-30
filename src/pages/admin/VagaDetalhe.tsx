@@ -325,7 +325,72 @@ export default function VagaDetalheAdmin() {
       setConfirmarDecisaoId(candId);
       return true;
     }
+    if (coluna === "Quest.") {
+      // Move + abre modal de envio de questionário (não bloqueia movimento).
+      setColunasEstado((prev) => ({ ...prev, [candId]: coluna }));
+      setEnviarQuestParaCand(candId);
+      return true;
+    }
     return false;
+  }
+
+  /** Gera link público (mock) para o candidato responder o questionário. */
+  function gerarLinkQuestionario(questionarioId: string, candidatoId: string) {
+    return `https://azumi.jobs/questionario/${questionarioId}?cand=${candidatoId}&vaga=${vaga.id}`;
+  }
+
+  function enviarQuestionarioParaCandidato(questionarioId: string, candidatoId: string) {
+    const link = gerarLinkQuestionario(questionarioId, candidatoId);
+    const hoje = new Date().toLocaleDateString("pt-BR");
+    setQuestionariosVaga((prev) =>
+      prev.map((q) =>
+        q.id === questionarioId
+          ? {
+              ...q,
+              respostasPorCandidato: {
+                ...q.respostasPorCandidato,
+                [candidatoId]: { status: "pendente", enviadoEm: hoje, link },
+              },
+            }
+          : q,
+      ),
+    );
+    toast.success("Link do questionário gerado. Você pode enviar por WhatsApp ou copiar o link.");
+    return link;
+  }
+
+  function salvarAvaliacaoQuestionario(
+    questionarioId: string,
+    candidatoId: string,
+    questoes: Record<string, AvaliacaoQuestao>,
+    salvoComo: "rascunho" | "definitivo",
+  ) {
+    const notas = Object.values(questoes).map((a) => a.nota);
+    const media = notas.length ? notas.reduce((a, b) => a + b, 0) / notas.length : 0;
+    setQuestionariosVaga((prev) =>
+      prev.map((q) => {
+        if (q.id !== questionarioId) return q;
+        const atual = q.respostasPorCandidato[candidatoId] ?? { status: "respondido" as const };
+        return {
+          ...q,
+          respostasPorCandidato: {
+            ...q.respostasPorCandidato,
+            [candidatoId]: {
+              ...atual,
+              status: "respondido",
+              respondidoEm: atual.respondidoEm ?? new Date().toLocaleDateString("pt-BR"),
+              avaliacao: { questoes, media, salvoComo },
+              notaMedia: salvoComo === "definitivo" ? media : atual.notaMedia,
+            },
+          },
+        };
+      }),
+    );
+    if (salvoComo === "definitivo") {
+      toast.success(`Avaliação salva — média ${media.toFixed(1)}/5.`);
+    } else {
+      toast.info("Rascunho da avaliação salvo.");
+    }
   }
 
   function avancarEtapa(candId: string) {
