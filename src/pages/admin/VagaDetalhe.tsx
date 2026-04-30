@@ -4418,3 +4418,114 @@ function AgendamentoGestorPanel({
 // Suprime warnings de imports usados apenas em fluxos opcionais
 void getParecerGestor;
 void getRealinhamento;
+
+// ────────────────────────────────────────────────────────────────────
+// Etapa 6 — Painel de proposta na ficha do candidato (com countdown
+// de 24h e botões de simulação Aceitar/Recusar/Expirar).
+// ────────────────────────────────────────────────────────────────────
+function PropostaPanel({ candidatoId, candidatoNome }: { candidatoId: string; candidatoNome: string }) {
+  const [tick, setTick] = useState(0);
+  // re-render a cada 1s (countdown) + assinar mudanças do store
+  useEffect(() => {
+    const off = subscribePropostas(() => setTick((v) => v + 1));
+    const id = window.setInterval(() => setTick((v) => v + 1), 1000);
+    return () => { off(); window.clearInterval(id); };
+  }, []);
+  // tick is intentionally read to force renders
+  void tick;
+
+  const proposta = getPropostaAtiva(candidatoId);
+  if (!proposta) return null;
+
+  const restantes = msRestantes(proposta);
+  const expiradaPorTempo = isExpiradaPorTempo(proposta);
+  function fmtRestante(ms: number) {
+    if (ms <= 0) return "expirou";
+    const totalSec = Math.floor(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    return `${h}h ${m.toString().padStart(2, "0")}m ${s.toString().padStart(2, "0")}s`;
+  }
+  const statusCls =
+    proposta.status === "aceita" ? "bg-success/15 text-success border-success/30" :
+    proposta.status === "recusada" ? "bg-destructive/15 text-destructive border-destructive/30" :
+    proposta.status === "expirada" || expiradaPorTempo ? "bg-muted text-muted-foreground border-border" :
+    "bg-warning/15 text-warning border-warning/30";
+
+  return (
+    <section>
+      <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">
+        Proposta (Etapa 6)
+      </h3>
+      <div className="rounded-lg border border-border bg-background/40 p-3 space-y-2 text-xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border", statusCls)}>
+            <Send className="h-3 w-3" /> {expiradaPorTempo && proposta.status === "enviada" ? "Expirada (sem resposta)" : statusPropostaLabel(proposta.status)}
+          </span>
+          <span className="text-[10px] text-muted-foreground font-data">
+            Enviada em {new Date(proposta.enviadaEm).toLocaleString("pt-BR")}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          <div><span className="text-muted-foreground">Tipo:</span> {proposta.tipo}</div>
+          <div><span className="text-muted-foreground">Remuneração:</span> {proposta.remuneracao}</div>
+          <div><span className="text-muted-foreground">Início:</span> {proposta.dataInicio}</div>
+          <div><span className="text-muted-foreground">Canal:</span> {proposta.canal}</div>
+        </div>
+
+        {proposta.status === "enviada" && (
+          <div className={cn(
+            "rounded-md border p-2 text-[11px] inline-flex items-center gap-1.5",
+            restantes > 0
+              ? "border-warning/30 bg-warning/10 text-warning"
+              : "border-destructive/30 bg-destructive/10 text-destructive"
+          )}>
+            <Clock className="h-3 w-3" />
+            Prazo: até {new Date(proposta.expiraEm).toLocaleString("pt-BR")} —{" "}
+            <strong className="font-data">{fmtRestante(restantes)}</strong>
+          </div>
+        )}
+
+        {proposta.respostaEm && (
+          <div className="text-[11px] text-muted-foreground">
+            Resposta registrada em {new Date(proposta.respostaEm).toLocaleString("pt-BR")}
+            {proposta.motivoRecusa && <> — motivo: "{proposta.motivoRecusa}"</>}
+          </div>
+        )}
+
+        {/* Atalhos de simulação para demo (mock) */}
+        {proposta.status === "enviada" && (
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            <button
+              type="button"
+              onClick={() => { aceitarProposta(proposta.id); toast.success(`${candidatoNome} aceitou a proposta — agora contratado(a).`); }}
+              className="h-7 px-2.5 rounded-md bg-success text-success-foreground text-[11px] font-medium inline-flex items-center gap-1"
+            >
+              <CheckCircle2 className="h-3 w-3" /> Simular aceita
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const motivo = window.prompt("Motivo da recusa (opcional):") ?? undefined;
+                recusarProposta(proposta.id, motivo);
+                toast.warning(`${candidatoNome} recusou a proposta.`);
+              }}
+              className="h-7 px-2.5 rounded-md border border-destructive/40 text-destructive text-[11px] font-medium inline-flex items-center gap-1 hover:bg-destructive/10"
+            >
+              <UserX className="h-3 w-3" /> Simular recusa
+            </button>
+            <button
+              type="button"
+              onClick={() => { expirarProposta(proposta.id); toast.info("Proposta marcada como expirada."); }}
+              className="h-7 px-2.5 rounded-md border border-border text-[11px] font-medium inline-flex items-center gap-1 hover:bg-secondary"
+            >
+              <Clock className="h-3 w-3" /> Forçar expiração
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
