@@ -29,10 +29,12 @@ import {
   MoreVertical, Eye, StickyNote, ChevronRight, UserX, Play, UserPlus, Link2,
   Copy, FileText, MessageCircle, Download, ListChecks, ThumbsDown, CalendarPlus,
   CalendarDays, Globe, Paperclip, X as XIcon, Plus, Mail, Phone, Briefcase, Circle,
+  Pencil, Trash2, GripVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useScrollLock } from "@/hooks/use-scroll-lock";
 
 const tabs = [
   { key: "candidatos", label: "Candidatos", icon: Users },
@@ -59,12 +61,51 @@ interface CandidatoExtra {
   declinio?: { motivo: string; quem: "candidato" | "azumi" };
 }
 
+type TipoPergunta = "texto_livre" | "multipla_escolha" | "escala_1_5";
+
+interface PerguntaQuestionario {
+  id: string;
+  ordem: number;
+  texto: string;
+  tipo: TipoPergunta;
+  obrigatoria: boolean;
+  opcoes?: string[]; // múltipla escolha
+}
+
+interface AvaliacaoQuestao {
+  nota: 1 | 2 | 3 | 4 | 5;
+  justificativa?: string;
+}
+
+interface RespostaCandidatoQuestionario {
+  status: "pendente" | "respondido";
+  enviadoEm?: string;       // dd/mm/aaaa
+  respondidoEm?: string;    // dd/mm/aaaa
+  link?: string;
+  /** Respostas do candidato (preenchidas via mock no momento da resposta). */
+  respostas?: Record<string, string>;
+  /** Avaliação feita pelo consultor. */
+  avaliacao?: {
+    questoes: Record<string, AvaliacaoQuestao>;
+    media: number;
+    salvoComo: "rascunho" | "definitivo";
+  };
+  notaMedia?: number;
+}
+
 interface QuestionarioVaga {
   id: string;
   nome: string;
-  tipo: "Comportamental" | "Técnico" | "Cultural";
-  questoes: number;
-  candidatosRespostas: Record<string, "pendente" | "respondido">;
+  descricao?: string;
+  /** Compatibilidade legacy — deprecated, derive de `perguntas.length`. */
+  tipo?: "Comportamental" | "Técnico" | "Cultural";
+  perguntas: PerguntaQuestionario[];
+  criadoPor: string;
+  criadoEm: string;          // dd/mm/aaaa
+  respostasPorCandidato: Record<string, RespostaCandidatoQuestionario>;
+  /** Compat: deprecated; mantido para não quebrar leituras antigas. */
+  questoes?: number;
+  candidatosRespostas?: Record<string, "pendente" | "respondido">;
 }
 
 interface EventoEntrevista {
@@ -215,7 +256,19 @@ export default function VagaDetalheAdmin() {
   const [publicacao, setPublicacao] = useState<PublicacaoStatus>("nao_publicada");
   const [candidatosExtras, setCandidatosExtras] = useState<CandidatoExtra[]>([]);
   const [questionariosVaga, setQuestionariosVaga] = useState<QuestionarioVaga[]>([
-    { id: "q-disc", nome: "DISC padrão", tipo: "Comportamental", questoes: 24, candidatosRespostas: {} },
+    {
+      id: "q-disc",
+      nome: "Avaliação técnica padrão",
+      descricao: "Perguntas básicas de fit técnico para a vaga.",
+      perguntas: [
+        { id: "p1", ordem: 1, texto: "Conte uma situação em que você liderou uma mudança importante.", tipo: "texto_livre", obrigatoria: true },
+        { id: "p2", ordem: 2, texto: "Como você lida com prazos apertados?", tipo: "escala_1_5", obrigatoria: true },
+        { id: "p3", ordem: 3, texto: "Modelo de trabalho preferido?", tipo: "multipla_escolha", obrigatoria: false, opcoes: ["Presencial", "Híbrido", "Remoto"] },
+      ],
+      criadoPor: "Patricia Lima",
+      criadoEm: new Date().toLocaleDateString("pt-BR"),
+      respostasPorCandidato: {},
+    },
   ]);
   const [eventos, setEventos] = useState<EventoEntrevista[]>([]);
   const [mensagens, setMensagens] = useState<MensagemVaga[]>([
@@ -232,7 +285,15 @@ export default function VagaDetalheAdmin() {
   // ── Modais novos ─────────────────────────────────────────────────
   const [novoCandOpen, setNovoCandOpen] = useState(false);
   const [convidarOpen, setConvidarOpen] = useState(false);
-  const [novoQuestOpen, setNovoQuestOpen] = useState(false);
+  // (legado removido — substituído por editorQuestId)
+  /** Quando aberto: id do questionário a editar; "novo" → criar do zero. */
+  const [editorQuestId, setEditorQuestId] = useState<string | "novo" | null>(null);
+  /** Confirmação de exclusão de questionário. */
+  const [excluirQuestId, setExcluirQuestId] = useState<string | null>(null);
+  /** Modal de envio de questionário ao mover para coluna Quest. */
+  const [enviarQuestParaCand, setEnviarQuestParaCand] = useState<string | null>(null);
+  /** Modal "Enviar via WhatsApp" — guarda candidatoId + questionarioId (opcional). */
+  const [whatsTemplateOpen, setWhatsTemplateOpen] = useState<{ candidatoId: string; questionarioId?: string } | null>(null);
   const [resumoOpen, setResumoOpen] = useState<string | null>(null);
   const [discWhatsOpen, setDiscWhatsOpen] = useState<string | null>(null);
   const [associarQuestOpen, setAssociarQuestOpen] = useState<string | null>(null);
@@ -266,7 +327,72 @@ export default function VagaDetalheAdmin() {
       setConfirmarDecisaoId(candId);
       return true;
     }
+    if (coluna === "Quest.") {
+      // Move + abre modal de envio de questionário (não bloqueia movimento).
+      setColunasEstado((prev) => ({ ...prev, [candId]: coluna }));
+      setEnviarQuestParaCand(candId);
+      return true;
+    }
     return false;
+  }
+
+  /** Gera link público (mock) para o candidato responder o questionário. */
+  function gerarLinkQuestionario(questionarioId: string, candidatoId: string) {
+    return `https://azumi.jobs/questionario/${questionarioId}?cand=${candidatoId}&vaga=${vaga.id}`;
+  }
+
+  function enviarQuestionarioParaCandidato(questionarioId: string, candidatoId: string) {
+    const link = gerarLinkQuestionario(questionarioId, candidatoId);
+    const hoje = new Date().toLocaleDateString("pt-BR");
+    setQuestionariosVaga((prev) =>
+      prev.map((q) =>
+        q.id === questionarioId
+          ? {
+              ...q,
+              respostasPorCandidato: {
+                ...q.respostasPorCandidato,
+                [candidatoId]: { status: "pendente", enviadoEm: hoje, link },
+              },
+            }
+          : q,
+      ),
+    );
+    toast.success("Link do questionário gerado. Você pode enviar por WhatsApp ou copiar o link.");
+    return link;
+  }
+
+  function salvarAvaliacaoQuestionario(
+    questionarioId: string,
+    candidatoId: string,
+    questoes: Record<string, AvaliacaoQuestao>,
+    salvoComo: "rascunho" | "definitivo",
+  ) {
+    const notas = Object.values(questoes).map((a) => a.nota);
+    const media = notas.length ? notas.reduce((a, b) => a + b, 0) / notas.length : 0;
+    setQuestionariosVaga((prev) =>
+      prev.map((q) => {
+        if (q.id !== questionarioId) return q;
+        const atual = q.respostasPorCandidato[candidatoId] ?? { status: "respondido" as const };
+        return {
+          ...q,
+          respostasPorCandidato: {
+            ...q.respostasPorCandidato,
+            [candidatoId]: {
+              ...atual,
+              status: "respondido",
+              respondidoEm: atual.respondidoEm ?? new Date().toLocaleDateString("pt-BR"),
+              avaliacao: { questoes, media, salvoComo },
+              notaMedia: salvoComo === "definitivo" ? media : atual.notaMedia,
+            },
+          },
+        };
+      }),
+    );
+    if (salvoComo === "definitivo") {
+      toast.success(`Avaliação salva — média ${media.toFixed(1)}/5.`);
+    } else {
+      toast.info("Rascunho da avaliação salvo.");
+    }
   }
 
   function avancarEtapa(candId: string) {
@@ -526,7 +652,7 @@ export default function VagaDetalheAdmin() {
               <Link2 className="h-3.5 w-3.5" /> Convidar candidato
             </button>
             <button
-              onClick={() => setNovoQuestOpen(true)}
+              onClick={() => setEditorQuestId("novo")}
               className="h-8 px-3 rounded-lg border border-border text-xs flex items-center gap-1.5 hover:bg-secondary"
             >
               <FileQuestion className="h-3.5 w-3.5" /> Criar questionário
@@ -966,9 +1092,9 @@ export default function VagaDetalheAdmin() {
       {tab === "questionarios" && (
         <div className="bg-card border border-border rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display font-semibold">Questionários da vaga</h3>
+            <h3 className="font-display font-semibold">Gestão de questionários</h3>
             <button
-              onClick={() => setNovoQuestOpen(true)}
+              onClick={() => setEditorQuestId("novo")}
               className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5"
             >
               <Plus className="h-3.5 w-3.5" /> Novo questionário
@@ -979,25 +1105,71 @@ export default function VagaDetalheAdmin() {
               Nenhum questionário criado.
             </div>
           ) : (
-            <ul className="space-y-2">
-              {questionariosVaga.map((q) => {
-                const respondidos = Object.values(q.candidatosRespostas).filter((s) => s === "respondido").length;
-                const total = Object.keys(q.candidatosRespostas).length;
-                return (
-                  <li key={q.id} className="border border-border rounded-lg px-3 py-2 flex items-center gap-3 bg-background/40">
-                    <div className="h-9 w-9 rounded-md bg-secondary flex items-center justify-center">
-                      <FileQuestion className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium">{q.nome}</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        {q.tipo} · {q.questoes} questões · {respondidos}/{total} respondido(s)
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full text-sm">
+                <thead className="bg-secondary/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-3 py-2 font-semibold">Título</th>
+                    <th className="text-left px-3 py-2 font-semibold">Perguntas</th>
+                    <th className="text-left px-3 py-2 font-semibold">Respostas</th>
+                    <th className="text-left px-3 py-2 font-semibold">Criado por</th>
+                    <th className="text-left px-3 py-2 font-semibold">Data</th>
+                    <th className="text-right px-3 py-2 font-semibold">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {questionariosVaga.map((q) => {
+                    const respondidos = Object.values(q.respostasPorCandidato).filter((r) => r.status === "respondido").length;
+                    const total = Object.keys(q.respostasPorCandidato).length;
+                    return (
+                      <tr
+                        key={q.id}
+                        className="border-t border-border hover:bg-secondary/20 cursor-pointer"
+                        onClick={() => setEditorQuestId(q.id)}
+                      >
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center gap-2">
+                            <FileQuestion className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <div className="font-medium">{q.nome}</div>
+                              {q.descricao && (
+                                <div className="text-[11px] text-muted-foreground line-clamp-1">{q.descricao}</div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5 font-data">{q.perguntas.length}</td>
+                        <td className="px-3 py-2.5 font-data">{respondidos}/{total || 0}</td>
+                        <td className="px-3 py-2.5">{q.criadoPor}</td>
+                        <td className="px-3 py-2.5 font-data text-muted-foreground">{q.criadoEm}</td>
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setEditorQuestId(q.id); }}
+                              className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground"
+                              aria-label="Editar"
+                              title="Editar"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setExcluirQuestId(q.id); }}
+                              className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-destructive/10 text-destructive"
+                              aria-label="Excluir"
+                              title="Excluir"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}
@@ -1281,19 +1453,107 @@ export default function VagaDetalheAdmin() {
         </ModalShell>
       )}
 
-      {/* ── Modal: Novo questionário ─────────────────────────────── */}
-      {novoQuestOpen && (
-        <ModalShell title="Novo questionário" onClose={() => setNovoQuestOpen(false)}>
-          <NovoQuestionarioForm
-            onCancel={() => setNovoQuestOpen(false)}
-            onSave={(q) => {
-              setQuestionariosVaga((prev) => [...prev, q]);
-              setNovoQuestOpen(false);
-              toast.success(`Questionário "${q.nome}" criado.`);
-            }}
-          />
-        </ModalShell>
+      {/* ── Modal: Editor de questionário (criar / editar) ───────── */}
+      {editorQuestId && (
+        <QuestionarioEditorModal
+          existing={editorQuestId !== "novo" ? questionariosVaga.find((q) => q.id === editorQuestId) ?? null : null}
+          onClose={() => setEditorQuestId(null)}
+          onSave={(q) => {
+            setQuestionariosVaga((prev) => {
+              const idx = prev.findIndex((x) => x.id === q.id);
+              if (idx >= 0) {
+                const copia = [...prev];
+                copia[idx] = { ...prev[idx], ...q, respostasPorCandidato: prev[idx].respostasPorCandidato };
+                return copia;
+              }
+              return [...prev, q];
+            });
+            setEditorQuestId(null);
+            toast.success(`Questionário "${q.nome}" salvo.`);
+          }}
+        />
       )}
+
+      {/* ── Confirmação: Excluir questionário ─────────────────────── */}
+      {excluirQuestId && (() => {
+        const q = questionariosVaga.find((x) => x.id === excluirQuestId);
+        return (
+          <ModalShell title="Excluir questionário" onClose={() => setExcluirQuestId(null)}>
+            <div className="space-y-3 text-sm">
+              <p>Tem certeza que deseja excluir <strong>{q?.nome}</strong>? Essa ação não pode ser desfeita.</p>
+              <div className="flex justify-end gap-2 pt-2">
+                <button onClick={() => setExcluirQuestId(null)} className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm">Cancelar</button>
+                <button
+                  onClick={() => {
+                    setQuestionariosVaga((prev) => prev.filter((x) => x.id !== excluirQuestId));
+                    setExcluirQuestId(null);
+                    toast.warning("Questionário excluído.");
+                  }}
+                  className="h-9 px-4 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium inline-flex items-center gap-1.5"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Excluir
+                </button>
+              </div>
+            </div>
+          </ModalShell>
+        );
+      })()}
+
+      {/* ── Modal: Enviar questionário ao mover candidato p/ Quest. ── */}
+      {enviarQuestParaCand && (() => {
+        const c = candidatosVaga.find((x) => x.id === enviarQuestParaCand)
+          ?? (() => {
+            const ex = candidatosExtras.find((x) => x.id === enviarQuestParaCand);
+            return ex ? { id: ex.id, nome: ex.nome } : null;
+          })();
+        return (
+          <ModalShell title="Enviar questionário" onClose={() => setEnviarQuestParaCand(null)}>
+            <EnviarQuestionarioForm
+              candidatoNome={c?.nome ?? "Candidato"}
+              questionarios={questionariosVaga}
+              onCancel={() => setEnviarQuestParaCand(null)}
+              onConfirm={(qId) => {
+                if (!enviarQuestParaCand) return;
+                enviarQuestionarioParaCandidato(qId, enviarQuestParaCand);
+                setEnviarQuestParaCand(null);
+              }}
+            />
+          </ModalShell>
+        );
+      })()}
+
+      {/* ── Modal: Enviar via WhatsApp (templates) ───────────────── */}
+      {whatsTemplateOpen && (() => {
+        const cBase = candidatosVaga.find((x) => x.id === whatsTemplateOpen.candidatoId);
+        const cExtra = candidatosExtras.find((x) => x.id === whatsTemplateOpen.candidatoId);
+        const nome = cBase?.nome ?? cExtra?.nome ?? "Candidato";
+        const telefone = cExtra?.telefone ?? DADOS_EXTRA_MOCK[whatsTemplateOpen.candidatoId]?.telefone ?? "";
+        const quest = whatsTemplateOpen.questionarioId
+          ? questionariosVaga.find((q) => q.id === whatsTemplateOpen.questionarioId)
+          : undefined;
+        const linkQuest = quest
+          ? quest.respostasPorCandidato[whatsTemplateOpen.candidatoId]?.link
+            ?? gerarLinkQuestionario(quest.id, whatsTemplateOpen.candidatoId)
+          : undefined;
+        return (
+          <ModalShell title="Enviar via WhatsApp" onClose={() => setWhatsTemplateOpen(null)}>
+            <WhatsTemplateForm
+              candidatoNome={nome}
+              vagaTitulo={vaga.titulo}
+              telefone={telefone}
+              linkQuestionario={linkQuest}
+              onCancel={() => setWhatsTemplateOpen(null)}
+              onConfirm={(mensagem) => {
+                const numero = telefone.replace(/\D/g, "");
+                const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
+                window.open(url, "_blank", "noopener,noreferrer");
+                toast.success("WhatsApp Web aberto com mensagem (mock).");
+                setWhatsTemplateOpen(null);
+              }}
+            />
+          </ModalShell>
+        );
+      })()}
 
       {/* ── Modal: Resumo para o cliente ─────────────────────────── */}
       {resumoOpen && (() => {
@@ -1360,30 +1620,30 @@ export default function VagaDetalheAdmin() {
       {associarQuestOpen && (() => {
         const c = candidatosVaga.find((x) => x.id === associarQuestOpen);
         return (
-          <ModalShell title="Associar questionário" onClose={() => setAssociarQuestOpen(null)}>
+          <ModalShell title="Associar / enviar questionário" onClose={() => setAssociarQuestOpen(null)}>
             <div className="text-sm space-y-3">
-              <p>Selecione um questionário para <strong>{c?.nome}</strong>:</p>
-              <ul className="space-y-2">
-                {questionariosVaga.map((q) => (
-                  <li key={q.id}>
-                    <button
-                      onClick={() => {
-                        setQuestionariosVaga((prev) => prev.map((x) =>
-                          x.id === q.id
-                            ? { ...x, candidatosRespostas: { ...x.candidatosRespostas, [c?.id ?? ""]: "pendente" } }
-                            : x
-                        ));
-                        setAssociarQuestOpen(null);
-                        toast.success(`Questionário "${q.nome}" associado.`);
-                      }}
-                      className="w-full text-left px-3 py-2 rounded-md border border-border hover:bg-secondary text-sm"
-                    >
-                      <div className="font-medium">{q.nome}</div>
-                      <div className="text-xs text-muted-foreground">{q.tipo} · {q.questoes} questões</div>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <p>Selecione um questionário para enviar a <strong>{c?.nome}</strong>:</p>
+              {questionariosVaga.length === 0 ? (
+                <div className="text-xs text-muted-foreground">Nenhum questionário criado ainda.</div>
+              ) : (
+                <ul className="space-y-2">
+                  {questionariosVaga.map((q) => (
+                    <li key={q.id}>
+                      <button
+                        onClick={() => {
+                          if (!associarQuestOpen) return;
+                          enviarQuestionarioParaCandidato(q.id, associarQuestOpen);
+                          setAssociarQuestOpen(null);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-md border border-border hover:bg-secondary text-sm"
+                      >
+                        <div className="font-medium">{q.nome}</div>
+                        <div className="text-xs text-muted-foreground">{q.perguntas.length} pergunta(s) · criado por {q.criadoPor}</div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </ModalShell>
         );
@@ -1448,6 +1708,8 @@ export default function VagaDetalheAdmin() {
         onAgendar={(id) => setAgendarOpen(id)}
         onAbrirRelatorio={(id) => setRelatorioOpenId(id)}
         relatorioStatus={fichaCandidatoId ? relatoriosPorCandidato[fichaCandidatoId]?.status : undefined}
+        onEnviarWhatsQuestionario={(candidatoId, questionarioId) => setWhatsTemplateOpen({ candidatoId, questionarioId })}
+        onSalvarAvaliacao={salvarAvaliacaoQuestionario}
       />
 
       {/* ── Editor de relatório do candidato (modal grande) ─────── */}
@@ -1492,21 +1754,25 @@ function ModalShell({
   title,
   children,
   onClose,
+  size = "md",
 }: {
   title: string;
   children: React.ReactNode;
   onClose: () => void;
+  size?: "md" | "lg" | "xl";
 }) {
+  useScrollLock(true);
+  const maxW = size === "xl" ? "max-w-3xl" : size === "lg" ? "max-w-xl" : "max-w-md";
   return (
     <div className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
-        <div className="flex items-center justify-between mb-4">
+      <div className={cn("bg-card border border-border rounded-2xl shadow-elevated w-full max-h-[92vh] flex flex-col animate-scale-in overflow-hidden", maxW)}>
+        <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-border">
           <h3 className="font-display text-lg font-semibold">{title}</h3>
           <button onClick={onClose} className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-secondary">
             <XIcon className="h-4 w-4" />
           </button>
         </div>
-        {children}
+        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
       </div>
     </div>
   );
@@ -1576,40 +1842,375 @@ function ConvidarLinkForm({ vagaId, onClose }: { vagaId: string; onClose: () => 
   );
 }
 
-function NovoQuestionarioForm({
-  onCancel,
+// ────────────────────────────────────────────────────────────────────
+// QuestionarioEditorModal — builder real (criar / editar)
+// ────────────────────────────────────────────────────────────────────
+function QuestionarioEditorModal({
+  existing,
+  onClose,
   onSave,
 }: {
-  onCancel: () => void;
+  existing: QuestionarioVaga | null;
+  onClose: () => void;
   onSave: (q: QuestionarioVaga) => void;
 }) {
-  const [nome, setNome] = useState("");
-  const [tipo, setTipo] = useState<QuestionarioVaga["tipo"]>("Comportamental");
-  const [questoes, setQuestoes] = useState(10);
+  useScrollLock(true);
+  const [nome, setNome] = useState(existing?.nome ?? "");
+  const [descricao, setDescricao] = useState(existing?.descricao ?? "");
+  const [perguntas, setPerguntas] = useState<PerguntaQuestionario[]>(
+    existing?.perguntas?.length
+      ? existing.perguntas
+      : [{ id: `p-${Date.now()}`, ordem: 1, texto: "", tipo: "texto_livre", obrigatoria: true }],
+  );
+
+  function addPergunta() {
+    setPerguntas((prev) => [
+      ...prev,
+      { id: `p-${Date.now()}`, ordem: prev.length + 1, texto: "", tipo: "texto_livre", obrigatoria: false },
+    ]);
+  }
+  function removePergunta(id: string) {
+    setPerguntas((prev) => prev.filter((p) => p.id !== id).map((p, i) => ({ ...p, ordem: i + 1 })));
+  }
+  function patchPergunta(id: string, patch: Partial<PerguntaQuestionario>) {
+    setPerguntas((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  }
+
+  function handleSalvar() {
+    if (!nome.trim()) {
+      toast.error("Informe o título do questionário.");
+      return;
+    }
+    if (perguntas.length === 0) {
+      toast.error("Adicione pelo menos uma pergunta.");
+      return;
+    }
+    for (const p of perguntas) {
+      if (!p.texto.trim()) {
+        toast.error(`Pergunta ${p.ordem} está sem texto.`);
+        return;
+      }
+      if (p.tipo === "multipla_escolha" && (p.opcoes?.filter((o) => o.trim()).length ?? 0) < 2) {
+        toast.error(`Pergunta ${p.ordem} (múltipla escolha) precisa de pelo menos 2 opções.`);
+        return;
+      }
+    }
+    const q: QuestionarioVaga = {
+      id: existing?.id ?? `q-${Date.now()}`,
+      nome: nome.trim(),
+      descricao: descricao.trim() || undefined,
+      perguntas,
+      criadoPor: existing?.criadoPor ?? "Patricia Lima",
+      criadoEm: existing?.criadoEm ?? new Date().toLocaleDateString("pt-BR"),
+      respostasPorCandidato: existing?.respostasPorCandidato ?? {},
+    };
+    onSave(q);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+      <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-3xl max-h-[92vh] flex flex-col animate-scale-in overflow-hidden">
+        <header className="px-6 py-4 border-b border-border flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-display text-lg font-semibold">
+              {existing ? "Editar questionário" : "Novo questionário"}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Defina título, descrição e perguntas. Aceita texto livre, múltipla escolha e escala 1–5.
+            </p>
+          </div>
+          <button onClick={onClose} aria-label="Fechar" className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-secondary">
+            <XIcon className="h-4 w-4" />
+          </button>
+        </header>
+
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+          <Field label="Título do questionário *">
+            <input
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Ex.: Avaliação técnica — Gerente de TI"
+              className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm"
+            />
+          </Field>
+          <Field label="Descrição (opcional)">
+            <textarea
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              rows={2}
+              placeholder="Contexto exibido para o candidato e para o consultor."
+              className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm resize-y"
+            />
+          </Field>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+                Perguntas ({perguntas.length})
+              </h4>
+              <button
+                type="button"
+                onClick={addPergunta}
+                className="h-8 px-3 rounded-md border border-border hover:bg-secondary text-xs font-medium inline-flex items-center gap-1.5"
+              >
+                <Plus className="h-3.5 w-3.5" /> Adicionar pergunta
+              </button>
+            </div>
+
+            <ol className="space-y-3">
+              {perguntas.map((p) => (
+                <li key={p.id} className="rounded-lg border border-border bg-background/40 p-3">
+                  <div className="flex items-start gap-2">
+                    <div className="h-7 w-7 rounded-md bg-secondary flex items-center justify-center text-xs font-semibold shrink-0">
+                      {p.ordem}
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <input
+                        value={p.texto}
+                        onChange={(e) => patchPergunta(p.id, { texto: e.target.value })}
+                        placeholder="Texto da pergunta"
+                        className="w-full h-9 px-3 rounded-md border border-border bg-card text-sm"
+                      />
+                      <div className="grid sm:grid-cols-[180px_auto_1fr] gap-2 items-center">
+                        <select
+                          value={p.tipo}
+                          onChange={(e) => patchPergunta(p.id, {
+                            tipo: e.target.value as TipoPergunta,
+                            opcoes: e.target.value === "multipla_escolha" ? (p.opcoes ?? ["", ""]) : undefined,
+                          })}
+                          className="h-9 px-2 rounded-md border border-border bg-card text-xs"
+                        >
+                          <option value="texto_livre">Texto livre</option>
+                          <option value="multipla_escolha">Múltipla escolha</option>
+                          <option value="escala_1_5">Escala 1–5</option>
+                        </select>
+                        <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={p.obrigatoria}
+                            onChange={(e) => patchPergunta(p.id, { obrigatoria: e.target.checked })}
+                          />
+                          Obrigatória
+                        </label>
+                        <div className="flex justify-end">
+                          {perguntas.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removePergunta(p.id)}
+                              className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-destructive/10 text-destructive"
+                              aria-label="Remover pergunta"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {p.tipo === "multipla_escolha" && (
+                        <div className="space-y-1.5 pt-1">
+                          {(p.opcoes ?? []).map((op, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <Circle className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <input
+                                value={op}
+                                onChange={(e) => {
+                                  const novas = [...(p.opcoes ?? [])];
+                                  novas[i] = e.target.value;
+                                  patchPergunta(p.id, { opcoes: novas });
+                                }}
+                                placeholder={`Opção ${i + 1}`}
+                                className="flex-1 h-8 px-2 rounded-md border border-border bg-card text-xs"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => patchPergunta(p.id, { opcoes: (p.opcoes ?? []).filter((_, j) => j !== i) })}
+                                disabled={(p.opcoes?.length ?? 0) <= 2}
+                                className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-destructive/10 text-destructive disabled:opacity-30 disabled:cursor-not-allowed"
+                                aria-label="Remover opção"
+                              >
+                                <XIcon className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => patchPergunta(p.id, { opcoes: [...(p.opcoes ?? []), ""] })}
+                            className="h-7 px-2 rounded-md border border-dashed border-border text-xs text-muted-foreground hover:bg-secondary inline-flex items-center gap-1"
+                          >
+                            <Plus className="h-3 w-3" /> Adicionar opção
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+
+        <footer className="px-6 py-3 border-t border-border flex items-center justify-end gap-2">
+          <button onClick={onClose} className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm">
+            Cancelar
+          </button>
+          <button
+            onClick={handleSalvar}
+            className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold inline-flex items-center gap-1.5"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" /> Salvar questionário
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────
+// EnviarQuestionarioForm — usado quando candidato é movido p/ Quest.
+// ────────────────────────────────────────────────────────────────────
+function EnviarQuestionarioForm({
+  candidatoNome,
+  questionarios,
+  onCancel,
+  onConfirm,
+}: {
+  candidatoNome: string;
+  questionarios: QuestionarioVaga[];
+  onCancel: () => void;
+  onConfirm: (questionarioId: string) => void;
+}) {
+  const [sel, setSel] = useState<string>(questionarios[0]?.id ?? "");
+  return (
+    <div className="space-y-3 text-sm">
+      <p>Deseja enviar um questionário para <strong>{candidatoNome}</strong> agora?</p>
+      {questionarios.length === 0 ? (
+        <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          Nenhum questionário disponível. Crie um na aba Questionários.
+        </div>
+      ) : (
+        <Field label="Questionário">
+          <select value={sel} onChange={(e) => setSel(e.target.value)} className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm">
+            {questionarios.map((q) => (
+              <option key={q.id} value={q.id}>{q.nome} ({q.perguntas.length} perguntas)</option>
+            ))}
+          </select>
+        </Field>
+      )}
+      <div className="flex justify-end gap-2 pt-2">
+        <button onClick={onCancel} className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm">Cancelar</button>
+        <button
+          disabled={!sel}
+          onClick={() => onConfirm(sel)}
+          className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5 disabled:opacity-50"
+        >
+          <Send className="h-3.5 w-3.5" /> Enviar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────
+// WhatsTemplateForm — escolhe template, preview editável, abre wa.me
+// ────────────────────────────────────────────────────────────────────
+type WhatsTemplateKey =
+  | "questionario_enviado"
+  | "avancou_entrevista_azumi"
+  | "avancou_teste_tecnico"
+  | "avancou_entrevista_gestor"
+  | "proposta"
+  | "contratado"
+  | "nao_selecionado"
+  | "personalizada";
+
+function WhatsTemplateForm({
+  candidatoNome,
+  vagaTitulo,
+  telefone,
+  linkQuestionario,
+  onCancel,
+  onConfirm,
+}: {
+  candidatoNome: string;
+  vagaTitulo: string;
+  telefone: string;
+  linkQuestionario?: string;
+  onCancel: () => void;
+  onConfirm: (mensagem: string) => void;
+}) {
+  const TEMPLATES: { value: WhatsTemplateKey; label: string; build: () => string }[] = [
+    {
+      value: "questionario_enviado", label: "Questionário enviado",
+      build: () => `Olá ${candidatoNome}! 👋 Aqui é da Azumi. Para avançarmos no processo da vaga ${vagaTitulo}, ` +
+        `pedimos que você responda nosso questionário rápido: ${linkQuestionario ?? "<link>"}. Qualquer dúvida, é só chamar!`,
+    },
+    {
+      value: "avancou_entrevista_azumi", label: "Avançou para entrevista Azumi",
+      build: () => `Olá ${candidatoNome}! Tenho uma boa notícia: você avançou para a entrevista interna Azumi referente à vaga ${vagaTitulo}. Em breve te chamamos para combinar dia e hora. 🚀`,
+    },
+    {
+      value: "avancou_teste_tecnico", label: "Avançou para teste técnico",
+      build: () => `Olá ${candidatoNome}! Você avançou para a etapa de teste técnico da vaga ${vagaTitulo}. Em breve enviamos as instruções por aqui.`,
+    },
+    {
+      value: "avancou_entrevista_gestor", label: "Avançou para entrevista com gestor",
+      build: () => `Olá ${candidatoNome}! Você foi selecionado(a) para a entrevista com o gestor da vaga ${vagaTitulo}. Vamos combinar a melhor data?`,
+    },
+    {
+      value: "proposta", label: "Proposta em andamento",
+      build: () => `Olá ${candidatoNome}! Estamos alinhando a proposta para a vaga ${vagaTitulo}. Em breve te enviamos os detalhes.`,
+    },
+    {
+      value: "contratado", label: "Contratado(a)!",
+      build: () => `🎉 Parabéns ${candidatoNome}! Você foi aprovado(a) na vaga ${vagaTitulo}. Em breve te passamos os próximos passos. Bem-vindo(a) ao time!`,
+    },
+    {
+      value: "nao_selecionado", label: "Não selecionado(a)",
+      build: () => `Olá ${candidatoNome}, agradecemos sua participação no processo da vaga ${vagaTitulo}. Desta vez, optamos por seguir com outro perfil, mas vamos manter o seu currículo na nossa base. Sucesso! 🙌`,
+    },
+    {
+      value: "personalizada", label: "Mensagem personalizada",
+      build: () => "",
+    },
+  ];
+
+  const [tplKey, setTplKey] = useState<WhatsTemplateKey>(linkQuestionario ? "questionario_enviado" : "avancou_entrevista_azumi");
+  const [mensagem, setMensagem] = useState(TEMPLATES.find((t) => t.value === tplKey)!.build());
+
+  function selecionar(k: WhatsTemplateKey) {
+    setTplKey(k);
+    const tpl = TEMPLATES.find((t) => t.value === k)!;
+    setMensagem(tpl.build());
+  }
 
   return (
     <div className="space-y-3 text-sm">
-      <Field label="Nome do questionário">
-        <input value={nome} onChange={(e) => setNome(e.target.value)} className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm" />
-      </Field>
-      <Field label="Tipo">
-        <select value={tipo} onChange={(e) => setTipo(e.target.value as QuestionarioVaga["tipo"])} className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm">
-          <option value="Comportamental">Comportamental</option>
-          <option value="Técnico">Técnico</option>
-          <option value="Cultural">Cultural</option>
-        </select>
-      </Field>
-      <Field label="Número de questões">
-        <input type="number" min={1} value={questoes} onChange={(e) => setQuestoes(Number(e.target.value))} className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm" />
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Telefone">
+          <input readOnly value={telefone || "— sem telefone —"} className="w-full h-9 px-3 rounded-md border border-border bg-secondary/40 text-sm" />
+        </Field>
+        <Field label="Template">
+          <select value={tplKey} onChange={(e) => selecionar(e.target.value as WhatsTemplateKey)} className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm">
+            {TEMPLATES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </select>
+        </Field>
+      </div>
+      <Field label="Mensagem">
+        <textarea
+          value={mensagem}
+          onChange={(e) => setMensagem(e.target.value)}
+          rows={6}
+          className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm resize-y"
+        />
       </Field>
       <div className="flex justify-end gap-2 pt-2">
         <button onClick={onCancel} className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm">Cancelar</button>
         <button
-          disabled={!nome.trim()}
-          onClick={() => onSave({ id: `q-${Date.now()}`, nome: nome.trim(), tipo, questoes, candidatosRespostas: {} })}
-          className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5 disabled:opacity-50"
+          disabled={!mensagem.trim() || !telefone}
+          onClick={() => onConfirm(mensagem.trim())}
+          className="h-9 px-4 rounded-lg bg-success text-success-foreground text-sm font-semibold inline-flex items-center gap-1.5 disabled:opacity-50"
         >
-          <Plus className="h-3.5 w-3.5" /> Criar
+          <MessageCircle className="h-3.5 w-3.5" /> Abrir WhatsApp Web →
         </button>
       </div>
     </div>
@@ -2047,6 +2648,8 @@ function CandidatoDetailSheet({
   onAgendar,
   onAbrirRelatorio,
   relatorioStatus,
+  onEnviarWhatsQuestionario,
+  onSalvarAvaliacao,
 }: {
   open: boolean;
   candidato: CandidatoBase | null;
@@ -2065,7 +2668,10 @@ function CandidatoDetailSheet({
   onAgendar: (id: string) => void;
   onAbrirRelatorio: (id: string) => void;
   relatorioStatus?: "rascunho" | "enviado";
+  onEnviarWhatsQuestionario?: (candidatoId: string, questionarioId: string) => void;
+  onSalvarAvaliacao?: (questionarioId: string, candidatoId: string, questoes: Record<string, AvaliacaoQuestao>, salvoComo: "rascunho" | "definitivo") => void;
 }) {
+  useScrollLock(open);
   if (!open) return null;
 
   // Aceita tanto candidato "oficial" quanto extra (manual/convidado)
@@ -2091,10 +2697,14 @@ function CandidatoDetailSheet({
 
   const etapaPodeAgendar = etapaAtual === "Entrevista" || etapaAtual === "Quest/Entrevista";
   const ultimasMensagens = mensagensVaga.slice(-2);
-  const questsDoCandidato = questionariosVaga.map((q) => ({
-    ...q,
-    statusCand: q.candidatosRespostas[cand.id] ?? "nao_associado",
-  }));
+  const questsDoCandidato = questionariosVaga.map((q) => {
+    const resp = q.respostasPorCandidato[cand.id];
+    return {
+      ...q,
+      resposta: resp,
+      statusCand: resp?.status ?? "nao_associado" as const,
+    };
+  });
 
   // Timeline simulada por etapa
   const ETAPAS_TL = ["Triagem", "Quest/Entrevista", "Entrevista", "Perfis enviados", "Decisão"];
@@ -2270,29 +2880,72 @@ function CandidatoDetailSheet({
                   onClick={() => onAssociarQuestionario(cand.id)}
                   className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border text-[11px] font-medium hover:bg-secondary"
                 >
-                  <ListChecks className="h-3 w-3" /> Associar
+                  <ListChecks className="h-3 w-3" /> Enviar
                 </button>
               </div>
               {questsDoCandidato.length === 0 ? (
                 <div className="text-xs text-muted-foreground py-2">Nenhum questionário criado para esta vaga.</div>
               ) : (
-                <ul className="space-y-1.5">
+                <ul className="space-y-2">
                   {questsDoCandidato.map((q) => (
-                    <li key={q.id} className="flex items-center justify-between text-xs">
-                      <div className="min-w-0">
-                        <div className="font-medium truncate">{q.nome}</div>
-                        <div className="text-muted-foreground text-[11px]">{q.tipo} · {q.questoes} questões</div>
+                    <li key={q.id} className="rounded-md border border-border bg-background/40 p-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="text-xs font-medium truncate">{q.nome}</div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {q.perguntas.length} pergunta(s)
+                            {q.resposta?.enviadoEm && ` · enviado em ${q.resposta.enviadoEm}`}
+                            {q.resposta?.respondidoEm && ` · respondido em ${q.resposta.respondidoEm}`}
+                          </div>
+                        </div>
+                        <span className={cn(
+                          "px-2 py-0.5 rounded-full text-[10px] font-medium border shrink-0",
+                          q.statusCand === "respondido" && "bg-success/10 text-success border-success/30",
+                          q.statusCand === "pendente" && "bg-warning/10 text-warning border-warning/30",
+                          q.statusCand === "nao_associado" && "bg-secondary text-muted-foreground border-border",
+                        )}>
+                          {q.statusCand === "respondido" ? "Respondido"
+                            : q.statusCand === "pendente" ? "Pendente"
+                            : "Não associado"}
+                        </span>
                       </div>
-                      <span className={cn(
-                        "px-2 py-0.5 rounded-full text-[10px] font-medium border shrink-0",
-                        q.statusCand === "respondido" && "bg-success/10 text-success border-success/30",
-                        q.statusCand === "pendente" && "bg-warning/10 text-warning border-warning/30",
-                        q.statusCand === "nao_associado" && "bg-secondary text-muted-foreground border-border",
-                      )}>
-                        {q.statusCand === "respondido" ? "Respondido"
-                          : q.statusCand === "pendente" ? "Pendente"
-                          : "Não associado"}
-                      </span>
+
+                      {q.statusCand === "pendente" && q.resposta?.link && (
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <input
+                            readOnly
+                            value={q.resposta.link}
+                            className="flex-1 h-7 px-2 rounded-md border border-border bg-card text-[10px] font-data"
+                          />
+                          <button
+                            onClick={() => { navigator.clipboard?.writeText(q.resposta!.link!); toast.success("Link copiado."); }}
+                            className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-border hover:bg-secondary"
+                            title="Copiar link"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </button>
+                          {onEnviarWhatsQuestionario && (
+                            <button
+                              onClick={() => onEnviarWhatsQuestionario(cand.id, q.id)}
+                              className="h-7 px-2 rounded-md bg-success text-success-foreground text-[10px] font-medium inline-flex items-center gap-1"
+                              title="Enviar via WhatsApp"
+                            >
+                              <MessageCircle className="h-3 w-3" /> WhatsApp
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {q.statusCand === "respondido" && q.resposta && (
+                        <CorrigirQuestionarioInline
+                          perguntas={q.perguntas}
+                          respostas={q.resposta.respostas ?? {}}
+                          avaliacaoInicial={q.resposta.avaliacao?.questoes ?? {}}
+                          mediaSalva={q.resposta.avaliacao?.media}
+                          salvoComo={q.resposta.avaliacao?.salvoComo}
+                          onSalvar={(quests, modo) => onSalvarAvaliacao?.(q.id, cand.id, quests, modo)}
+                        />
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -2419,6 +3072,90 @@ function CandidatoDetailSheet({
   );
 }
 
+function CorrigirQuestionarioInline({
+  perguntas,
+  respostas,
+  avaliacaoInicial,
+  mediaSalva,
+  salvoComo,
+  onSalvar,
+}: {
+  perguntas: PerguntaQuestionario[];
+  respostas: Record<string, string>;
+  avaliacaoInicial: Record<string, AvaliacaoQuestao>;
+  mediaSalva?: number;
+  salvoComo?: "rascunho" | "definitivo";
+  onSalvar: (q: Record<string, AvaliacaoQuestao>, modo: "rascunho" | "definitivo") => void;
+}) {
+  const [estado, setEstado] = useState<Record<string, AvaliacaoQuestao>>(avaliacaoInicial);
+  function setNota(pid: string, nota: 1 | 2 | 3 | 4 | 5) {
+    setEstado((p) => ({ ...p, [pid]: { ...(p[pid] ?? { nota: 3 }), nota } }));
+  }
+  function setJust(pid: string, justificativa: string) {
+    setEstado((p) => ({ ...p, [pid]: { ...(p[pid] ?? { nota: 3 }), justificativa } }));
+  }
+  return (
+    <div className="mt-3 space-y-2">
+      {mediaSalva !== undefined && (
+        <div className="text-[11px] text-muted-foreground">
+          Média atual: <strong className="text-foreground">{mediaSalva.toFixed(1)}/5</strong>
+          {salvoComo && ` · ${salvoComo === "definitivo" ? "Salvo" : "Rascunho"}`}
+        </div>
+      )}
+      <ul className="space-y-2">
+        {perguntas.map((p) => {
+          const av = estado[p.id] ?? { nota: 3 as const };
+          return (
+            <li key={p.id} className="rounded border border-border bg-card p-2">
+              <div className="text-[11px] font-medium">{p.ordem}. {p.texto}</div>
+              <div className="text-[10px] text-foreground/70 bg-secondary/40 rounded px-2 py-1 mt-1">
+                <span className="text-muted-foreground mr-1">Resposta:</span>
+                {respostas[p.id] ?? <em className="text-muted-foreground">— sem resposta —</em>}
+              </div>
+              <div className="flex items-center gap-1 mt-1.5">
+                <span className="text-[10px] text-muted-foreground mr-1">Nota:</span>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setNota(p.id, n as 1 | 2 | 3 | 4 | 5)}
+                    className={cn(
+                      "h-6 w-6 rounded border text-[10px] font-semibold",
+                      av.nota === n ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-secondary",
+                    )}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <input
+                value={av.justificativa ?? ""}
+                onChange={(e) => setJust(p.id, e.target.value)}
+                placeholder="Nota interna / justificativa"
+                className="mt-1.5 w-full h-7 px-2 rounded-md border border-border bg-card text-[10px]"
+              />
+            </li>
+          );
+        })}
+      </ul>
+      <div className="flex justify-end gap-1.5">
+        <button
+          onClick={() => onSalvar(estado, "rascunho")}
+          className="h-7 px-2 rounded-md border border-border hover:bg-secondary text-[10px] font-medium"
+        >
+          Salvar rascunho
+        </button>
+        <button
+          onClick={() => onSalvar(estado, "definitivo")}
+          className="h-7 px-2 rounded-md bg-primary text-primary-foreground text-[10px] font-semibold"
+        >
+          Salvar avaliação
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function DadoLinha({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-start gap-2 rounded-md border border-border bg-background/40 px-3 py-2">
@@ -2454,6 +3191,7 @@ function RelatorioCandidatoModal({
   onSaveDraft: (data: RelatorioCandidato) => void;
   onMarkSent: (data: RelatorioCandidato) => void;
 }) {
+  useScrollLock(true);
   const protocoloAuto = useMemo(
     () => `REL-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`,
     [candidato.id],
