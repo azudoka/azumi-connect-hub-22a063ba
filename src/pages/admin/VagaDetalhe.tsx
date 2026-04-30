@@ -87,6 +87,29 @@ interface MensagemVaga {
   anexo?: string;
 }
 
+interface RelatorioQuestaoNota {
+  nota: number; // 1..5
+  justificativa: string;
+}
+
+interface RelatorioCandidato {
+  protocolo: string;
+  data: string; // dd/mm/yyyy
+  cidadeUf: string;
+  cargoAtual: string;
+  experienciaResumida: string;
+  sintese: string;
+  pontosPositivos: string;
+  pontosAtencao: string;
+  discResumo: string;
+  questoes: Record<string, RelatorioQuestaoNota>;
+  recomendacao: string;
+  movimento: "Avançar" | "Stand by" | "Desclassificar" | "";
+  consultorNome: string;
+  consultorCargo: string;
+  status: "rascunho" | "enviado";
+}
+
 const PESSOAS_MENCAO_VAGA = [
   "Ana Beatriz",
   "Rafael Moura",
