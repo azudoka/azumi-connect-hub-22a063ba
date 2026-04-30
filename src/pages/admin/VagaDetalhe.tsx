@@ -244,7 +244,7 @@ export default function VagaDetalheAdmin() {
   const max = Math.max(...funil.map((f) => f.n), 1);
 
   const candidatosVaga = candidatos.filter((c) => c.vagaId === vaga.id);
-  const colunas = ["Triagem", "Quest.", "Entrevista", "Enviados", "Decisão", "Proposta", "Reprovados"] as const;
+  const colunas = ["Triagem", "Quest.", "Entrevista Azumi", "Entrevista gestor", "Enviados", "Decisão", "Proposta", "Reprovados"] as const;
   type Coluna = typeof colunas[number];
 
   // Posições da vaga (Doc Mestre — Etapa 6: bloquear contratações além do total).
