@@ -6,6 +6,7 @@ import { DiscBars } from "@/components/DiscBars";
 import { Timer } from "@/components/Timer";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { vagas, candidatos, etapasVaga, comentariosVaga } from "@/data/mock";
+import { getParecerCliente, getFeedback1aLeva } from "@/data/atracaoClienteStore";
 
 const BENEFICIO_LABEL: Record<string, string> = {
   vale_transporte: "Vale-transporte",
@@ -2672,6 +2673,7 @@ function CandidatoDetailSheet({
   onSalvarAvaliacao?: (questionarioId: string, candidatoId: string, questoes: Record<string, AvaliacaoQuestao>, salvoComo: "rascunho" | "definitivo") => void;
 }) {
   useScrollLock(open);
+  const { id: vagaIdParam } = useParams();
   if (!open) return null;
 
   // Aceita tanto candidato "oficial" quanto extra (manual/convidado)
@@ -2981,6 +2983,99 @@ function CandidatoDetailSheet({
               })}
             </ol>
           </section>
+
+          {/* Bloco: Parecer do cliente (lido do store compartilhado) */}
+          {(() => {
+            const parecer = getParecerCliente(cand.id);
+            const fb1aLeva = vagaIdParam ? getFeedback1aLeva(vagaIdParam) : null;
+            if (!parecer && !fb1aLeva) return null;
+            return (
+              <section>
+                <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">
+                  Parecer do cliente
+                </h3>
+                {parecer ? (
+                  <div className="rounded-lg border border-border bg-background/40 p-3 space-y-2 text-xs">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {!parecer.compareceu ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-muted text-muted-foreground border-border">
+                          Não compareceu
+                        </span>
+                      ) : parecer.decisao === "avancar" ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-success/15 text-success border-success/30">
+                          Avançar
+                        </span>
+                      ) : parecer.decisao === "standby" ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-warning/15 text-warning border-warning/30">
+                          Stand by
+                        </span>
+                      ) : parecer.decisao === "reprovar" ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-destructive/15 text-destructive border-destructive/30">
+                          Reprovado
+                        </span>
+                      ) : null}
+                      <span className="text-[10px] text-muted-foreground font-data">
+                        {new Date(parecer.criadoEm).toLocaleString("pt-BR")}
+                      </span>
+                    </div>
+                    {!parecer.compareceu && (
+                      <div className="text-muted-foreground">
+                        {parecer.remarcar ? "Cliente solicitou remarcação." : "Sem remarcação."}
+                        {parecer.justificativaNaoCompareceu && (
+                          <div className="italic mt-1">"{parecer.justificativaNaoCompareceu}"</div>
+                        )}
+                      </div>
+                    )}
+                    {parecer.compareceu && (
+                      <>
+                        {parecer.pontosPositivos && (
+                          <div>
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Positivos</div>
+                            <div>{parecer.pontosPositivos}</div>
+                          </div>
+                        )}
+                        {parecer.pontosAtencao && (
+                          <div>
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Atenção</div>
+                            <div>{parecer.pontosAtencao}</div>
+                          </div>
+                        )}
+                        {parecer.proximaFasePlanejada && (
+                          <div>
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Próxima fase</div>
+                            <div>{parecer.proximaFasePlanejada}</div>
+                          </div>
+                        )}
+                        {parecer.decisao === "reprovar" && parecer.motivoReprovacao && (
+                          <div>
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Motivo da reprovação</div>
+                            <div>{parecer.motivoReprovacao}</div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                ) : null}
+                {fb1aLeva && (
+                  <div className="mt-2 rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs space-y-1">
+                    <div className="font-medium text-warning">
+                      Cliente reprovou os 3 perfis da 1ª leva
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Motivo:</span>{" "}
+                      {fb1aLeva.motivoPrincipal}
+                    </div>
+                    {fb1aLeva.direcionamentos && (
+                      <div>
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Direcionamentos:</span>{" "}
+                        {fb1aLeva.direcionamentos}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
+            );
+          })()}
 
           {/* Bloco: Histórico de interações */}
           <section>

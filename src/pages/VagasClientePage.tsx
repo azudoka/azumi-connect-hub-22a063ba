@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -11,8 +12,11 @@ import {
   ThumbsUp,
   AlertCircle,
   ThumbsDown,
+  FileText,
+  ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
+import { candidatosComRelatorioPorVaga } from "@/data/atracaoClienteStore";
 
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
@@ -505,6 +509,9 @@ export default function VagasClientePage() {
         ))}
       </div>
 
+      {/* Card destaque: vaga demo com perfis enviados (novo fluxo cliente) */}
+      <DemoVagaDestaque />
+
       {lista.length === 0 ? (
         <EmptyState
           icon={Inbox}
@@ -559,5 +566,36 @@ export default function VagasClientePage() {
         </div>
       )}
     </>
+  );
+}
+
+function DemoVagaDestaque() {
+  const perfis = candidatosComRelatorioPorVaga("v1");
+  if (perfis.length === 0) return null;
+  return (
+    <Link
+      to="/cliente/atracao/v1"
+      className="block mb-4 bg-card/80 backdrop-blur border border-primary/30 rounded-2xl p-5 hover:bg-card transition-colors"
+    >
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-primary font-medium">
+              <FileText size={12} /> Perfis enviados
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              {perfis.length}/3
+            </span>
+          </div>
+          <h3 className="font-semibold text-base mt-1">Gerente de TI</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Kentaki Foods — Consultora Camila Torres
+          </p>
+        </div>
+        <span className="inline-flex items-center gap-1 text-xs text-primary font-medium">
+          Ver candidatos enviados <ArrowRight size={14} />
+        </span>
+      </div>
+    </Link>
   );
 }

@@ -1,329 +1,190 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  Lock,
+  CheckCircle2,
+  FileText,
+  Info,
+  AlertTriangle,
+  CalendarCheck,
+  ClipboardList,
+  X,
+  ThumbsUp,
+  ThumbsDown,
+  PauseCircle,
+} from "lucide-react";
+import { toast } from "sonner";
+
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SectionDivider } from "@/components/SectionDivider";
-import { SlaBar } from "@/components/SlaBar";
 import { DiscBars } from "@/components/DiscBars";
-import { Link, useParams } from "react-router-dom";
-import {
-  vagas, candidatos, etapasVaga, comentariosVaga,
-  beneficiosLabels, getEtapaStyle,
-} from "@/data/mock";
-import {
-  ArrowLeft, Lock, Send, AlertTriangle, CheckCircle2,
-  PauseCircle, XCircle, FileText, Info, Star, Loader2, Gift, ShieldCheck,
-  FileSignature,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { vagas, candidatos } from "@/data/mock";
+import {
+  getRelatorioEnviado,
+  candidatosComRelatorioPorVaga,
+  entrevistaRealizada,
+  getParecerCliente,
+  salvarParecerCliente,
+  getFeedback1aLeva,
+  salvarFeedback1aLeva,
+  reprovadosNaPrimeiraLeva,
+  type ParecerCliente,
+} from "@/data/atracaoClienteStore";
 
-// B01: chave do localStorage para persistir ciência assinada por vaga
-const CIENCIAS_KEY = "azumi_ciencias";
-type CienciaRecord = { assinado: true; data: string };
-type CienciasMap = Record<string, CienciaRecord>;
+type DecisaoCliente = "avancar" | "standby" | "reprovar";
 
-function lerCiencias(): CienciasMap {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(CIENCIAS_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? (parsed as CienciasMap) : {};
-  } catch {
-    return {};
-  }
-}
-
-function salvarCiencia(vagaId: string): CienciaRecord {
-  const atual = lerCiencias();
-  const registro: CienciaRecord = { assinado: true, data: new Date().toISOString() };
-  const novo: CienciasMap = { ...atual, [vagaId]: registro };
-  try {
-    window.localStorage.setItem(CIENCIAS_KEY, JSON.stringify(novo));
-  } catch {
-    // silencia falhas de storage (modo privado, quota, etc.)
-  }
-  return registro;
-}
-
-type DecisaoTipo = "aprovar" | "standby" | "reprovar";
-type CandidatoStatus = "novo" | "em_analise" | "aprovado" | "standby" | "reprovado" | "contratado";
+// ────────────────────────────────────────────────────────────────────
+// Página
+// ────────────────────────────────────────────────────────────────────
 
 export default function VagaDetalheCliente() {
   const { id } = useParams();
   const vaga = vagas.find((v) => v.id === id) ?? vagas[0];
-  const candidatosEnviados = candidatos.filter((c) => c.vagaId === vaga.id && c.enviado);
 
-  // B05: estado local de status por candidato (carrega o status inicial do mock)
-  const [candidatoStatus, setCandidatoStatus] = useState<Record<string, CandidatoStatus>>(
-    () => Object.fromEntries(
-      candidatosEnviados.map((c) => [c.id, ((c as any).status as CandidatoStatus) ?? "em_analise"])
-    )
-  );
-  const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [decisao, setDecisao] = useState<{ open: boolean; tipo: DecisaoTipo | null; candidatoId: string | null }>({
-    open: false, tipo: null, candidatoId: null,
-  });
-  const [justificativa, setJustificativa] = useState("");
-
-  // B01: estado de ciência do relatório final (persistido em localStorage)
-  const [ciencia, setCiencia] = useState<CienciaRecord | null>(null);
-  const [cienciaOpen, setCienciaOpen] = useState(false);
-  const [assinandoCiencia, setAssinandoCiencia] = useState(false);
-
-  useEffect(() => {
-    const todas = lerCiencias();
-    setCiencia(todas[vaga.id] ?? null);
-  }, [vaga.id]);
-
-  // Apenas vagas concluídas exibem o botão de ciência do relatório final
-  const podeAssinarCiencia = vaga.status === "concluida";
-
-  async function handleAssinarCiencia() {
-    setAssinandoCiencia(true);
-    // simula latência da chamada à API
-    await new Promise((r) => setTimeout(r, 500));
-    const registro = salvarCiencia(vaga.id);
-    setCiencia(registro);
-    setAssinandoCiencia(false);
-    setCienciaOpen(false);
-    toast.success("Ciência assinada com sucesso.", {
-      description: "O registro ficará disponível para consulta a qualquer momento.",
-    });
+  // Re-render trigger quando o store é atualizado (parecer salvo etc).
+  const [versao, setVersao] = useState(0);
+  function bump() {
+    setVersao((v) => v + 1);
   }
 
-  const funilResumido = [
-    { etapa: "Triagem", n: vaga.candidatosTriagem },
-    { etapa: "Entrevista", n: vaga.candidatosEntrevista },
-    { etapa: "Enviados", n: vaga.candidatosEnviados },
-  ];
-  const max = Math.max(...funilResumido.map(f => f.n), 1);
-  const atrasado = vaga.sla > 90;
+  // Apenas candidatos com relatório enviado para esta vaga aparecem ao cliente.
+  // O vínculo cand→vaga vem do store (relatório enviado), não do mock.
+  const candidatosVisiveis = useMemo(() => {
+    const idsComRelatorio = candidatosComRelatorioPorVaga(vaga.id);
+    return idsComRelatorio
+      .map((cid) => candidatos.find((c) => c.id === cid))
+      .filter((c): c is (typeof candidatos)[number] => !!c);
+    // versao força recomputo após salvar parecer/feedback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vaga.id, versao]);
 
-  // B06: benefícios da vaga (com fallback se não houver no mock)
-  const beneficios: string[] = (vaga as any).beneficios ?? [];
+  // Estado de modais
+  const [fichaCandId, setFichaCandId] = useState<string | null>(null);
+  const [relatorioCandId, setRelatorioCandId] = useState<string | null>(null);
+  const [parecerCandId, setParecerCandId] = useState<string | null>(null);
+  const [feedback1aLevaOpen, setFeedback1aLevaOpen] = useState(false);
 
-  function abrirDecisao(candidatoId: string, tipo: DecisaoTipo) {
-    // B05: bloqueia reprovação de candidato já contratado
-    const statusAtual = candidatoStatus[candidatoId];
-    if (tipo === "reprovar" && statusAtual === "contratado") {
-      toast.error("Não é possível reprovar um candidato já contratado.", {
-        description: "Para reverter uma contratação, fale com seu consultor Azumi.",
-      });
-      return;
-    }
-    setDecisao({ open: true, tipo, candidatoId });
-  }
+  const fichaCand = candidatosVisiveis.find((c) => c.id === fichaCandId) ?? null;
 
-  async function confirmarDecisao() {
-    if (!decisao.candidatoId || !decisao.tipo) return;
-    const candidatoId = decisao.candidatoId;
-    const tipo = decisao.tipo;
-    const candidato = candidatosEnviados.find(c => c.id === candidatoId);
-
-    setLoadingId(candidatoId);
-    // simula chamada à API
-    await new Promise((r) => setTimeout(r, 700));
-
-    const novoStatus: CandidatoStatus =
-      tipo === "aprovar" ? "aprovado" :
-      tipo === "standby" ? "standby" : "reprovado";
-
-    setCandidatoStatus((prev) => ({ ...prev, [candidatoId]: novoStatus }));
-    setLoadingId(null);
-    setDecisao({ open: false, tipo: null, candidatoId: null });
-    setJustificativa("");
-
-    const labelTipo = tipo === "aprovar" ? "aprovado" : tipo === "standby" ? "colocado em standby" : "reprovado";
-    if (tipo === "aprovar") {
-      toast.success(`${candidato?.nome ?? "Candidato"} foi ${labelTipo}.`, {
-        description: "Seu consultor foi notificado e dará sequência ao processo.",
-      });
-    } else if (tipo === "reprovar") {
-      toast.error(`${candidato?.nome ?? "Candidato"} foi ${labelTipo}.`, {
-        description: "Justificativa registrada. Novos perfis serão enviados em breve.",
-      });
-    } else {
-      toast.warning(`${candidato?.nome ?? "Candidato"} foi ${labelTipo}.`, {
-        description: "O candidato permanece no pipeline aguardando definição.",
-      });
+  // Após salvar parecer, verifica se acionou a regra dos 3 reprovados.
+  function aposSalvarParecer() {
+    bump();
+    const fb = getFeedback1aLeva(vaga.id);
+    if (fb) return; // já registrado nesta vaga
+    const { totalLeva, reprovados } = reprovadosNaPrimeiraLeva(vaga.id);
+    if (totalLeva >= 3 && reprovados >= 3) {
+      setFeedback1aLevaOpen(true);
     }
   }
 
   return (
     <div>
-      <Link to="/cliente/atracao" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-3">
+      <Link
+        to="/cliente/atracao"
+        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-3"
+      >
         <ArrowLeft className="h-3.5 w-3.5" /> Voltar para minhas vagas
       </Link>
 
       <PageHeader
         title={vaga.titulo}
-        subtitle={`${vaga.empresa} · ${vaga.filial}` as any}
+        subtitle={`${vaga.empresa} · ${vaga.filial} · Consultora Azumi: Camila Torres`}
         actions={<StatusBadge status={vaga.status} />}
       />
 
-      {atrasado && (
-        <div className="mb-5 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+      {/* Aviso quando ainda não há perfis enviados */}
+      {candidatosVisiveis.length === 0 && (
+        <div className="mb-5 rounded-xl border border-info/30 bg-info/10 px-4 py-3 flex items-start gap-3">
+          <Lock className="h-5 w-5 text-info shrink-0 mt-0.5" />
           <div>
-            <div className="text-sm font-medium text-warning">Parecer pendente — prazo excedido</div>
-            <div className="text-xs text-warning/80 mt-0.5">
-              O parecer da última rodada está em atraso. O SLA da vaga foi atualizado.
+            <div className="text-sm font-medium text-info">
+              Vaga em andamento — perfis ainda não foram enviados
+            </div>
+            <div className="text-xs text-info/80 mt-0.5">
+              A consultoria está conduzindo a triagem. Você poderá visualizar
+              os candidatos e dar seu parecer assim que os relatórios forem
+              enviados pela Azumi.
             </div>
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Timeline com mini-chat */}
+      {/* Resumo da vaga */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-2">
         <div className="lg:col-span-2 bg-card border border-border rounded-xl p-5">
-          <h3 className="font-display font-semibold mb-4">Etapas da vaga</h3>
-          <ol className="space-y-3">
-            {etapasVaga.map((e, idx) => {
-              // B04: usa getEtapaStyle com fallback seguro — nunca quebra
-              const etapaStyle = getEtapaStyle(e.status);
-              const { color: etapaColor, bg: etapaBg } = etapaStyle;
-              const done = e.status === "concluida";
-              const active = e.status === "andamento";
-              return (
-                <li key={idx} className="flex items-start gap-3 p-3 rounded-lg border border-border bg-background/40">
-                  <div className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center font-data text-xs shrink-0 text-white",
-                    etapaBg,
-                    active && "animate-soft-pulse",
-                  )}>
-                    {done ? <CheckCircle2 className="h-4 w-4" /> : idx + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={cn("text-sm font-medium", etapaColor)}>{e.nome}</span>
-                      <StatusBadge status={e.status} />
-                    </div>
-                    <div className="text-[11px] text-muted-foreground font-data mt-0.5">
-                      {e.inicio} → {e.fim}
-                    </div>
-                    {active && (
-                      <button className="mt-2 text-xs text-primary hover:underline inline-flex items-center gap-1">
-                        <Send className="h-3 w-3" /> Comentar nesta etapa
-                      </button>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
+          <h3 className="font-display font-semibold mb-2">Resumo da vaga</h3>
+          <p className="text-sm text-muted-foreground">
+            {vaga.titulo} para {vaga.empresa} ({vaga.filial}). O processo segue
+            conduzido pela consultoria Azumi. Para qualquer ajuste no perfil
+            desejado, fale com sua consultora.
+          </p>
         </div>
-
-        {/* Funil resumido */}
-        <div className="space-y-5">
-          <div className="bg-card border border-border rounded-xl p-5">
-            <h3 className="font-display font-semibold mb-3">Funil (resumo)</h3>
-            <ul className="space-y-3">
-              {funilResumido.map((f) => {
-                const w = (f.n / max) * 100;
-                return (
-                  <li key={f.etapa}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-muted-foreground">{f.etapa}</span>
-                      <span className="font-data">{f.n}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full rounded-full bg-primary" style={{ width: `${w}%` }} />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-            <SlaBar percent={vaga.sla} className="mt-4" label="SLA" />
-          </div>
-
-          <div className="bg-card border border-border rounded-xl p-5">
-            <div className="flex items-start gap-2">
-              <Info className="h-4 w-4 text-info mt-0.5" />
-              <div>
-                <h4 className="font-display font-semibold text-sm">Informações importantes</h4>
-                <ul className="mt-2 text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
-                  <li>É proibida a contratação direta de candidatos sem intermediação Azumi.</li>
-                  <li>SLA padrão: 30 dias úteis para fechamento.</li>
-                  <li>Após 3 reprovações consecutivas, será necessário realinhamento obrigatório.</li>
-                </ul>
-              </div>
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-start gap-2">
+            <Info className="h-4 w-4 text-info mt-0.5" />
+            <div>
+              <h4 className="font-display font-semibold text-sm">
+                Como funciona
+              </h4>
+              <ul className="mt-2 text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
+                <li>A Azumi envia até 3 perfis com relatório.</li>
+                <li>Você visualiza cada relatório e realiza a entrevista.</li>
+                <li>Após a entrevista, registra o parecer pelo botão da ficha.</li>
+              </ul>
             </div>
           </div>
         </div>
       </div>
 
-      {/* B06: Benefícios da vaga renderizados como badges com labels PT-BR */}
-      {beneficios.length > 0 && (
-        <>
-          <SectionDivider>Benefícios oferecidos</SectionDivider>
-          <div className="bg-card border border-border rounded-xl p-5">
-            <div className="flex items-start gap-3">
-              <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <Gift className="h-4 w-4" />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-display font-semibold text-sm mb-3">Pacote de benefícios</h4>
-                <ul className="flex flex-wrap gap-2">
-                  {beneficios.map((b) => (
-                    <li
-                      key={b}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium"
-                    >
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                      {beneficiosLabels[b] ?? b.replace(/_/g, " ")}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+      <SectionDivider>Candidatos enviados</SectionDivider>
 
-      <SectionDivider>Perfis apresentados</SectionDivider>
-
-      {candidatosEnviados.length === 0 ? (
+      {candidatosVisiveis.length === 0 ? (
         <div className="bg-card border border-border rounded-xl p-10 text-center">
-          <p className="text-muted-foreground text-sm">Nenhum perfil apresentado ainda. Você será notificado quando os candidatos forem enviados.</p>
+          <p className="text-muted-foreground text-sm">
+            Nenhum perfil apresentado ainda. Você será notificado quando os
+            candidatos forem enviados.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {candidatosEnviados.map((c) => {
-            const status = candidatoStatus[c.id] ?? "em_analise";
-            const isLoading = loadingId === c.id;
-            const isContratado = status === "contratado";
-            const isAprovado = status === "aprovado";
-            const isStandby = status === "standby";
-            const isReprovado = status === "reprovado";
+          {candidatosVisiveis.map((c) => {
+            const parecer = getParecerCliente(c.id);
+            const podeEntrevista = entrevistaRealizada(c.id);
             return (
-              <div key={c.id} className="bg-card border border-border rounded-xl p-5 card-hover">
+              <div
+                key={c.id}
+                className="bg-card border border-border rounded-xl p-5 card-hover"
+              >
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-gradient-brand flex items-center justify-center text-xs font-semibold text-white">
-                    {c.nome.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                    {c.nome
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .slice(0, 2)}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-medium truncate">{c.nome}</div>
-                    <div className="text-[11px] text-muted-foreground">DISC: {c.perfilDom} dominante</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {parecer
+                        ? "Parecer registrado"
+                        : podeEntrevista
+                        ? "Aguardando seu parecer"
+                        : "Aguardando entrevista"}
+                    </div>
                   </div>
-                  <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-label="Contato bloqueado" />
+                  <Lock
+                    className="h-3.5 w-3.5 text-muted-foreground"
+                    aria-label="Contato bloqueado"
+                  />
                 </div>
 
-                {/* Badge do status atual da decisão */}
-                {(isContratado || isAprovado || isStandby || isReprovado) && (
+                {parecer && (
                   <div className="mt-3">
-                    <span className={cn(
-                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border",
-                      isContratado && "bg-success/15 text-success border-success/30",
-                      isAprovado && "bg-success/15 text-success border-success/30",
-                      isStandby && "bg-warning/15 text-warning border-warning/30",
-                      isReprovado && "bg-destructive/15 text-destructive border-destructive/30",
-                    )}>
-                      {isContratado && <><CheckCircle2 className="h-3 w-3" /> Contratado</>}
-                      {isAprovado && <><CheckCircle2 className="h-3 w-3" /> Aprovado</>}
-                      {isStandby && <><PauseCircle className="h-3 w-3" /> Em standby</>}
-                      {isReprovado && <><XCircle className="h-3 w-3" /> Reprovado</>}
-                    </span>
+                    <StatusPillParecer decisao={parecer.decisao} compareceu={parecer.compareceu} />
                   </div>
                 )}
 
@@ -331,195 +192,848 @@ export default function VagaDetalheCliente() {
                   <DiscBars values={c.disc} compact />
                 </div>
 
-                <p className="mt-3 text-xs text-muted-foreground line-clamp-2">{c.parecer}</p>
-
-                <button className="mt-3 w-full h-8 rounded-lg border border-border hover:bg-secondary text-xs font-medium flex items-center justify-center gap-1.5">
-                  <FileText className="h-3.5 w-3.5" /> Ver relatório completo
+                <button
+                  onClick={() => setFichaCandId(c.id)}
+                  className="mt-4 w-full h-8 rounded-lg border border-border hover:bg-secondary text-xs font-medium flex items-center justify-center gap-1.5"
+                >
+                  <FileText className="h-3.5 w-3.5" /> Ver candidato
                 </button>
-
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  <button
-                    onClick={() => abrirDecisao(c.id, "aprovar")}
-                    disabled={isLoading || isContratado}
-                    className="h-8 rounded-lg bg-success/15 hover:bg-success/25 text-success text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                    Aprovar
-                  </button>
-                  <button
-                    onClick={() => abrirDecisao(c.id, "standby")}
-                    disabled={isLoading || isContratado}
-                    className="h-8 rounded-lg bg-warning/15 hover:bg-warning/25 text-warning text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PauseCircle className="h-3.5 w-3.5" />}
-                    Standby
-                  </button>
-                  <button
-                    onClick={() => abrirDecisao(c.id, "reprovar")}
-                    disabled={isLoading || isContratado}
-                    title={isContratado ? "Candidato já contratado — não pode ser reprovado" : undefined}
-                    className="h-8 rounded-lg bg-destructive/15 hover:bg-destructive/25 text-destructive text-xs font-medium flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
-                    Reprovar
-                  </button>
-                </div>
-
-                {isContratado && (
-                  <p className="mt-2 text-[10px] text-muted-foreground italic">
-                    Candidato contratado — ações de decisão bloqueadas.
-                  </p>
-                )}
-
-                <div className="mt-3 pt-3 border-t border-border">
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Parecer do gestor</div>
-                  <div className="flex items-center gap-1">
-                    {[1,2,3,4,5].map((n) => (
-                      <Star key={n} className="h-4 w-4 text-muted-foreground hover:text-warning hover:fill-warning cursor-pointer" />
-                    ))}
-                  </div>
-                </div>
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Mini-chat */}
-      <SectionDivider>Conversa com o consultor</SectionDivider>
-      <div className="bg-card border border-border rounded-xl p-5 max-w-3xl">
-        <ul className="space-y-3 mb-4">
-          {comentariosVaga.map((c) => (
-            <li key={c.id} className={cn("flex gap-3", c.azumi ? "" : "flex-row-reverse")}>
-              <div className={cn(
-                "h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0",
-                c.azumi ? "bg-gradient-brand text-white" : "bg-secondary text-foreground"
-              )}>
-                {c.azumi ? "A" : "EU"}
-              </div>
-              <div className={cn("max-w-md", c.azumi ? "" : "text-right")}>
-                <div className="text-[11px] text-muted-foreground mb-1">{c.autor} · <span className="font-data">{c.quando}</span></div>
-                <div className={cn(
-                  "rounded-xl px-3 py-2 text-sm border",
-                  c.azumi ? "bg-primary/10 border-primary/20" : "bg-secondary border-border"
-                )}>{c.texto}</div>
-              </div>
-            </li>
-          ))}
-        </ul>
-        <div className="flex items-center gap-2">
-          <input type="text" placeholder="Escreva uma mensagem para o consultor…" className="flex-1 h-10 px-3 rounded-lg bg-secondary border border-input focus:border-primary outline-none text-sm" />
-          <button className="h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5">
-            <Send className="h-4 w-4" /> Enviar
-          </button>
-        </div>
-      </div>
-
-      {/* Modal decisão */}
-      {decisao.open && (
-        <div className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
-            <h3 className="font-display text-lg font-semibold capitalize">
-              {decisao.tipo === "aprovar" ? "Aprovar candidato" :
-               decisao.tipo === "standby" ? "Colocar em standby" : "Reprovar candidato"}
-            </h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Justifique brevemente sua decisão para que o consultor possa dar continuidade ao processo.
-            </p>
-            <textarea
-              value={justificativa}
-              onChange={(e) => setJustificativa(e.target.value)}
-              placeholder="Sua justificativa…"
-              className="mt-3 w-full h-28 p-3 rounded-lg bg-secondary border border-input focus:border-primary outline-none text-sm resize-none"
-            />
-            <div className="mt-4 flex items-center justify-end gap-2">
-              <button
-                onClick={() => { setDecisao({ open: false, tipo: null, candidatoId: null }); setJustificativa(""); }}
-                disabled={loadingId !== null}
-                className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                disabled={!justificativa.trim() || loadingId !== null}
-                onClick={confirmarDecisao}
-                className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 inline-flex items-center gap-1.5"
-              >
-                {loadingId !== null && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                {loadingId !== null ? "Registrando…" : "Confirmar"}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Ficha simplificada do candidato */}
+      {fichaCand && (
+        <FichaCandidatoModal
+          candidato={fichaCand}
+          onClose={() => setFichaCandId(null)}
+          onAbrirRelatorio={(cid) => setRelatorioCandId(cid)}
+          onGerarParecer={(cid) => setParecerCandId(cid)}
+          parecerExistente={getParecerCliente(fichaCand.id)}
+          podeGerarParecer={entrevistaRealizada(fichaCand.id)}
+        />
       )}
 
-      {/* B01: Ciência do relatório final — botão global no rodapé,
-          visível apenas quando a vaga está concluída. Estado persistido
-          em localStorage (chave azumi_ciencias) por vagaId. */}
-      {podeAssinarCiencia && (
-        <>
-          <SectionDivider>Relatório final</SectionDivider>
-          <div className="bg-card border border-border rounded-xl p-5 flex items-start gap-4 flex-wrap">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <FileSignature className="h-5 w-5" />
-            </div>
-            <div className="flex-1 min-w-[220px]">
-              <h4 className="font-display font-semibold text-sm">Ciência do relatório final</h4>
-              <p className="text-xs text-muted-foreground mt-1">
-                {ciencia
-                  ? `Você assinou ciência em ${new Date(ciencia.data).toLocaleString("pt-BR")}.`
-                  : "Confirme que você tomou ciência do relatório final desta vaga."}
-              </p>
-            </div>
-            {ciencia ? (
-              <button
-                disabled
-                className="h-9 px-4 rounded-lg bg-success/15 text-success border border-success/30 text-sm font-medium inline-flex items-center gap-1.5 cursor-default"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                Ciência assinada
-              </button>
-            ) : (
-              <button
-                onClick={() => setCienciaOpen(true)}
-                className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5 hover:opacity-90"
-              >
-                <FileSignature className="h-4 w-4" />
-                Assinar ciência do relatório final
-              </button>
-            )}
-          </div>
-        </>
+      {/* Visualização do relatório (modo leitura) */}
+      {relatorioCandId && (
+        <RelatorioVisualizacaoModal
+          candidatoId={relatorioCandId}
+          onClose={() => setRelatorioCandId(null)}
+        />
       )}
 
-      {/* B01: Modal de confirmação da ciência */}
-      {cienciaOpen && (
-        <div className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
-            <h3 className="font-display text-lg font-semibold">Assinar ciência do relatório final</h3>
-            <p className="text-sm text-muted-foreground mt-2">
-              Ao assinar, você confirma que tomou ciência do relatório final desta vaga.
-            </p>
-            <div className="mt-4 flex items-center justify-end gap-2">
-              <button
-                onClick={() => setCienciaOpen(false)}
-                disabled={assinandoCiencia}
-                className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleAssinarCiencia}
-                disabled={assinandoCiencia}
-                className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 inline-flex items-center gap-1.5"
-              >
-                {assinandoCiencia && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                {assinandoCiencia ? "Assinando…" : "Assinar"}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Modal de parecer pós-entrevista */}
+      {parecerCandId && (
+        <ParecerEntrevistaModal
+          candidatoId={parecerCandId}
+          vagaId={vaga.id}
+          onClose={() => setParecerCandId(null)}
+          onSaved={() => {
+            setParecerCandId(null);
+            aposSalvarParecer();
+          }}
+        />
+      )}
+
+      {/* Modal especial: 3 perfis reprovados na 1ª leva */}
+      {feedback1aLevaOpen && (
+        <Feedback1aLevaModal
+          vagaId={vaga.id}
+          onClose={() => setFeedback1aLevaOpen(false)}
+          onSaved={() => {
+            setFeedback1aLevaOpen(false);
+            bump();
+          }}
+        />
       )}
     </div>
   );
 }
+
+// ────────────────────────────────────────────────────────────────────
+// Subcomponentes
+// ────────────────────────────────────────────────────────────────────
+
+function StatusPillParecer({
+  decisao,
+  compareceu,
+}: {
+  decisao?: DecisaoCliente;
+  compareceu: boolean;
+}) {
+  if (!compareceu) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-muted text-muted-foreground border-border">
+        <AlertTriangle className="h-3 w-3" /> Não compareceu
+      </span>
+    );
+  }
+  if (decisao === "avancar") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-success/15 text-success border-success/30">
+        <ThumbsUp className="h-3 w-3" /> Avançar
+      </span>
+    );
+  }
+  if (decisao === "standby") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-warning/15 text-warning border-warning/30">
+        <PauseCircle className="h-3 w-3" /> Stand by
+      </span>
+    );
+  }
+  if (decisao === "reprovar") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-destructive/15 text-destructive border-destructive/30">
+        <ThumbsDown className="h-3 w-3" /> Reprovado
+      </span>
+    );
+  }
+  return null;
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Shell de modal padrão (centro da tela, z-50, scroll lock)
+// ────────────────────────────────────────────────────────────────────
+
+function ModalShell({
+  title,
+  subtitle,
+  onClose,
+  children,
+  footer,
+  maxWidth = "max-w-xl",
+}: {
+  title: string;
+  subtitle?: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  maxWidth?: string;
+}) {
+  useEffect(() => {
+    document.body.classList.add("modal-open");
+    return () => {
+      document.body.classList.remove("modal-open");
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden
+      />
+      <div
+        className={cn(
+          "relative w-full bg-card border border-border rounded-2xl shadow-2xl flex flex-col max-h-[90vh]",
+          maxWidth
+        )}
+      >
+        <div className="flex items-start justify-between gap-3 p-5 border-b border-border">
+          <div className="min-w-0">
+            <h3 className="font-display font-semibold text-base">{title}</h3>
+            {subtitle && (
+              <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            className="h-8 w-8 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground"
+            aria-label="Fechar"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5">{children}</div>
+
+        {footer && (
+          <div className="border-t border-border p-4 flex flex-wrap items-center justify-end gap-2">
+            {footer}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Ficha simplificada do candidato (visão cliente)
+// ────────────────────────────────────────────────────────────────────
+
+interface CandidatoMock {
+  id: string;
+  nome: string;
+  cargo: string;
+  vagaId: string;
+  disc: { D: number; I: number; S: number; C: number };
+  perfilDom: string;
+  parecer: string;
+}
+
+function FichaCandidatoModal({
+  candidato,
+  onClose,
+  onAbrirRelatorio,
+  onGerarParecer,
+  parecerExistente,
+  podeGerarParecer,
+}: {
+  candidato: CandidatoMock;
+  onClose: () => void;
+  onAbrirRelatorio: (candidatoId: string) => void;
+  onGerarParecer: (candidatoId: string) => void;
+  parecerExistente: ParecerCliente | null;
+  podeGerarParecer: boolean;
+}) {
+  const relatorio = getRelatorioEnviado(candidato.id);
+  const parecerSalvo = !!parecerExistente;
+
+  return (
+    <ModalShell
+      title={candidato.nome}
+      subtitle={candidato.cargo}
+      onClose={onClose}
+      footer={
+        <>
+          <button
+            onClick={onClose}
+            className="h-9 px-4 rounded-lg border border-border text-sm font-medium hover:bg-secondary"
+          >
+            Fechar
+          </button>
+          <button
+            onClick={() => onAbrirRelatorio(candidato.id)}
+            className="h-9 px-4 rounded-lg border border-border text-sm font-medium hover:bg-secondary inline-flex items-center gap-1.5"
+          >
+            <FileText className="h-3.5 w-3.5" /> Visualizar relatório
+          </button>
+          {parecerSalvo ? (
+            <button
+              disabled
+              className="h-9 px-4 rounded-lg bg-muted text-muted-foreground text-sm font-medium inline-flex items-center gap-1.5 cursor-not-allowed"
+              title="Parecer já registrado para este candidato"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" /> Parecer registrado
+            </button>
+          ) : (
+            <button
+              disabled={!podeGerarParecer}
+              onClick={() => onGerarParecer(candidato.id)}
+              className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              title={
+                podeGerarParecer
+                  ? "Registrar parecer pós-entrevista"
+                  : "O botão será liberado após a entrevista com o cliente"
+              }
+            >
+              <CalendarCheck className="h-3.5 w-3.5" /> Gerar parecer da entrevista
+            </button>
+          )}
+        </>
+      }
+    >
+      <div className="space-y-5">
+        <section>
+          <h4 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+            Dados básicos
+          </h4>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <div className="text-[11px] text-muted-foreground">
+                Cargo atual
+              </div>
+              <div>{candidato.cargo}</div>
+            </div>
+            <div>
+              <div className="text-[11px] text-muted-foreground">Cidade/UF</div>
+              <div>São Paulo / SP</div>
+            </div>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground italic">
+            <Lock className="h-3 w-3 inline mr-1" />
+            Contato direto bloqueado — fale com sua consultora Azumi.
+          </p>
+        </section>
+
+        <section>
+          <h4 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+            Resumo profissional
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            {relatorio?.resumo ?? candidato.parecer}
+          </p>
+        </section>
+
+        <section>
+          <h4 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+            DISC
+          </h4>
+          <DiscBars values={candidato.disc} />
+          {relatorio?.discResumo && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {relatorio.discResumo}
+            </p>
+          )}
+        </section>
+
+        {parecerExistente && (
+          <section className="bg-background/40 border border-border rounded-xl p-4">
+            <h4 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+              Seu parecer registrado
+            </h4>
+            <ResumoParecer parecer={parecerExistente} />
+          </section>
+        )}
+      </div>
+    </ModalShell>
+  );
+}
+
+function ResumoParecer({ parecer }: { parecer: ParecerCliente }) {
+  return (
+    <div className="space-y-2 text-sm">
+      <div className="flex items-center gap-2">
+        <StatusPillParecer
+          decisao={parecer.decisao}
+          compareceu={parecer.compareceu}
+        />
+        <span className="text-[11px] text-muted-foreground">
+          {new Date(parecer.criadoEm).toLocaleString("pt-BR")}
+        </span>
+      </div>
+      {!parecer.compareceu && (
+        <div className="text-xs text-muted-foreground">
+          {parecer.remarcar
+            ? "Cliente solicitou remarcação."
+            : "Cliente não solicitou remarcação."}
+          {parecer.justificativaNaoCompareceu && (
+            <div className="mt-1 italic">
+              "{parecer.justificativaNaoCompareceu}"
+            </div>
+          )}
+        </div>
+      )}
+      {parecer.compareceu && (
+        <>
+          {parecer.pontosPositivos && (
+            <div>
+              <div className="text-[11px] text-muted-foreground">
+                Pontos positivos
+              </div>
+              <div className="text-xs">{parecer.pontosPositivos}</div>
+            </div>
+          )}
+          {parecer.pontosAtencao && (
+            <div>
+              <div className="text-[11px] text-muted-foreground">
+                Pontos de atenção
+              </div>
+              <div className="text-xs">{parecer.pontosAtencao}</div>
+            </div>
+          )}
+          {parecer.proximaFasePlanejada && (
+            <div>
+              <div className="text-[11px] text-muted-foreground">
+                Próxima fase planejada
+              </div>
+              <div className="text-xs">{parecer.proximaFasePlanejada}</div>
+            </div>
+          )}
+          {parecer.decisao === "reprovar" && parecer.motivoReprovacao && (
+            <div>
+              <div className="text-[11px] text-muted-foreground">
+                Motivo da reprovação
+              </div>
+              <div className="text-xs">{parecer.motivoReprovacao}</div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Visualização de relatório (modo leitura)
+// ────────────────────────────────────────────────────────────────────
+
+function RelatorioVisualizacaoModal({
+  candidatoId,
+  onClose,
+}: {
+  candidatoId: string;
+  onClose: () => void;
+}) {
+  const cand = candidatos.find((c) => c.id === candidatoId);
+  const relatorio = getRelatorioEnviado(candidatoId);
+
+  return (
+    <ModalShell
+      title="Relatório do candidato"
+      subtitle={cand?.nome}
+      onClose={onClose}
+      maxWidth="max-w-2xl"
+      footer={
+        <button
+          onClick={onClose}
+          className="h-9 px-4 rounded-lg border border-border text-sm font-medium hover:bg-secondary"
+        >
+          Fechar
+        </button>
+      }
+    >
+      {!relatorio ? (
+        <p className="text-sm text-muted-foreground">
+          Relatório indisponível.
+        </p>
+      ) : (
+        <div className="space-y-5">
+          <section>
+            <h4 className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+              Síntese de carreira
+            </h4>
+            <p className="text-sm">{relatorio.resumo}</p>
+          </section>
+          <section>
+            <h4 className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+              Perfil DISC
+            </h4>
+            {cand && <DiscBars values={cand.disc} />}
+            <p className="mt-2 text-sm text-muted-foreground">
+              {relatorio.discResumo}
+            </p>
+          </section>
+          {relatorio.fasePlanejada && (
+            <section>
+              <h4 className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                Próxima fase prevista pela Azumi
+              </h4>
+              <p className="text-sm">{relatorio.fasePlanejada}</p>
+            </section>
+          )}
+          <p className="text-[11px] text-muted-foreground italic">
+            Enviado em {new Date(relatorio.enviadoEm).toLocaleString("pt-BR")}
+          </p>
+        </div>
+      )}
+    </ModalShell>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Modal de parecer pós-entrevista
+// ────────────────────────────────────────────────────────────────────
+
+function ParecerEntrevistaModal({
+  candidatoId,
+  vagaId,
+  onClose,
+  onSaved,
+}: {
+  candidatoId: string;
+  vagaId: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const cand = candidatos.find((c) => c.id === candidatoId);
+
+  const [compareceu, setCompareceu] = useState<"sim" | "nao" | "">("");
+  const [remarcar, setRemarcar] = useState<"sim" | "nao" | "">("");
+  const [justNaoCompareceu, setJustNaoCompareceu] = useState("");
+  const [pontosPositivos, setPontosPositivos] = useState("");
+  const [pontosAtencao, setPontosAtencao] = useState("");
+  const [proximaFase, setProximaFase] = useState("");
+  const [decisao, setDecisao] = useState<DecisaoCliente | "">("");
+  const [motivoReprovacao, setMotivoReprovacao] = useState("");
+
+  // Step de confirmação para "Não compareceu + Não remarcar"
+  const [confirmandoDesclassif, setConfirmandoDesclassif] = useState(false);
+
+  const podeSalvar = useMemo(() => {
+    if (compareceu === "") return false;
+    if (compareceu === "nao") {
+      return remarcar !== "";
+    }
+    if (compareceu === "sim") {
+      if (decisao === "") return false;
+      if (decisao === "reprovar" && !motivoReprovacao.trim()) return false;
+      return true;
+    }
+    return false;
+  }, [compareceu, remarcar, decisao, motivoReprovacao]);
+
+  function persistir() {
+    const parecer: ParecerCliente = {
+      candidatoId,
+      vagaId,
+      compareceu: compareceu === "sim",
+      ...(compareceu === "nao"
+        ? {
+            remarcar: remarcar === "sim",
+            justificativaNaoCompareceu: justNaoCompareceu.trim() || undefined,
+          }
+        : {
+            pontosPositivos: pontosPositivos.trim() || undefined,
+            pontosAtencao: pontosAtencao.trim() || undefined,
+            proximaFasePlanejada: proximaFase.trim() || undefined,
+            decisao: (decisao || undefined) as DecisaoCliente | undefined,
+            motivoReprovacao:
+              decisao === "reprovar" ? motivoReprovacao.trim() : undefined,
+          }),
+      criadoEm: new Date().toISOString(),
+    };
+    salvarParecerCliente(parecer);
+
+    if (compareceu === "nao" && remarcar === "sim") {
+      toast.success("Solicitação de remarcação enviada à consultora.");
+    } else if (compareceu === "nao") {
+      toast.warning("Candidato marcado como não compareceu.");
+    } else {
+      toast.success("Parecer registrado com sucesso.");
+    }
+    onSaved();
+  }
+
+  function handleSalvar() {
+    if (!podeSalvar) return;
+    if (compareceu === "nao" && remarcar === "nao" && !confirmandoDesclassif) {
+      setConfirmandoDesclassif(true);
+      return;
+    }
+    persistir();
+  }
+
+  return (
+    <ModalShell
+      title="Parecer do cliente sobre o candidato"
+      subtitle={`Preencha após a entrevista para registrar sua avaliação${
+        cand ? ` — ${cand.nome}` : ""
+      }.`}
+      onClose={onClose}
+      maxWidth="max-w-2xl"
+      footer={
+        <>
+          <button
+            onClick={onClose}
+            className="h-9 px-4 rounded-lg border border-border text-sm font-medium hover:bg-secondary"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSalvar}
+            disabled={!podeSalvar}
+            className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {confirmandoDesclassif
+              ? "Confirmar desclassificação"
+              : "Salvar parecer"}
+          </button>
+        </>
+      }
+    >
+      {confirmandoDesclassif ? (
+        <div className="space-y-3">
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <div className="font-medium text-destructive">
+                Confirmar desclassificação?
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                O candidato será marcado como{" "}
+                <strong>"Desclassificado — não compareceu"</strong> sem
+                possibilidade de remarcação. Essa ação será registrada para a
+                consultora.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setConfirmandoDesclassif(false)}
+            className="text-xs text-primary hover:underline"
+          >
+            ← Voltar e revisar
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {/* 1. Compareceu? */}
+          <Field label="Candidato compareceu à entrevista?" required>
+            <RadioRow
+              name="compareceu"
+              value={compareceu}
+              onChange={(v) => setCompareceu(v as "sim" | "nao")}
+              options={[
+                { value: "sim", label: "Sim" },
+                { value: "nao", label: "Não" },
+              ]}
+            />
+          </Field>
+
+          {/* 2. Não compareceu */}
+          {compareceu === "nao" && (
+            <>
+              <Field label="Deseja remarcar a entrevista?" required>
+                <RadioRow
+                  name="remarcar"
+                  value={remarcar}
+                  onChange={(v) => setRemarcar(v as "sim" | "nao")}
+                  options={[
+                    { value: "sim", label: "Sim" },
+                    { value: "nao", label: "Não" },
+                  ]}
+                />
+              </Field>
+              <Field label="Justificativa do não comparecimento">
+                <textarea
+                  value={justNaoCompareceu}
+                  onChange={(e) => setJustNaoCompareceu(e.target.value)}
+                  rows={3}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  placeholder="Ex.: avisou em cima da hora, sem retorno…"
+                />
+              </Field>
+            </>
+          )}
+
+          {/* 3. Compareceu — bloco principal */}
+          {compareceu === "sim" && (
+            <>
+              <Field label="Pontos positivos">
+                <textarea
+                  value={pontosPositivos}
+                  onChange={(e) => setPontosPositivos(e.target.value)}
+                  rows={3}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  placeholder="O que mais gostou no candidato?"
+                />
+              </Field>
+              <Field label="Pontos de atenção / negativos">
+                <textarea
+                  value={pontosAtencao}
+                  onChange={(e) => setPontosAtencao(e.target.value)}
+                  rows={3}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  placeholder="Lacunas, dúvidas, pontos a aprofundar…"
+                />
+              </Field>
+              <Field label="Próxima fase planejada">
+                <input
+                  value={proximaFase}
+                  onChange={(e) => setProximaFase(e.target.value)}
+                  className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  placeholder="Ex.: Segunda entrevista com diretoria, proposta…"
+                />
+              </Field>
+              <Field label="Decisão do cliente" required>
+                <RadioRow
+                  name="decisao"
+                  value={decisao}
+                  onChange={(v) => setDecisao(v as DecisaoCliente)}
+                  options={[
+                    { value: "avancar", label: "Avançar para próxima fase" },
+                    { value: "standby", label: "Stand by" },
+                    { value: "reprovar", label: "Reprovar" },
+                  ]}
+                  vertical
+                />
+              </Field>
+              {decisao === "reprovar" && (
+                <Field label="Motivo da reprovação" required>
+                  <textarea
+                    value={motivoReprovacao}
+                    onChange={(e) => setMotivoReprovacao(e.target.value)}
+                    rows={3}
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    placeholder="Descreva o motivo principal da reprovação…"
+                  />
+                </Field>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </ModalShell>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Modal especial — 3 perfis reprovados na 1ª leva
+// ────────────────────────────────────────────────────────────────────
+
+function Feedback1aLevaModal({
+  vagaId,
+  onClose,
+  onSaved,
+}: {
+  vagaId: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [motivo, setMotivo] = useState("");
+  const [direcionamentos, setDirecionamentos] = useState("");
+  const podeEnviar = motivo.trim().length > 0;
+
+  function handleConfirmar() {
+    if (!podeEnviar) return;
+    salvarFeedback1aLeva({
+      vagaId,
+      motivoPrincipal: motivo.trim(),
+      direcionamentos: direcionamentos.trim(),
+      criadoEm: new Date().toISOString(),
+    });
+    toast.success("Feedback enviado à Azumi.", {
+      description: "Sua consultora preparará a próxima leva de perfis.",
+    });
+    onSaved();
+  }
+
+  return (
+    <ModalShell
+      title="Nenhum candidato aprovado até o momento"
+      subtitle="Vamos ajustar o direcionamento da próxima leva."
+      onClose={onClose}
+      maxWidth="max-w-2xl"
+      footer={
+        <>
+          <button
+            onClick={onClose}
+            className="h-9 px-4 rounded-lg border border-border text-sm font-medium hover:bg-secondary"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleConfirmar}
+            disabled={!podeEnviar}
+            className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Confirmar e enviar à Azumi
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning/90 space-y-2">
+          <p>
+            Que pena que não aprovamos nenhum candidato desta primeira leva.
+            Por favor, nos conte o motivo principal da desclassificação e novos
+            direcionamentos para ajustarmos o perfil.
+          </p>
+          <p>
+            Enviaremos, conforme nossa política, mais três perfis. Caso nenhum
+            dos seis perfis (3 iniciais + 3 adicionais) seja aprovado e não
+            haja reaproveitamento de candidatos, o processo será encerrado
+            automaticamente.
+          </p>
+        </div>
+
+        <Field
+          label="Principal motivo da não aprovação dos 3 perfis"
+          required
+        >
+          <textarea
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            rows={4}
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            placeholder="Ex.: senioridade técnica abaixo do esperado, fit cultural baixo…"
+          />
+        </Field>
+
+        <Field label="Direcionamentos adicionais para ajustar o perfil desejado">
+          <textarea
+            value={direcionamentos}
+            onChange={(e) => setDirecionamentos(e.target.value)}
+            rows={4}
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            placeholder="Ex.: priorizar candidatos com vivência em fintech, faixa salarial flexível…"
+          />
+        </Field>
+      </div>
+    </ModalShell>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Pequenos blocos de form
+// ────────────────────────────────────────────────────────────────────
+
+function Field({
+  label,
+  required,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium flex items-center gap-1">
+        {label}
+        {required && <span className="text-destructive">*</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function RadioRow({
+  name,
+  value,
+  onChange,
+  options,
+  vertical,
+}: {
+  name: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  vertical?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex gap-2",
+        vertical ? "flex-col" : "flex-row flex-wrap"
+      )}
+    >
+      {options.map((opt) => {
+        const checked = value === opt.value;
+        return (
+          <label
+            key={opt.value}
+            className={cn(
+              "inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer",
+              checked
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border hover:bg-secondary"
+            )}
+          >
+            <input
+              type="radio"
+              name={name}
+              value={opt.value}
+              checked={checked}
+              onChange={() => onChange(opt.value)}
+              className="sr-only"
+            />
+            <span className="h-3.5 w-3.5 rounded-full border border-current flex items-center justify-center">
+              {checked && (
+                <span className="h-1.5 w-1.5 rounded-full bg-current" />
+              )}
+            </span>
+            {opt.label}
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+// Suprime warning de import não usado quando módulo é tree-shaken
+void ClipboardList;
