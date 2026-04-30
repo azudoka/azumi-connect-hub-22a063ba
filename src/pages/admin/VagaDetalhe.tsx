@@ -2691,10 +2691,14 @@ function CandidatoDetailSheet({
 
   const etapaPodeAgendar = etapaAtual === "Entrevista" || etapaAtual === "Quest/Entrevista";
   const ultimasMensagens = mensagensVaga.slice(-2);
-  const questsDoCandidato = questionariosVaga.map((q) => ({
-    ...q,
-    statusCand: q.candidatosRespostas[cand.id] ?? "nao_associado",
-  }));
+  const questsDoCandidato = questionariosVaga.map((q) => {
+    const resp = q.respostasPorCandidato[cand.id];
+    return {
+      ...q,
+      resposta: resp,
+      statusCand: resp?.status ?? "nao_associado" as const,
+    };
+  });
 
   // Timeline simulada por etapa
   const ETAPAS_TL = ["Triagem", "Quest/Entrevista", "Entrevista", "Perfis enviados", "Decisão"];
