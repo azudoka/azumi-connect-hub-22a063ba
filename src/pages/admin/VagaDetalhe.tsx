@@ -1403,6 +1403,25 @@ export default function VagaDetalheAdmin() {
           </ModalShell>
         );
       })()}
+
+      {/* ── Ficha completa do candidato (painel lateral) ─────────── */}
+      <CandidatoDetailSheet
+        open={!!fichaCandidatoId}
+        candidato={candidatosVaga.find((c) => c.id === fichaCandidatoId) ?? null}
+        candidatoExtra={candidatosExtras.find((c) => c.id === fichaCandidatoId) ?? null}
+        tituloVaga={vaga.titulo}
+        etapaAtual={fichaCandidatoId ? colunasEstado[fichaCandidatoId] : undefined}
+        eventos={eventos.filter((e) => e.candidatoId === fichaCandidatoId)}
+        declinio={fichaCandidatoId ? declinios[fichaCandidatoId] : undefined}
+        questionariosVaga={questionariosVaga}
+        mensagensVaga={mensagens}
+        onClose={() => setFichaCandidatoId(null)}
+        onSolicitarDisc={(id) => setDiscWhatsOpen(id)}
+        onVerResumo={(id) => setResumoOpen(id)}
+        onAssociarQuestionario={(id) => setAssociarQuestOpen(id)}
+        onDeclinar={(id) => setDeclinarOpen(id)}
+        onAgendar={(id) => setAgendarOpen(id)}
+      />
     </div>
   );
 }
