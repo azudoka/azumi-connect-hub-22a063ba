@@ -3292,7 +3292,7 @@ function CandidatoDetailSheet({
     discStatus: "nao_solicitado" as const,
   };
 
-  const etapaPodeAgendar = etapaAtual === "Entrevista" || etapaAtual === "Quest/Entrevista";
+  const etapaPodeAgendar = etapaAtual === "Entrevista Azumi" || etapaAtual === "Entrevista gestor" || etapaAtual === "Quest/Entrevista";
   const ultimasMensagens = mensagensVaga.slice(-2);
   const questsDoCandidato = questionariosVaga.map((q) => {
     const resp = q.respostasPorCandidato[cand.id];
