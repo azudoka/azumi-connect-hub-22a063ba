@@ -51,6 +51,7 @@ import ClienteDashboard from "./pages/cliente/ClienteDashboard";
 import ClienteGestaoContaPage from "./pages/cliente/ClienteGestaoContaPage";
 import ClienteHubIndisponivelPage from "./pages/cliente/ClienteHubIndisponivelPage";
 import VagaDetalheCliente from "./pages/cliente/VagaDetalheCliente";
+import ConfirmarEntrevistaPage from "./pages/public/ConfirmarEntrevistaPage";
 
 import LiderPainelPage from "./pages/hub/lider/LiderPainelPage";
 import MeuTimePage from "./pages/hub/lider/MeuTimePage";
