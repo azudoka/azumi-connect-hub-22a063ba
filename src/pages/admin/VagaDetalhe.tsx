@@ -215,6 +215,7 @@ export default function VagaDetalheAdmin() {
   const [associarQuestOpen, setAssociarQuestOpen] = useState<string | null>(null);
   const [declinarOpen, setDeclinarOpen] = useState<string | null>(null);
   const [agendarOpen, setAgendarOpen] = useState<string | null>(null);
+  const [fichaCandidatoId, setFichaCandidatoId] = useState<string | null>(null);
 
   // Link público da vaga (mock)
   const linkPublico = `https://azumi.jobs/vaga/${vaga.id}`;
