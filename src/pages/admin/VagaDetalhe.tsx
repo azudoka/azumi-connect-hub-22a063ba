@@ -483,12 +483,54 @@ export default function VagaDetalheAdmin() {
 
       {tab === "candidatos" && (
         <div>
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
             <button className="h-8 px-3 rounded-lg border border-border text-xs flex items-center gap-1.5 hover:bg-secondary">
               <Filter className="h-3.5 w-3.5" /> Filtrar
             </button>
+            <button
+              onClick={() => setNovoCandOpen(true)}
+              className="h-8 px-3 rounded-lg border border-border text-xs flex items-center gap-1.5 hover:bg-secondary"
+            >
+              <UserPlus className="h-3.5 w-3.5" /> Adicionar candidato
+            </button>
+            <button
+              onClick={() => setConvidarOpen(true)}
+              className="h-8 px-3 rounded-lg border border-border text-xs flex items-center gap-1.5 hover:bg-secondary"
+            >
+              <Link2 className="h-3.5 w-3.5" /> Convidar candidato
+            </button>
+            <button
+              onClick={() => setNovoQuestOpen(true)}
+              className="h-8 px-3 rounded-lg border border-border text-xs flex items-center gap-1.5 hover:bg-secondary"
+            >
+              <FileQuestion className="h-3.5 w-3.5" /> Criar questionário
+            </button>
             <span className="text-xs text-muted-foreground ml-auto">Arraste candidatos entre etapas</span>
           </div>
+
+          {/* Candidatos adicionados manualmente / convidados (mock — não entram no kanban ainda) */}
+          {candidatosExtras.length > 0 && (
+            <div className="mb-4 rounded-lg border border-dashed border-border bg-card p-3">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                Adicionados recentemente ({candidatosExtras.length})
+              </div>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {candidatosExtras.map((c) => (
+                  <li key={c.id} className="border border-border rounded-md p-2 flex items-center gap-2 bg-background/40">
+                    <div className="h-7 w-7 rounded-full bg-gradient-brand flex items-center justify-center text-[10px] font-semibold text-white">
+                      {c.nome.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-medium truncate">{c.nome}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">
+                        {c.cargo} · {c.origem === "manual" ? "Adicionado manualmente" : c.origem === "convite" ? "Convidado" : "Site"}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
             {colunas.map((col) => {
               const candidatosNaColuna = candidatosVaga.filter(
