@@ -1752,21 +1752,25 @@ function ModalShell({
   title,
   children,
   onClose,
+  size = "md",
 }: {
   title: string;
   children: React.ReactNode;
   onClose: () => void;
+  size?: "md" | "lg" | "xl";
 }) {
+  useScrollLock(true);
+  const maxW = size === "xl" ? "max-w-3xl" : size === "lg" ? "max-w-xl" : "max-w-md";
   return (
     <div className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
-        <div className="flex items-center justify-between mb-4">
+      <div className={cn("bg-card border border-border rounded-2xl shadow-elevated w-full max-h-[92vh] flex flex-col animate-scale-in overflow-hidden", maxW)}>
+        <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-border">
           <h3 className="font-display text-lg font-semibold">{title}</h3>
           <button onClick={onClose} className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-secondary">
             <XIcon className="h-4 w-4" />
           </button>
         </div>
-        {children}
+        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
       </div>
     </div>
   );
