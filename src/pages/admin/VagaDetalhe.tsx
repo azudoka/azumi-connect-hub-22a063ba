@@ -2034,6 +2034,7 @@ export default function VagaDetalheAdmin() {
         relatorioStatus={fichaCandidatoId ? relatoriosPorCandidato[fichaCandidatoId]?.status : undefined}
         onEnviarWhatsQuestionario={(candidatoId, questionarioId) => setWhatsTemplateOpen({ candidatoId, questionarioId })}
         onSalvarAvaliacao={salvarAvaliacaoQuestionario}
+        onSimularResposta={simularRespostaQuestionario}
       />
 
       {/* ── Editor de relatório do candidato (modal grande) ─────── */}
