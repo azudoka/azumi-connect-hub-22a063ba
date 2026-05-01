@@ -4296,13 +4296,15 @@ function CampoTextarea({
 }
 
 function RelatorioPreview({
-  form, candidato, vagaTitulo, empresa, questoesMock,
+  form, candidato, vagaTitulo, empresa, questoesReais, algumRespondido, algumaAvaliacao,
 }: {
   form: RelatorioCandidato;
   candidato: CandidatoBase;
   vagaTitulo: string;
   empresa: string;
-  questoesMock: { id: string; pergunta: string; resposta: string }[];
+  questoesReais: { id: string; pergunta: string; resposta: string; notaSalva?: number; justificativaSalva?: string }[];
+  algumRespondido: boolean;
+  algumaAvaliacao: boolean;
 }) {
   return (
     <article className="mx-auto max-w-3xl bg-card border border-border rounded-lg p-8 shadow-sm">
