@@ -3335,6 +3335,7 @@ function CandidatoDetailSheet({
   relatorioStatus?: "rascunho" | "enviado";
   onEnviarWhatsQuestionario?: (candidatoId: string, questionarioId: string) => void;
   onSalvarAvaliacao?: (questionarioId: string, candidatoId: string, questoes: Record<string, AvaliacaoQuestao>, salvoComo: "rascunho" | "definitivo") => void;
+  onSimularResposta?: (candidatoId: string, questionarioId: string) => void;
 }) {
   useScrollLock(open);
   const { id: vagaIdParam } = useParams();
