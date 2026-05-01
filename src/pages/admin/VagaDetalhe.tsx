@@ -4132,11 +4132,20 @@ function RelatorioCandidatoModal({
               </SecaoEditor>
 
               <SecaoEditor titulo="Questionário — respostas e notas">
-                {questoesMock.length === 0 ? (
-                  <div className="text-xs text-muted-foreground">Nenhum questionário associado a esta vaga.</div>
-                ) : (
+                {!algumRespondido ? (
+                  <div className="text-xs text-muted-foreground rounded-md border border-dashed border-border px-3 py-2">
+                    Questionário ainda não respondido por este candidato. Após responder
+                    (ou usar a simulação na ficha), as perguntas e respostas aparecem aqui.
+                  </div>
+                ) : !algumaAvaliacao ? (
+                  <div className="text-xs text-warning rounded-md border border-warning/30 bg-warning/10 px-3 py-2 mb-2">
+                    Questionário ainda não corrigido. Atribua as notas abaixo — ou
+                    corrija na aba <strong>Questionário</strong> da ficha do candidato.
+                  </div>
+                ) : null}
+                {algumRespondido && (
                   <ul className="space-y-3">
-                    {questoesMock.map((q) => {
+                    {questoesReais.map((q) => {
                       const nota = form.questoes[q.id]?.nota ?? 3;
                       const just = form.questoes[q.id]?.justificativa ?? "";
                       return (
