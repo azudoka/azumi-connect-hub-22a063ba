@@ -220,9 +220,9 @@ const AppRoutes = () => (
       <Route path="/hub/lider/comunicados" element={<Stub title="Comunicados para a equipe" />} />
     </Route>
 
-    {/* Hub Colaborador */}
+    {/* Hub Colaborador (cliente liberado em ambiente demo) */}
     <Route element={
-      <PrivateRoute allowed={["colaborador", "lider", "rh", "admin"]}>
+      <PrivateRoute allowed={["colaborador", "lider", "rh", "admin", "cliente"]}>
         <HubLayout profile="colaborador" />
       </PrivateRoute>
     }>
