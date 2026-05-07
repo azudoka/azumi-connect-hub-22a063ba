@@ -73,6 +73,7 @@ import SolicitacoesColabPage from "./pages/hub/colaborador/SolicitacoesColabPage
 import TermometroPage from "./pages/hub/colaborador/TermometroPage";
 import MuralPage from "./pages/hub/colaborador/MuralPage";
 import OnboardingColabPage from "./pages/hub/colaborador/OnboardingPage";
+import GuiasPage from "./pages/hub/colaborador/GuiasPage";
 import CeoDashboard from "./pages/hub/CeoDashboard";
 import HeadcountPage from "./pages/hub/ceo/HeadcountPage";
 import FinanceiroRHPage from "./pages/hub/ceo/FinanceiroRHPage";
