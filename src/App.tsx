@@ -50,6 +50,10 @@ import SolicitacoesClientePage from "./pages/SolicitacoesClientePage";
 import ClienteProjetosPage from "./pages/cliente/ClienteProjetosPage";
 import ClienteProjetoDetalhe from "./pages/cliente/ClienteProjetoDetalhe";
 import ClienteHorasPage from "./pages/cliente/ClienteHorasPage";
+import ClienteGuiaPage from "./pages/cliente/ClienteGuiaPage";
+import ClienteComunicadosPage from "./pages/cliente/ClienteComunicadosPage";
+import ClienteCalendarioPage from "./pages/cliente/ClienteCalendarioPage";
+import ClienteDocumentosPage from "./pages/cliente/ClienteDocumentosPage";
 
 import ClienteDashboard from "./pages/cliente/ClienteDashboard";
 import ClienteGestaoContaPage from "./pages/cliente/ClienteGestaoContaPage";
@@ -201,10 +205,10 @@ const AppRoutes = () => (
       <Route path="/cliente/atracao/:id" element={<VagaDetalheCliente />} />
       <Route path="/cliente/gestao-conta" element={<ClienteGestaoContaPage />} />
       <Route path="/cliente/hub-indisponivel" element={<ClienteHubIndisponivelPage />} />
-      <Route path="/cliente/comunicados" element={<Stub title="Comunicados recebidos" />} />
-      <Route path="/cliente/calendario" element={<Stub title="Calendário" />} />
-      <Route path="/cliente/documentos" element={<Stub title="Documentos da empresa" />} />
-      <Route path="/cliente/guia" element={<Stub title="Guia / FAQ" />} />
+      <Route path="/cliente/comunicados" element={<ClienteComunicadosPage />} />
+      <Route path="/cliente/calendario" element={<ClienteCalendarioPage />} />
+      <Route path="/cliente/documentos" element={<ClienteDocumentosPage />} />
+      <Route path="/cliente/guia" element={<ClienteGuiaPage />} />
     </Route>
 
     {/* Hub Líder */}
