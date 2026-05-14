@@ -247,6 +247,87 @@ export default function UsuariosPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!editarUsuario} onOpenChange={(o) => !o && setEditarUsuario(null)}>
+        <DialogContent className="sm:max-w-md rounded-xl">
+          <DialogHeader>
+            <DialogTitle>Editar role</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-md bg-[#034C8B] text-white flex items-center justify-center text-xs font-semibold">
+                {editarUsuario?.iniciais}
+              </div>
+              <div>
+                <p className="font-medium">{editarUsuario?.nome}</p>
+                <p className="text-xs text-muted-foreground">{editarUsuario?.email}</p>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Nova role</Label>
+              <Select
+                value={editarUsuario?.role}
+                onValueChange={(v) => {
+                  if (!editarUsuario) return;
+                  setUsuarios((prev) =>
+                    prev.map((u) =>
+                      u.id === editarUsuario.id ? { ...u, role: v as Role } : u
+                    )
+                  );
+                  toast.success(`Role de ${editarUsuario.nome} atualizada.`);
+                  setEditarUsuario(null);
+                }}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="consultor">Consultor</SelectItem>
+                  <SelectItem value="cliente_recorrente">Cliente Recorrente</SelectItem>
+                  <SelectItem value="cliente_avulso">Cliente Avulso</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditarUsuario(null)} className="rounded-[100px]">
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!desativarUsuario} onOpenChange={(o) => !o && setDesativarUsuario(null)}>
+        <DialogContent className="sm:max-w-md rounded-xl">
+          <DialogHeader>
+            <DialogTitle>Desativar usuário</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-2">
+            Tem certeza que deseja desativar <strong className="text-foreground">{desativarUsuario?.nome}</strong>?
+            O acesso será revogado imediatamente. Você poderá reativar depois.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDesativarUsuario(null)} className="rounded-[100px]">
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              className="rounded-[100px]"
+              onClick={() => {
+                if (!desativarUsuario) return;
+                setUsuarios((prev) =>
+                  prev.map((u) =>
+                    u.id === desativarUsuario.id ? { ...u, ativo: false } : u
+                  )
+                );
+                toast.warning(`${desativarUsuario.nome} foi desativado.`);
+                setDesativarUsuario(null);
+              }}
+            >
+              Desativar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
