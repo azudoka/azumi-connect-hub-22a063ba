@@ -182,16 +182,16 @@ export default function UsuariosPage() {
                   <div className="flex items-center justify-end gap-1">
                     <span className="text-xs text-muted-foreground mr-2">{u.ultimaAtividade}</span>
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
-                      <button className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title="Editar role">
+                      <button onClick={() => setEditarUsuario(u)} className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title="Editar role">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
-                      <button className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title="Reenviar convite">
+                      <button onClick={() => toast.info(`Convite reenviado para ${u.email}`)} className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title="Reenviar convite">
                         <Mail className="h-3.5 w-3.5" />
                       </button>
-                      <button className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive" title="Desativar">
+                      <button onClick={() => setDesativarUsuario(u)} className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive" title="Desativar">
                         <UserX className="h-3.5 w-3.5" />
                       </button>
-                      <button className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title="Mais">
+                      <button onClick={() => toast.info("Em breve")} className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title="Mais">
                         <MoreHorizontal className="h-3.5 w-3.5" />
                       </button>
                     </div>
