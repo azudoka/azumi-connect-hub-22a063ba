@@ -15,6 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 type Role = "admin" | "consultor" | "cliente_recorrente" | "cliente_avulso";
@@ -86,14 +87,17 @@ export default function UsuariosPage() {
   const [busca, setBusca] = useState("");
   const [filtroRole, setFiltroRole] = useState<Role | "all">("all");
   const [novoOpen, setNovoOpen] = useState(false);
+  const [usuarios, setUsuarios] = useState<Usuario[]>(MOCK);
+  const [editarUsuario, setEditarUsuario] = useState<Usuario | null>(null);
+  const [desativarUsuario, setDesativarUsuario] = useState<Usuario | null>(null);
 
   const lista = useMemo(() => {
-    return MOCK.filter((u) => {
+    return usuarios.filter((u) => {
       if (filtroRole !== "all" && u.role !== filtroRole) return false;
       if (busca && !`${u.nome} ${u.email} ${u.empresa}`.toLowerCase().includes(busca.toLowerCase())) return false;
       return true;
     });
-  }, [busca, filtroRole]);
+  }, [busca, filtroRole, usuarios]);
 
   return (
     <div className="space-y-6">
@@ -178,16 +182,16 @@ export default function UsuariosPage() {
                   <div className="flex items-center justify-end gap-1">
                     <span className="text-xs text-muted-foreground mr-2">{u.ultimaAtividade}</span>
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
-                      <button className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title="Editar role">
+                      <button onClick={() => setEditarUsuario(u)} className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title="Editar role">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
-                      <button className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title="Reenviar convite">
+                      <button onClick={() => toast.info(`Convite reenviado para ${u.email}`)} className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title="Reenviar convite">
                         <Mail className="h-3.5 w-3.5" />
                       </button>
-                      <button className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive" title="Desativar">
+                      <button onClick={() => setDesativarUsuario(u)} className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive" title="Desativar">
                         <UserX className="h-3.5 w-3.5" />
                       </button>
-                      <button className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title="Mais">
+                      <button onClick={() => toast.info("Em breve")} className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title="Mais">
                         <MoreHorizontal className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -240,6 +244,87 @@ export default function UsuariosPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setNovoOpen(false)} className="rounded-[100px]">Cancelar</Button>
             <Button onClick={() => setNovoOpen(false)} className="rounded-[100px] bg-[#3B82F6] hover:bg-[#3B82F6]/90 text-white">Criar usuário</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editarUsuario} onOpenChange={(o) => !o && setEditarUsuario(null)}>
+        <DialogContent className="sm:max-w-md rounded-xl">
+          <DialogHeader>
+            <DialogTitle>Editar role</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-md bg-[#034C8B] text-white flex items-center justify-center text-xs font-semibold">
+                {editarUsuario?.iniciais}
+              </div>
+              <div>
+                <p className="font-medium">{editarUsuario?.nome}</p>
+                <p className="text-xs text-muted-foreground">{editarUsuario?.email}</p>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Nova role</Label>
+              <Select
+                value={editarUsuario?.role}
+                onValueChange={(v) => {
+                  if (!editarUsuario) return;
+                  setUsuarios((prev) =>
+                    prev.map((u) =>
+                      u.id === editarUsuario.id ? { ...u, role: v as Role } : u
+                    )
+                  );
+                  toast.success(`Role de ${editarUsuario.nome} atualizada.`);
+                  setEditarUsuario(null);
+                }}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="consultor">Consultor</SelectItem>
+                  <SelectItem value="cliente_recorrente">Cliente Recorrente</SelectItem>
+                  <SelectItem value="cliente_avulso">Cliente Avulso</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditarUsuario(null)} className="rounded-[100px]">
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!desativarUsuario} onOpenChange={(o) => !o && setDesativarUsuario(null)}>
+        <DialogContent className="sm:max-w-md rounded-xl">
+          <DialogHeader>
+            <DialogTitle>Desativar usuário</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-2">
+            Tem certeza que deseja desativar <strong className="text-foreground">{desativarUsuario?.nome}</strong>?
+            O acesso será revogado imediatamente. Você poderá reativar depois.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDesativarUsuario(null)} className="rounded-[100px]">
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              className="rounded-[100px]"
+              onClick={() => {
+                if (!desativarUsuario) return;
+                setUsuarios((prev) =>
+                  prev.map((u) =>
+                    u.id === desativarUsuario.id ? { ...u, ativo: false } : u
+                  )
+                );
+                toast.warning(`${desativarUsuario.nome} foi desativado.`);
+                setDesativarUsuario(null);
+              }}
+            >
+              Desativar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
