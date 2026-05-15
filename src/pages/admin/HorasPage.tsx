@@ -1104,6 +1104,49 @@ export default function HorasPage() {
             </table>
           </div>
         )}
+
+        {interacoes.length > 0 && (
+          <div className="mt-4 border-t border-border pt-4">
+            <h4 className="text-xs font-medium uppercase tracking-wider text-muted-foreground px-4 mb-2">
+              Interações externas registradas
+            </h4>
+            <table className="w-full text-sm">
+              <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="text-left font-medium px-4 py-2">Data</th>
+                  <th className="text-left font-medium px-4 py-2">Canal</th>
+                  <th className="text-left font-medium px-4 py-2">Empresa</th>
+                  <th className="text-left font-medium px-4 py-2">Descrição</th>
+                  <th className="text-right font-medium px-4 py-2">Duração</th>
+                </tr>
+              </thead>
+              <tbody>
+                {interacoes.map((int) => (
+                  <tr key={int.id} className="border-t border-border hover:bg-secondary/20">
+                    <td className="px-4 py-2 font-data text-xs">
+                      {format(new Date(int.data), "dd/MM/yy", { locale: ptBR })}
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className="badge-pill bg-info/15 text-info border-info/30">
+                        {int.canal}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2">{int.empresaNome}</td>
+                    <td className="px-4 py-2 text-muted-foreground text-xs max-w-[200px] truncate">
+                      {int.descricao}
+                    </td>
+                    <td className="px-4 py-2 text-right font-data text-xs">
+                      {Math.floor(int.duracaoMin / 60) > 0
+                        ? `${Math.floor(int.duracaoMin / 60)}h `
+                        : ""}
+                      {int.duracaoMin % 60}min
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       {/* Dialog: bloqueio de segundo timer simultâneo */}
