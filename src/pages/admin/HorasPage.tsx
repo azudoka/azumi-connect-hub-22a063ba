@@ -5,7 +5,7 @@ import { ptBR } from "date-fns/locale";
 import {
   Clock, Timer as TimerIcon, PenSquare, Download, Play,
   CalendarIcon, ChevronDown, ChevronRight, AlertTriangle, Filter,
-  Briefcase,
+  Briefcase, MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -69,6 +69,21 @@ interface Lancamento {
   observacao?: string;     // detalhe extra (somente expandido)
   requerRevisao?: boolean;
   etapaVaga?: EtapaVaga;
+}
+
+type CanalInteracao = "WhatsApp" | "E-mail" | "Ligação" | "Visita presencial" | "Outro";
+
+interface Interacao {
+  id: string;
+  data: string;
+  canal: CanalInteracao;
+  empresaId: string;
+  empresaNome: string;
+  entregavel?: string;
+  duracaoMin: number;
+  descricao: string;
+  consultorId: string;
+  consultorNome: string;
 }
 
 // Projetos por empresa para o select dependente
