@@ -59,6 +59,13 @@ const STATUS_LABEL: Record<Status, string> = {
   aberta: "Aberta", andamento: "Em andamento", finalizada: "Finalizada", cancelada: "Cancelada",
 };
 
+const CONSULTORES_AZUMI = [
+  { id: "ab", nome: "Ana Beatriz" },
+  { id: "rm", nome: "Rafael Moura" },
+  { id: "ct", nome: "Camila Torres" },
+  { id: "da", nome: "Diego Alves" },
+];
+
 function StatusPill({ s }: { s: Status }) {
   const map: Record<Status, string> = {
     aberta:     "bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30",
@@ -149,6 +156,8 @@ function AdminView() {
   const [confirmAcao, setConfirmAcao] = useState<"finalizar" | "reabrir" | null>(null);
   const [notaOpen, setNotaOpen] = useState(false);
   const [notaTexto, setNotaTexto] = useState("");
+  const [encaminharOpen, setEncaminharOpen] = useState(false);
+  const [consultorDestino, setConsultorDestino] = useState("");
 
   const empresas = useMemo(() => Array.from(new Set(solicitacoes.map((s) => s.empresa))), [solicitacoes]);
   const tipos    = useMemo(() => Array.from(new Set(solicitacoes.map((s) => s.tipo))), [solicitacoes]);
@@ -432,7 +441,7 @@ function AdminView() {
                     <Button
                       variant="outline"
                       className="rounded-[100px]"
-                      onClick={() => toast.info("Encaminhar: em breve.")}
+                      onClick={() => { setConsultorDestino(""); setEncaminharOpen(true); }}
                     >
                       Encaminhar
                     </Button>
@@ -543,6 +552,64 @@ function AdminView() {
               }}
             >
               Salvar nota
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={encaminharOpen}
+        onOpenChange={(o) => { if (!o) setEncaminharOpen(false); }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Encaminhar solicitação</DialogTitle>
+            <DialogDescription>
+              Selecione o consultor que irá assumir esta solicitação.
+              O consultor atual será notificado.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {CONSULTORES_AZUMI.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setConsultorDestino(c.id)}
+                className={cn(
+                  "w-full text-left px-4 py-2.5 rounded-lg border text-sm transition-colors flex items-center gap-3",
+                  consultorDestino === c.id
+                    ? "border-primary bg-primary/10 text-primary font-medium"
+                    : "border-border hover:bg-secondary/50"
+                )}
+              >
+                <span className="h-8 w-8 rounded-full bg-gradient-brand text-white flex items-center justify-center text-xs font-semibold">
+                  {c.nome.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                </span>
+                {c.nome}
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEncaminharOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={!consultorDestino}
+              onClick={() => {
+                if (!selected || !consultorDestino) return;
+                const consultor = CONSULTORES_AZUMI.find(
+                  (c) => c.id === consultorDestino
+                );
+                atualizarSolicitacao(selected.id, {
+                  consultor: consultor?.nome ?? selected.consultor,
+                  status: "andamento",
+                });
+                toast.success(`Solicitação encaminhada para ${consultor?.nome}.`);
+                setEncaminharOpen(false);
+                setConsultorDestino("");
+              }}
+            >
+              Confirmar encaminhamento
             </Button>
           </DialogFooter>
         </DialogContent>
