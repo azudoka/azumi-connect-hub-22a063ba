@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -14,6 +14,10 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
+} from "@/components/ui/sheet";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -73,6 +77,17 @@ const CONSULTORES_AZUMI = [
   { id: "ct", nome: "Camila Torres" },
   { id: "da", nome: "Diego Alves" },
 ];
+
+const TIPOS_SOL = {
+  duvida: "Dúvida",
+  reuniao: "Solicitação de reunião",
+  suporte: "Suporte técnico",
+  ajuste_projeto: "Ajuste em projeto/entregável",
+  novo_usuario: "Solicitar novo usuário",
+  outro: "Outro",
+} as const;
+
+const URGENCIA_LABEL = { alta: "Alta", media: "Média", baixa: "Baixa" } as const;
 
 function StatusPill({ s }: { s: Status }) {
   const map: Record<Status, string> = {
@@ -269,7 +284,7 @@ function MensagemChat({
 }
 
 function AdminView() {
-  const navigate = useNavigate();
+  // navigate removido — agora abre Sheet local
   const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>(MOCK);
   const [busca, setBusca]       = useState("");
   const [empresa, setEmpresa]   = useState<string>("all");
@@ -285,6 +300,13 @@ function AdminView() {
   const [notaTexto, setNotaTexto] = useState("");
   const [encaminharOpen, setEncaminharOpen] = useState(false);
   const [consultorDestino, setConsultorDestino] = useState("");
+  const [novaOpen, setNovaOpen] = useState(false);
+  const [nTipo, setNTipo] = useState<keyof typeof TIPOS_SOL>("duvida");
+  const [nTitulo, setNTitulo] = useState("");
+  const [nUrgencia, setNUrgencia] = useState<"alta" | "media" | "baixa">("media");
+  const [nDescricao, setNDescricao] = useState("");
+  const [nEmpresa, setNEmpresa] = useState("");
+  const [nConsultor, setNConsultor] = useState("");
 
   const empresas = useMemo(() => Array.from(new Set(solicitacoes.map((s) => s.empresa))), [solicitacoes]);
   const tipos    = useMemo(() => Array.from(new Set(solicitacoes.map((s) => s.tipo))), [solicitacoes]);
@@ -344,7 +366,7 @@ function AdminView() {
         subtitle="Central de solicitações"
         actions={
           <Button
-            onClick={() => navigate("/app/atracao?new=1")}
+            onClick={() => setNovaOpen(true)}
             className="rounded-[100px] bg-[#3B82F6] hover:bg-[#3B82F6]/90 text-white gap-1.5"
           >
             <Plus className="h-4 w-4" /> Nova solicitação
@@ -435,7 +457,14 @@ function AdminView() {
                 <TableCell><UrgPill u={s.urgencia} /></TableCell>
                 <TableCell><StatusPill s={s.status} /></TableCell>
                 <TableCell className="text-muted-foreground text-sm">{s.data}</TableCell>
-                <TableCell>{s.consultor}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded-md bg-gradient-brand flex items-center justify-center text-[9px] font-semibold text-white shrink-0">
+                      {s.consultor.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                    </div>
+                    <span className="text-sm">{s.consultor}</span>
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
             {lista.length === 0 && (
@@ -723,6 +752,136 @@ function AdminView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Sheet open={novaOpen} onOpenChange={(o) => {
+        setNovaOpen(o);
+        if (!o) {
+          setNTipo("duvida"); setNTitulo(""); setNUrgencia("media");
+          setNDescricao(""); setNEmpresa(""); setNConsultor("");
+        }
+      }}>
+        <SheetContent className="sm:max-w-md w-full overflow-y-auto flex flex-col">
+          <SheetHeader>
+            <SheetTitle>Nova solicitação</SheetTitle>
+            <SheetDescription>
+              Registre uma demanda recebida pelo cliente.
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="flex-1 space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Empresa *</Label>
+              <Select value={nEmpresa} onValueChange={setNEmpresa}>
+                <SelectTrigger><SelectValue placeholder="Selecione a empresa" /></SelectTrigger>
+                <SelectContent>
+                  {empresas.map((e) => (
+                    <SelectItem key={e} value={e}>{e}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tipo *</Label>
+              <Select value={nTipo} onValueChange={(v) => setNTipo(v as keyof typeof TIPOS_SOL)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(TIPOS_SOL).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Título *</Label>
+              <Input
+                value={nTitulo}
+                onChange={(e) => setNTitulo(e.target.value)}
+                placeholder="Resumo da solicitação"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Urgência</Label>
+              <div className="flex gap-2">
+                {(["alta", "media", "baixa"] as const).map((u) => (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => setNUrgencia(u)}
+                    className={cn(
+                      "flex-1 rounded-full border px-3 py-2 text-xs transition-colors",
+                      nUrgencia === u
+                        ? "border-primary bg-primary/10 font-medium"
+                        : "border-border hover:bg-muted/40"
+                    )}
+                  >
+                    {URGENCIA_LABEL[u]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Consultor responsável</Label>
+              <Select value={nConsultor} onValueChange={setNConsultor}>
+                <SelectTrigger><SelectValue placeholder="Selecione um consultor" /></SelectTrigger>
+                <SelectContent>
+                  {CONSULTORES_AZUMI.map((c) => (
+                    <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Descrição *</Label>
+              <Textarea
+                rows={4}
+                className="resize-none"
+                value={nDescricao}
+                onChange={(e) => setNDescricao(e.target.value)}
+                placeholder="Descreva a solicitação com detalhes."
+              />
+            </div>
+          </div>
+
+          <SheetFooter className="border-t pt-4 flex-row gap-2 sm:justify-end">
+            <Button variant="outline" className="rounded-full"
+              onClick={() => setNovaOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="rounded-full"
+              disabled={!nEmpresa || !nTitulo.trim() || !nDescricao.trim()}
+              onClick={() => {
+                const ano = new Date().getFullYear();
+                const suf = String(Math.floor(Math.random() * 9000) + 1000);
+                const nova: Solicitacao = {
+                  id: `adm-${Date.now()}`,
+                  protocolo: `SOL-${ano}-${suf}`,
+                  empresa: nEmpresa,
+                  tipo: TIPOS_SOL[nTipo],
+                  status: "aberta",
+                  urgencia: nUrgencia,
+                  data: format(new Date(), "dd/MM/yyyy"),
+                  consultor: nConsultor || "—",
+                  titulo: nTitulo.trim(),
+                  historico: [],
+                };
+                setSolicitacoes((prev) => [nova, ...prev]);
+                toast.success(`Solicitação criada — ${nova.protocolo}`);
+                setNovaOpen(false);
+                setNTipo("duvida"); setNTitulo(""); setNUrgencia("media");
+                setNDescricao(""); setNEmpresa(""); setNConsultor("");
+              }}
+            >
+              Criar solicitação
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
