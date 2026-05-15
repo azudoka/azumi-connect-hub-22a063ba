@@ -545,6 +545,19 @@ export default function SolicitacoesClientePage() {
                           Ver conversa completa
                           <ArrowRight className="h-3.5 w-3.5" />
                         </Button>
+                        {(s.status === "aberta" || s.status === "aguardando_cliente") && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="rounded-full text-destructive hover:text-destructive hover:bg-destructive/10 ml-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCancelarSol(s);
+                            }}
+                          >
+                            Cancelar solicitação
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
