@@ -668,6 +668,131 @@ export default function SolicitacoesClientePage() {
           </form>
         </SheetContent>
       </Sheet>
+
+      {/* Sheet — Conversa completa */}
+      <Sheet
+        open={!!conversaAberta}
+        onOpenChange={(o) => !o && setConversaAberta(null)}
+      >
+        <SheetContent className="sm:max-w-md w-full flex flex-col">
+          <SheetHeader>
+            <SheetTitle>{conversaAberta?.titulo}</SheetTitle>
+            <SheetDescription>
+              {conversaAberta?.codigo} · {conversaAberta?.consultor ?? "Azumi RH"}
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="flex-1 overflow-y-auto space-y-2 py-4 pr-1">
+            {(conversaAberta?.historico ?? []).length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                Nenhuma mensagem ainda.
+              </p>
+            )}
+            {(conversaAberta?.historico ?? []).map((m, i) => {
+              const isMe = m.autor === "Você";
+              return (
+                <div key={i}
+                  className={cn("flex gap-2 items-end",
+                    isMe && "flex-row-reverse")}>
+                  {!isMe && (
+                    <div className="h-7 w-7 rounded-md bg-gradient-brand flex items-center justify-center text-[10px] font-semibold text-white shrink-0">
+                      {m.autor.charAt(0)}
+                    </div>
+                  )}
+                  <div className={cn(
+                    "max-w-[78%] rounded-2xl px-3 py-2 text-sm shadow-sm",
+                    isMe
+                      ? "bg-primary text-primary-foreground rounded-br-sm"
+                      : "bg-secondary text-foreground rounded-bl-sm border border-border"
+                  )}>
+                    {!isMe && (
+                      <div className="text-[10px] font-semibold mb-0.5 text-primary">
+                        {m.autor}
+                      </div>
+                    )}
+                    <p className="break-words">{m.texto}</p>
+                    <div className={cn(
+                      "text-[10px] font-data mt-1 text-right",
+                      isMe ? "text-primary-foreground/70" : "text-muted-foreground"
+                    )}>
+                      {format(new Date(m.data), "dd/MM HH:mm", { locale: ptBR })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {conversaAberta &&
+            conversaAberta.status !== "finalizada" &&
+            conversaAberta.status !== "cancelada" && (
+              <ClienteRespostaInput
+                onEnviar={(texto) => {
+                  const nova: MensagemHistorico = {
+                    autor: "Você",
+                    texto,
+                    data: new Date().toISOString(),
+                  };
+                  setSolicitacoes((prev) =>
+                    prev.map((s) =>
+                      s.id === conversaAberta.id
+                        ? { ...s, historico: [...(s.historico ?? []), nova] }
+                        : s
+                    )
+                  );
+                  setConversaAberta((prev) =>
+                    prev ? {
+                      ...prev,
+                      historico: [...(prev.historico ?? []), nova],
+                    } : prev
+                  );
+                  toast.success("Mensagem enviada.");
+                }}
+              />
+            )}
+        </SheetContent>
+      </Sheet>
     </>
+  );
+}
+
+function ClienteRespostaInput({
+  onEnviar,
+}: {
+  onEnviar: (texto: string) => void;
+}) {
+  const [texto, setTexto] = useState("");
+  return (
+    <div className="flex gap-2 items-end border-t border-border pt-3">
+      <Textarea
+        rows={2}
+        placeholder="Escreva uma mensagem…"
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        className="resize-none flex-1 text-sm rounded-xl"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            if (texto.trim()) {
+              onEnviar(texto.trim());
+              setTexto("");
+            }
+          }
+        }}
+      />
+      <Button
+        size="sm"
+        disabled={!texto.trim()}
+        className="rounded-full gap-1.5 shrink-0"
+        onClick={() => {
+          if (texto.trim()) {
+            onEnviar(texto.trim());
+            setTexto("");
+          }
+        }}
+      >
+        <Send className="h-3.5 w-3.5" /> Enviar
+      </Button>
+    </div>
   );
 }
