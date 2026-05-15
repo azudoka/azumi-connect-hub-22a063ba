@@ -901,12 +901,14 @@ function AdminView() {
                   consultor: nConsultor || "—",
                   titulo: nTitulo.trim(),
                   historico: [],
+                  obsInterna: nObsInterna.trim() || undefined,
                 };
                 setSolicitacoes((prev) => [nova, ...prev]);
                 toast.success(`Solicitação criada — ${nova.protocolo}`);
                 setNovaOpen(false);
                 setNTipo("duvida"); setNTitulo(""); setNUrgencia("media");
                 setNDescricao(""); setNEmpresa(""); setNConsultor("");
+                setNObsInterna("");
               }}
             >
               Criar solicitação
