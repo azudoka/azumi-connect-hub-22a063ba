@@ -497,29 +497,33 @@ export default function SolicitacoesClientePage() {
                             Últimas mensagens
                           </p>
                           <div className="space-y-2">
-                            {ultimas.map((m, i) => (
-                              <div
-                                key={i}
-                                className="flex items-start gap-2 text-sm bg-muted/40 rounded-lg p-3"
-                              >
-                                <div className="h-7 w-7 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-semibold shrink-0">
-                                  {m.autor.charAt(0)}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span className="text-xs font-medium">{m.autor}</span>
-                                    <span className="text-[10px] text-muted-foreground">
-                                      {format(new Date(m.data), "dd/MM HH:mm", {
-                                        locale: ptBR,
-                                      })}
-                                    </span>
+                            {ultimas.map((m, i) => {
+                              const isMe = m.autor === "Você";
+                              return (
+                                <div key={i}
+                                  className={cn("flex gap-2 items-end",
+                                    isMe && "flex-row-reverse")}>
+                                  {!isMe && (
+                                    <div className="h-6 w-6 rounded-md bg-gradient-brand flex items-center justify-center text-[9px] font-semibold text-white shrink-0">
+                                      {m.autor.charAt(0)}
+                                    </div>
+                                  )}
+                                  <div className={cn(
+                                    "max-w-[80%] rounded-xl px-3 py-2 text-xs",
+                                    isMe
+                                      ? "bg-primary text-primary-foreground rounded-br-sm"
+                                      : "bg-muted text-foreground rounded-bl-sm"
+                                  )}>
+                                    {!isMe && (
+                                      <div className="font-semibold mb-0.5 opacity-70">
+                                        {m.autor}
+                                      </div>
+                                    )}
+                                    <p>{m.texto}</p>
                                   </div>
-                                  <p className="text-xs text-foreground/90 mt-0.5">
-                                    {m.texto}
-                                  </p>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       )}
