@@ -535,7 +535,7 @@ export default function SolicitacoesClientePage() {
                           className="rounded-full text-primary hover:text-primary"
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/cliente/solicitacoes/${s.id}`);
+                            setConversaAberta(s);
                           }}
                         >
                           Ver conversa completa
