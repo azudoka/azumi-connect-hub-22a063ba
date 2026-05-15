@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth, type Papel } from "@/context/AuthContext";
 import { ModulesProvider } from "@/context/ModulesContext";
 import { FinanceiroProvider } from "@/context/FinanceiroContext";
+import { TimerProvider } from "@/context/TimerContext";
 import { useCarregarModulosCliente } from "@/hooks/useCarregarModulosCliente";
 import type { ReactNode } from "react";
 
