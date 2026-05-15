@@ -218,9 +218,9 @@ export default function ProjetosPage() {
   void atualizarCronograma;
 
   // Toggle Lista/Kanban com persistência
-  const [view, setView] = useState<"lista" | "kanban">(() => {
+  const [view, setView] = useState<"lista" | "tabela" | "kanban">(() => {
     if (typeof window === "undefined") return "lista";
-    return (localStorage.getItem(VIEW_KEY) as "lista" | "kanban") ?? "lista";
+    return (localStorage.getItem(VIEW_KEY) as "lista" | "tabela" | "kanban") ?? "lista";
   });
   useEffect(() => {
     localStorage.setItem(VIEW_KEY, view);
@@ -347,14 +347,31 @@ export default function ProjetosPage() {
     setProjOpen(false);
   }
 
-  // ─── Aprovação de entregável + NPS ──────────────────────────────
-  const [npsOpen, setNpsOpen] = useState(false);
-  const [npsEmpresaNome, setNpsEmpresaNome] = useState<string>("");
+  // ─── Encerramento de projeto ─────────────────────────────────────
+  const [encerrarOpen, setEncerrarOpen] = useState(false);
+  const [projetoParaEncerrar, setProjetoParaEncerrar] = useState<Projeto | null>(null);
 
-  function aprovarEntregavel(projeto: Projeto) {
-    toast.success("Entregável aprovado! NPS enviado ao cliente.");
-    setNpsEmpresaNome(projeto.empresaNome);
-    setNpsOpen(true);
+  const [enviarCronOpen, setEnviarCronOpen] = useState(false);
+  const [cronParaEnviar, setCronParaEnviar] = useState<CronogramaPendente | null>(null);
+
+  function confirmarEncerramento() {
+    if (!projetoParaEncerrar) return;
+    setProjetos((prev) =>
+      prev.map((p) =>
+        p.id === projetoParaEncerrar.id
+          ? {
+              ...p,
+              status: "encerrado" as ProjetoStatus,
+              encerradoEm: format(new Date(), "yyyy-MM-dd"),
+            }
+          : p
+      )
+    );
+    toast.success(`Projeto "${projetoParaEncerrar.titulo}" encerrado.`, {
+      description: "Movido para a aba Encerrados.",
+    });
+    setEncerrarOpen(false);
+    setProjetoParaEncerrar(null);
   }
 
   // ─── Helpers ────────────────────────────────────────────────────
@@ -472,6 +489,16 @@ export default function ProjetosPage() {
               </button>
               <button
                 type="button"
+                onClick={() => setView("tabela")}
+                className={cn(
+                  "h-8 px-3 rounded-md text-xs font-medium inline-flex items-center gap-1.5 transition-colors",
+                  view === "tabela" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <ListIcon className="h-3.5 w-3.5" /> Tabela
+              </button>
+              <button
+                type="button"
                 onClick={() => setView("kanban")}
                 className={cn(
                   "h-8 px-3 rounded-md text-xs font-medium inline-flex items-center gap-1.5 transition-colors",
@@ -543,20 +570,139 @@ export default function ProjetosPage() {
                       </Link>
                     </div>
 
-                    <div className="mt-3 pt-3 border-t border-border flex justify-end">
+                    <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+                      {p.conclusao < 100 ? (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <AlertTriangle className="h-3.5 w-3.5 text-warning" />
+                          {p.conclusao}% concluído — entregáveis em aberto
+                        </span>
+                      ) : (
+                        <span className="text-xs text-success flex items-center gap-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Todos entregáveis aprovados
+                        </span>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
                         className="gap-1.5"
-                        onClick={() => aprovarEntregavel(p)}
+                        disabled={p.conclusao < 100}
+                        title={p.conclusao < 100
+                          ? `Há entregáveis em aberto (${p.conclusao}%). Conclua todos antes de encerrar.`
+                          : "Encerrar este projeto"}
+                        onClick={() => {
+                          setProjetoParaEncerrar(p);
+                          setEncerrarOpen(true);
+                        }}
                       >
-                        <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-                        Aprovar entregável
+                        <CheckCircle2 className={cn(
+                          "h-3.5 w-3.5",
+                          p.conclusao < 100 ? "text-muted-foreground" : "text-success"
+                        )} />
+                        Encerrar projeto
                       </Button>
                     </div>
                   </div>
                 );
               })}
+            </div>
+          ) : view === "tabela" ? (
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="text-left font-medium px-4 py-3">Código</th>
+                      <th className="text-left font-medium px-4 py-3">Projeto</th>
+                      <th className="text-left font-medium px-4 py-3">Empresa</th>
+                      <th className="text-left font-medium px-4 py-3">Consultor</th>
+                      <th className="text-left font-medium px-4 py-3">Frente</th>
+                      <th className="text-left font-medium px-4 py-3 w-32">Conclusão</th>
+                      <th className="text-left font-medium px-4 py-3">Prazo</th>
+                      <th className="text-left font-medium px-4 py-3">Status</th>
+                      <th className="text-right font-medium px-4 py-3">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtrados.map((p) => {
+                      const atrasado = isAtrasado(p);
+                      return (
+                        <tr
+                          key={p.id}
+                          className="border-t border-border hover:bg-secondary/30 transition-colors"
+                        >
+                          <td className="px-4 py-3 font-data text-xs text-muted-foreground">
+                            {p.codigo}
+                          </td>
+                          <td className="px-4 py-3 font-medium max-w-[180px] truncate">
+                            {p.titulo}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            {p.empresaNome}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1.5">
+                              <div className="h-6 w-6 rounded-md bg-gradient-brand flex items-center justify-center text-[9px] font-semibold text-white shrink-0">
+                                {p.consultorIniciais}
+                              </div>
+                              <span className="text-xs text-muted-foreground truncate">
+                                {p.consultorNome}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="badge-pill bg-secondary text-secondary-foreground border-border text-[11px]">
+                              {frenteLabels[p.frente]}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 w-32">
+                            <div className="flex items-center gap-2">
+                              <Progress value={p.conclusao} className="h-1.5 flex-1" />
+                              <span className="font-data text-xs tabular-nums shrink-0">
+                                {p.conclusao}%
+                              </span>
+                            </div>
+                          </td>
+                          <td className={cn(
+                            "px-4 py-3 text-xs font-data tabular-nums",
+                            atrasado ? "text-destructive font-semibold" : "text-muted-foreground"
+                          )}>
+                            {format(new Date(p.prazoFinal), "dd/MM/yyyy", { locale: ptBR })}
+                            {atrasado && <span className="block text-[10px]">atrasado</span>}
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusBadge status={statusToBadge[p.status]}>
+                              {statusLabels[p.status]}
+                            </StatusBadge>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="inline-flex items-center gap-2 justify-end">
+                              <Link
+                                to={`/app/projetos/${p.id}`}
+                                className="text-xs text-primary hover:underline font-medium"
+                              >
+                                Ver →
+                              </Link>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                disabled={p.conclusao < 100}
+                                className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                                onClick={() => {
+                                  setProjetoParaEncerrar(p);
+                                  setEncerrarOpen(true);
+                                }}
+                              >
+                                Encerrar
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -667,12 +813,8 @@ export default function ProjetosPage() {
                               <Button
                                 size="sm"
                                 onClick={() => {
-                                  setCronogramas((prev) =>
-                                    prev.map((c) =>
-                                      c.id === cr.id ? { ...c, status: "aguardando_aprovacao_cliente" } : c,
-                                    ),
-                                  );
-                                  toast.success("Cronograma enviado ao cliente para aprovação.");
+                                  setCronParaEnviar(cr);
+                                  setEnviarCronOpen(true);
                                 }}
                               >
                                 Enviar para cliente
@@ -920,23 +1062,105 @@ export default function ProjetosPage() {
           </form>
         </DialogContent>
       </Dialog>
-      {/* ─────────── Dialog: NPS disparado ─────────── */}
-      <Dialog open={npsOpen} onOpenChange={setNpsOpen}>
+      {/* ─────────── Dialog: Encerrar projeto ─────────── */}
+      <Dialog
+        open={encerrarOpen}
+        onOpenChange={(o) => {
+          if (!o) {
+            setEncerrarOpen(false);
+            setProjetoParaEncerrar(null);
+          }
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-success/15 text-success flex items-center justify-center shrink-0">
-                <CheckCircle2 className="h-5 w-5" />
-              </div>
-              <DialogTitle>NPS disparado</DialogTitle>
-            </div>
-            <DialogDescription className="pt-2">
-              O cliente <strong className="text-foreground">{npsEmpresaNome}</strong> foi notificado para
-              avaliar a entrega. A resposta ficará disponível em Analytics.
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              Encerrar projeto?
+            </DialogTitle>
+            <DialogDescription className="pt-1">
+              Você está prestes a encerrar{" "}
+              <strong className="text-foreground">
+                {projetoParaEncerrar?.titulo}
+              </strong>{" "}
+              —{" "}
+              <strong className="text-foreground">
+                {projetoParaEncerrar?.empresaNome}
+              </strong>
+              . O projeto será movido para a aba Encerrados e não poderá
+              ser reaberto pela interface. Tem certeza?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button onClick={() => setNpsOpen(false)}>Ok, entendido</Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEncerrarOpen(false);
+                setProjetoParaEncerrar(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={confirmarEncerramento}>
+              Sim, encerrar projeto
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─────────── Dialog: Confirmar envio de cronograma ─────────── */}
+      <Dialog
+        open={enviarCronOpen}
+        onOpenChange={(o) => {
+          if (!o) {
+            setEnviarCronOpen(false);
+            setCronParaEnviar(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enviar cronograma para o cliente?</DialogTitle>
+            <DialogDescription className="pt-1">
+              O cronograma{" "}
+              <strong className="text-foreground">
+                {cronParaEnviar?.codigo}
+              </strong>{" "}
+              será enviado para{" "}
+              <strong className="text-foreground">
+                {cronParaEnviar?.empresaNome}
+              </strong>{" "}
+              para aprovação. O cliente será notificado e esta ação
+              não pode ser desfeita. Tem certeza?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEnviarCronOpen(false);
+                setCronParaEnviar(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                if (!cronParaEnviar) return;
+                setCronogramas((prev) =>
+                  prev.map((c) =>
+                    c.id === cronParaEnviar.id
+                      ? { ...c, status: "aguardando_aprovacao_cliente" }
+                      : c
+                  )
+                );
+                toast.success("Cronograma enviado ao cliente para aprovação.");
+                setEnviarCronOpen(false);
+                setCronParaEnviar(null);
+              }}
+            >
+              Sim, enviar para o cliente
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
