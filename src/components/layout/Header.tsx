@@ -1,4 +1,5 @@
-import { Bell, Search, ChevronDown, AlertTriangle, ArrowRight } from "lucide-react";
+import { Bell, Search, ChevronDown, AlertTriangle, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { useFinanceiro } from "@/context/FinanceiroContext";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,7 @@ interface HeaderProps {
 export function Header({ showSwitcher = true, context = "connect" }: HeaderProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { visivel, toggle } = useFinanceiro();
   const [openNotif, setOpenNotif] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
@@ -171,6 +173,21 @@ export function Header({ showSwitcher = true, context = "connect" }: HeaderProps
               </div>
             )}
           </div>
+
+          <button
+            type="button"
+            onClick={toggle}
+            title={visivel ? "Ocultar dados financeiros" : "Revelar dados financeiros"}
+            aria-label={visivel ? "Ocultar dados financeiros" : "Revelar dados financeiros"}
+            className={cn(
+              "h-8 w-8 rounded-md flex items-center justify-center transition-colors",
+              visivel
+                ? "text-muted-foreground hover:text-foreground hover:bg-muted"
+                : "text-warning bg-warning/10 hover:bg-warning/20"
+            )}
+          >
+            {visivel ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          </button>
 
           <button className="flex items-center gap-2 h-9 px-2 pr-3 rounded-lg hover:bg-secondary">
             <div className="h-7 w-7 rounded-full bg-gradient-brand flex items-center justify-center text-[10px] font-semibold text-white">VC</div>
