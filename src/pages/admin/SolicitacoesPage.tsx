@@ -84,6 +84,10 @@ const TIPOS_SOL = {
   suporte: "Suporte técnico",
   ajuste_projeto: "Ajuste em projeto/entregável",
   novo_usuario: "Solicitar novo usuário",
+  relatorio: "Relatório personalizado",
+  upgrade_plano: "Upgrade de plano",
+  cancelamento: "Cancelamento de serviço",
+  feedback: "Feedback do cliente",
   outro: "Outro",
 } as const;
 
