@@ -1018,12 +1018,16 @@ function EditarEntregavelDialog({
   onSave: (patch: Partial<Entregavel>) => void;
 }) {
   const [nome, setNome] = useState("");
+  const [frente, setFrente] = useState<Frente | "">("");
+  const [complexidade, setComplexidade] = useState<Complexidade | "">("");
   const [responsavel, setResponsavel] = useState("");
   const [prazo, setPrazo] = useState<Date | undefined>();
 
   useEffect(() => {
     if (entregavel) {
       setNome(entregavel.nome);
+      setFrente(entregavel.frente);
+      setComplexidade(entregavel.complexidade);
       setResponsavel(entregavel.responsavelId);
       setPrazo(new Date(entregavel.prazo));
     }
@@ -1033,13 +1037,15 @@ function EditarEntregavelDialog({
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!nome.trim() || !responsavel || !prazo) {
+    if (!nome.trim() || !responsavel || !prazo || !frente || !complexidade) {
       toast.error("Preencha todos os campos.");
       return;
     }
     const r = responsaveisDisponiveis.find((x) => x.id === responsavel)!;
     onSave({
       nome: nome.trim(),
+      frente: frente as Frente,
+      complexidade: complexidade as Complexidade,
       responsavelId: r.id,
       responsavelNome: r.nome,
       responsavelIniciais: r.iniciais,
@@ -1058,6 +1064,30 @@ function EditarEntregavelDialog({
           <div className="space-y-1.5">
             <Label>Nome</Label>
             <Input value={nome} onChange={(e) => setNome(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Frente</Label>
+              <Select value={frente} onValueChange={(v) => setFrente(v as Frente)}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(frenteLabels) as Frente[]).map((f) => (
+                    <SelectItem key={f} value={f}>{frenteLabels[f]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Complexidade</Label>
+              <Select value={complexidade} onValueChange={(v) => setComplexidade(v as Complexidade)}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="C1">C1 — Simples (~30 dias)</SelectItem>
+                  <SelectItem value="C2">C2 — Média (~45 dias)</SelectItem>
+                  <SelectItem value="C3">C3 — Complexa (~60 dias)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
