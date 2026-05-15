@@ -783,6 +783,142 @@ export default function HorasPage() {
         </Accordion>
       </section>
 
+      {/* ───────── 2b. Interações externas ───────── */}
+      <section className="bg-card border border-border rounded-xl mb-6 overflow-hidden">
+        <Accordion type="single" collapsible value={interacaoAberta} onValueChange={setInteracaoAberta}>
+          <AccordionItem value="interacao" className="border-none">
+            <AccordionTrigger className="px-5 py-4 hover:no-underline">
+              <div className="flex items-center gap-2">
+                <div className="h-9 w-9 rounded-lg bg-info/15 text-info flex items-center justify-center">
+                  <MessageSquare className="h-4 w-4" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-display font-semibold text-sm">Registrar interação externa</h3>
+                  <p className="text-[11px] text-muted-foreground font-normal">
+                    WhatsApp, e-mail, ligação, visita presencial
+                  </p>
+                </div>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-5 pb-5">
+              <form onSubmit={salvarInteracao} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Canal */}
+                <div className="space-y-1.5 md:col-span-2">
+                  <Label>Canal <span className="text-destructive">*</span></Label>
+                  <div className="flex flex-wrap gap-2">
+                    {(["WhatsApp","E-mail","Ligação","Visita presencial","Outro"] as CanalInteracao[]).map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setICanal(c)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-full border text-xs transition-colors",
+                          iCanal === c
+                            ? "border-primary bg-primary/10 text-primary font-medium"
+                            : "border-border hover:bg-secondary/50"
+                        )}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Data */}
+                <div className="space-y-1.5">
+                  <Label>Data <span className="text-destructive">*</span></Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        type="button"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !iData && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {iData ? format(iData, "dd 'de' MMMM yyyy", { locale: ptBR }) : "Selecione uma data"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={iData}
+                        onSelect={setIData}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Empresa */}
+                <div className="space-y-1.5">
+                  <Label>Empresa <span className="text-destructive">*</span></Label>
+                  <Select value={iEmpresa} onValueChange={setIEmpresa}>
+                    <SelectTrigger><SelectValue placeholder="Selecione a empresa" /></SelectTrigger>
+                    <SelectContent>
+                      {empresas.filter((e) => projetosPorEmpresa[e.id]).map((e) => (
+                        <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Duração estimada */}
+                <div className="space-y-1.5">
+                  <Label>Duração estimada (min) <span className="text-destructive">*</span></Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={iDuracao}
+                    onChange={(e) => setIDuracao(e.target.value)}
+                    placeholder="Ex: 15"
+                  />
+                  {iDuracao && Number(iDuracao) > 0 && (
+                    <p className="text-[10px] text-muted-foreground">
+                      {Math.floor(Number(iDuracao) / 60) > 0
+                        ? `${Math.floor(Number(iDuracao) / 60)}h `
+                        : ""}
+                      {Number(iDuracao) % 60}min
+                    </p>
+                  )}
+                </div>
+
+                {/* Entregável relacionado (opcional) */}
+                <div className="space-y-1.5">
+                  <Label>
+                    Entregável relacionado
+                    <span className="ml-1 text-[10px] font-normal text-muted-foreground">(opcional)</span>
+                  </Label>
+                  <Input
+                    value={iEntregavel}
+                    onChange={(e) => setIEntregavel(e.target.value)}
+                    placeholder="Nome do entregável (se aplicável)"
+                  />
+                </div>
+
+                {/* Descrição */}
+                <div className="space-y-1.5 md:col-span-2">
+                  <Label>Descrição breve <span className="text-destructive">*</span></Label>
+                  <Textarea
+                    rows={3}
+                    value={iDescricao}
+                    onChange={(e) => setIDescricao(e.target.value)}
+                    placeholder="Resumo da interação…"
+                  />
+                </div>
+
+                <div className="md:col-span-2 flex justify-end">
+                  <Button type="submit">Registrar interação</Button>
+                </div>
+              </form>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </section>
+
       {/* ───────── 3. Extrato de Horas ───────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
         <KpiCard label="Total no período" value={`${totalHoras.toFixed(2)}h`} icon={Clock} />
