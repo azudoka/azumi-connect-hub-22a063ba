@@ -188,6 +188,8 @@ export default function HorasPage() {
   const [timerKey, setTimerKey] = useState(0);
   const [timerAtivo, setTimerAtivo] = useState(false);
   const [confirmStartOpen, setConfirmStartOpen] = useState(false);
+  const [segundosTimer, setSegundosTimer] = useState(0);
+  const [manualAberto, setManualAberto] = useState<string>("");
 
   // Tarefa selecionada para o timer (empresa → projeto/entregável)
   const [tEmpresa, setTEmpresa] = useState<string>("");
@@ -220,6 +222,8 @@ export default function HorasPage() {
         toast.info(`Tarefa pré-selecionada: ${tarefa.label}`);
         return;
       }
+      toast.error("Tarefa não encontrada para o link informado.");
+      return;
     }
 
     if (entNome) {
@@ -233,6 +237,8 @@ export default function HorasPage() {
       }
       if (codigo) {
         toast.info(`Aberto para ${decoded} (${codigo}). Selecione a empresa manualmente.`);
+      } else {
+        toast.error("Tarefa não encontrada. Selecione manualmente.");
       }
     }
   }, [searchParams]);
@@ -258,11 +264,31 @@ export default function HorasPage() {
   }, [timerAtivo]);
 
   function encerrarAutomaticamente() {
+    if (segundosTimer > 0) {
+      handleTimerStop(segundosTimer);
+    }
     setTimerAtivo(false);
     setTimerKey((k) => k + 1);
+    setSegundosTimer(0);
     setProximoRequerRevisao(true);
-    toast.warning("Seu timer foi encerrado automaticamente às 18h.", {
-      description: "Deseja ajustar as horas manualmente?",
+    if (tarefaAtiva) {
+      setMEmpresa(tarefaAtiva.empresaId);
+      setMProjeto(`${tarefaAtiva.projeto}::${tarefaAtiva.entregavel}`);
+    }
+    setManualAberto("manual");
+    toast.warning("Timer encerrado automaticamente às 18h.", {
+      description: "As horas foram registradas. Deseja ajustar?",
+      action: {
+        label: "Ajustar horas",
+        onClick: () => {
+          if (tarefaAtiva) {
+            setMEmpresa(tarefaAtiva.empresaId);
+            setMProjeto(`${tarefaAtiva.projeto}::${tarefaAtiva.entregavel}`);
+          }
+          setManualAberto("manual");
+          window.scrollTo({ top: 400, behavior: "smooth" });
+        },
+      },
     });
   }
 
