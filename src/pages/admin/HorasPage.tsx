@@ -365,9 +365,11 @@ export default function HorasPage() {
         consultorId: "ab",
         consultorNome: "Ana Beatriz",
         requerRevisao: proximoRequerRevisao,
+        etapaVaga: isVaga(tarefaAtiva) ? (etapaSelecionada as EtapaVaga) : undefined,
       };
       setLancamentos((prev) => [novo, ...prev]);
       setProximoRequerRevisao(false);
+      setEtapaSelecionada("");
       toast.success(`Timer encerrado: ${horasReg.toFixed(2)}h registradas.`);
     } else if (seconds > 0) {
       toast.success(`Timer encerrado: ${(seconds / 3600).toFixed(2)}h registradas.`);
@@ -856,7 +858,12 @@ export default function HorasPage() {
                         </td>
                         <td className="px-4 py-3 font-medium">{l.empresaNome}</td>
                         <td className="px-4 py-3 text-muted-foreground">{l.projeto}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{l.entregavel}</td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          <div>{l.entregavel}</div>
+                          {l.etapaVaga && (
+                            <div className="text-[10px] text-primary mt-0.5">Etapa: {l.etapaVaga}</div>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-right font-data tabular-nums">{l.horas.toFixed(2)}h</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5 flex-wrap">
@@ -931,6 +938,44 @@ export default function HorasPage() {
             </Button>
             <Button onClick={confirmarEncerrarEReiniciar}>
               Encerrar atual e iniciar novo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: seleção de etapa para timer de vaga */}
+      <Dialog open={etapaOpen} onOpenChange={(o) => !o && setEtapaOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Em qual etapa você está trabalhando?</DialogTitle>
+            <DialogDescription>
+              {tarefaAtiva?.label} — selecione a etapa para registrar
+              as horas corretamente no relatório da vaga.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {ETAPAS_VAGA.map((etapa) => (
+              <button
+                key={etapa}
+                type="button"
+                onClick={() => setEtapaSelecionada(etapa)}
+                className={cn(
+                  "w-full text-left px-4 py-2.5 rounded-lg border text-sm transition-colors",
+                  etapaSelecionada === etapa
+                    ? "border-primary bg-primary/10 text-primary font-medium"
+                    : "border-border hover:bg-secondary/50"
+                )}
+              >
+                {etapa}
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEtapaOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmarEtapaEIniciar} disabled={!etapaSelecionada}>
+              Iniciar timer
             </Button>
           </DialogFooter>
         </DialogContent>
