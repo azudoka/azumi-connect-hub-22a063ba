@@ -861,6 +861,22 @@ function AdminView() {
                 placeholder="Descreva a solicitação com detalhes."
               />
             </div>
+
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                Observação interna
+                <span className="text-[10px] text-muted-foreground font-normal">
+                  (não visível para o cliente)
+                </span>
+              </Label>
+              <Textarea
+                rows={3}
+                className="resize-none border-warning/40 bg-warning/5"
+                value={nObsInterna}
+                onChange={(e) => setNObsInterna(e.target.value)}
+                placeholder="Ex: Cliente ligou pedindo urgência, veio por WhatsApp..."
+              />
+            </div>
           </div>
 
           <SheetFooter className="border-t pt-4 flex-row gap-2 sm:justify-end">
