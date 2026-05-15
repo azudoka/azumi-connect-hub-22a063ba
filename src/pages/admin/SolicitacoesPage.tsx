@@ -78,6 +78,17 @@ const CONSULTORES_AZUMI = [
   { id: "da", nome: "Diego Alves" },
 ];
 
+const TIPOS_SOL = {
+  duvida: "Dúvida",
+  reuniao: "Solicitação de reunião",
+  suporte: "Suporte técnico",
+  ajuste_projeto: "Ajuste em projeto/entregável",
+  novo_usuario: "Solicitar novo usuário",
+  outro: "Outro",
+} as const;
+
+const URGENCIA_LABEL = { alta: "Alta", media: "Média", baixa: "Baixa" } as const;
+
 function StatusPill({ s }: { s: Status }) {
   const map: Record<Status, string> = {
     aberta:     "bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30",
