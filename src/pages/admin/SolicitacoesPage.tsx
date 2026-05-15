@@ -457,7 +457,14 @@ function AdminView() {
                 <TableCell><UrgPill u={s.urgencia} /></TableCell>
                 <TableCell><StatusPill s={s.status} /></TableCell>
                 <TableCell className="text-muted-foreground text-sm">{s.data}</TableCell>
-                <TableCell>{s.consultor}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded-md bg-gradient-brand flex items-center justify-center text-[9px] font-semibold text-white shrink-0">
+                      {s.consultor.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                    </div>
+                    <span className="text-sm">{s.consultor}</span>
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
             {lista.length === 0 && (
