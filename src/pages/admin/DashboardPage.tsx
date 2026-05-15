@@ -208,6 +208,7 @@ function AdminDashboard() {
           icon={Briefcase}
           hint="+1 desde semana passada"
           trend={{ value: "+1", positive: true }}
+          onClick={() => navigate("/app/projetos")}
         />
         <KpiCard
           label="Horas no mês"
@@ -215,6 +216,7 @@ function AdminDashboard() {
           icon={Clock}
           hint="vs 98h mês anterior"
           trend={{ value: "+17%", positive: true }}
+          onClick={() => navigate("/app/horas")}
         />
         {pode("financeiro.ver_valores") && (
           <KpiCard
@@ -223,6 +225,7 @@ function AdminDashboard() {
             icon={CircleDollarSign}
             hint={`Meta: ${formatBRL(fin.metaFaturamento)}`}
             trend={{ value: `${pctFaturamento}% da meta`, positive: pctFaturamento >= 80 }}
+            onClick={() => navigate("/app/financeiro")}
           />
         )}
         <KpiCard
@@ -231,6 +234,7 @@ function AdminDashboard() {
           icon={AlertTriangle}
           hint={atrasados > 0 ? "Requer atenção imediata" : "Tudo no prazo"}
           className={cn(atrasados > 0 && "ring-1 ring-destructive/40")}
+          onClick={() => navigate("/app/projetos")}
         />
       </div>
 
