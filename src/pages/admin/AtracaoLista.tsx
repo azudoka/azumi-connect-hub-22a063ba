@@ -188,7 +188,10 @@ export default function AtracaoLista() {
             <button className="h-9 px-3 rounded-lg border border-border hover:bg-secondary text-sm flex items-center gap-1.5">
               <Filter className="h-4 w-4" /> Filtros
             </button>
-            <button className="h-9 px-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5">
+            <button
+              onClick={() => setNovaVagaOpen(true)}
+              className="h-9 px-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5"
+            >
               <Plus className="h-4 w-4" /> Nova vaga
             </button>
           </>
