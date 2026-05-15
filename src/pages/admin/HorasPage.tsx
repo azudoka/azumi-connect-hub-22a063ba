@@ -1196,7 +1196,53 @@ export default function HorasPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: seleção de etapa para timer de vaga */}
+      {/* Dialog: confirmação de encerramento do timer */}
+      <Dialog open={confirmStopOpen} onOpenChange={(o) => !o && setConfirmStopOpen(false)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              Encerrar registro de horas?
+            </DialogTitle>
+            <DialogDescription className="pt-1 space-y-2">
+              <span className="block">
+                Você está prestes a encerrar o timer de{" "}
+                <strong className="text-foreground">{tarefaAtiva?.label}</strong>.
+              </span>
+              <span className="block text-warning font-medium">
+                Atenção: após encerrar, nenhum consultor poderá iniciar um novo timer nesta tarefa.
+              </span>
+              {!isAdmin && (
+                <span className="block text-muted-foreground text-xs">
+                  Apenas o administrador pode reabrir a tarefa para novos registros.
+                </span>
+              )}
+              <span className="block text-xs text-muted-foreground">
+                Horas a registrar:{" "}
+                <span className="font-data font-medium text-foreground">
+                  {(segundosParaGravar / 3600).toFixed(2)}h
+                </span>
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmStopOpen(false)}>
+              Cancelar — manter ativo
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setConfirmStopOpen(false);
+                handleTimerStop(segundosParaGravar);
+                setTimerKey((k) => k + 1);
+              }}
+            >
+              Sim, encerrar registro
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={etapaOpen} onOpenChange={(o) => !o && setEtapaOpen(false)}>
         <DialogContent>
           <DialogHeader>
