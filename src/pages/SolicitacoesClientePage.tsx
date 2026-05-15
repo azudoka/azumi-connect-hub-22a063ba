@@ -568,6 +568,58 @@ export default function SolicitacoesClientePage() {
         )}
       </div>
 
+      {/* Dialog — Cancelar solicitação */}
+      <Dialog
+        open={!!cancelarSol}
+        onOpenChange={(o) => !o && setCancelarSol(null)}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              Cancelar solicitação?
+            </DialogTitle>
+            <DialogDescription className="pt-1 space-y-2">
+              <span className="block">
+                Você está cancelando{" "}
+                <strong className="text-foreground">{cancelarSol?.titulo}</strong>.
+              </span>
+              <span className="block text-warning font-medium text-sm">
+                Atenção: as horas já trabalhadas nesta solicitação não serão devolvidas ao seu pacote.
+              </span>
+              <span className="block text-muted-foreground text-xs">
+                Se preferir, entre em contato com sua consultora antes de cancelar.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelarSol(null)}>
+              Voltar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (!cancelarSol) return;
+                setSolicitacoes((prev) =>
+                  prev.map((s) =>
+                    s.id === cancelarSol.id
+                      ? { ...s, status: "cancelada" as StatusSolicitacao }
+                      : s
+                  )
+                );
+                toast.warning("Solicitação cancelada.", {
+                  description:
+                    "As horas já trabalhadas não foram devolvidas ao seu pacote.",
+                });
+                setCancelarSol(null);
+              }}
+            >
+              Confirmar cancelamento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Sheet — Nova solicitação */}
       <Sheet
         open={sheetAberto}
