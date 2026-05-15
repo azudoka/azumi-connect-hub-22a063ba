@@ -12,14 +12,32 @@ function fmt(s: number) {
 interface TimerProps {
   initial?: number;
   compact?: boolean;
+  autoStart?: boolean;
   onStop?: (seconds: number) => void;
   onTick?: (seconds: number) => void;
+  onPause?: () => void;
+  onResume?: () => void;
+  onRequestStop?: (seconds: number) => void;
 }
 
-export function Timer({ initial = 0, compact, onStop, onTick }: TimerProps) {
+export function Timer({
+  initial = 0,
+  compact,
+  autoStart,
+  onStop,
+  onTick,
+  onPause,
+  onResume,
+  onRequestStop,
+}: TimerProps) {
   const [seconds, setSeconds] = useState(initial);
   const [state, setState] = useState<"idle" | "running" | "paused">("idle");
   const ref = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (autoStart) setState("running");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (state === "running") {
@@ -57,7 +75,10 @@ export function Timer({ initial = 0, compact, onStop, onTick }: TimerProps) {
       <div className="flex items-center gap-1 ml-1">
         {state !== "running" ? (
           <button
-            onClick={() => setState("running")}
+            onClick={() => {
+              if (state === "paused") onResume?.();
+              setState("running");
+            }}
             className="h-7 w-7 rounded-full bg-success text-success-foreground flex items-center justify-center hover:opacity-90"
             aria-label="Iniciar"
           >
@@ -65,7 +86,10 @@ export function Timer({ initial = 0, compact, onStop, onTick }: TimerProps) {
           </button>
         ) : (
           <button
-            onClick={() => setState("paused")}
+            onClick={() => {
+              setState("paused");
+              onPause?.();
+            }}
             className="h-7 w-7 rounded-full bg-warning text-warning-foreground flex items-center justify-center hover:opacity-90"
             aria-label="Pausar"
           >
@@ -74,9 +98,13 @@ export function Timer({ initial = 0, compact, onStop, onTick }: TimerProps) {
         )}
         <button
           onClick={() => {
-            onStop?.(seconds);
-            setSeconds(0);
-            setState("idle");
+            if (onRequestStop) {
+              onRequestStop(seconds);
+            } else {
+              onStop?.(seconds);
+              setSeconds(0);
+              setState("idle");
+            }
           }}
           className="h-7 w-7 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:opacity-90"
           aria-label="Parar"

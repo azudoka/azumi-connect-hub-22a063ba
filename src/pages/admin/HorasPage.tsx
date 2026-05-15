@@ -36,6 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import { useAuth } from "@/context/AuthContext";
+import { useTimerGlobal } from "@/context/TimerContext";
 import { empresas, consultores } from "@/data/mock";
 
 // ────────────────────────────────────────────────────────────────────
@@ -204,6 +205,7 @@ function isHorarioPermitido(now: Date = new Date()): {
 export default function HorasPage() {
   const { usuario } = useAuth();
   const isAdmin = usuario?.role === "admin";
+  const timerCtx = useTimerGlobal();
 
   // Lista do extrato
   const [lancamentos, setLancamentos] = useState<Lancamento[]>(lancamentosIniciais);
@@ -214,6 +216,8 @@ export default function HorasPage() {
   const [timerKey, setTimerKey] = useState(0);
   const [timerAtivo, setTimerAtivo] = useState(false);
   const [confirmStartOpen, setConfirmStartOpen] = useState(false);
+  const [confirmStopOpen, setConfirmStopOpen] = useState(false);
+  const [segundosParaGravar, setSegundosParaGravar] = useState(0);
   const [etapaOpen, setEtapaOpen] = useState(false);
   const [etapaSelecionada, setEtapaSelecionada] = useState<string>("");
   const [segundosTimer, setSegundosTimer] = useState(0);
@@ -346,6 +350,7 @@ export default function HorasPage() {
       return;
     }
     setTimerAtivo(true);
+    timerCtx.iniciar(tarefaAtiva?.label ?? "", tarefaAtiva?.empresaNome ?? "");
   }
 
   function confirmarEtapaEIniciar() {
@@ -355,6 +360,7 @@ export default function HorasPage() {
     }
     setEtapaOpen(false);
     setTimerAtivo(true);
+    timerCtx.iniciar(tarefaAtiva?.label ?? "", tarefaAtiva?.empresaNome ?? "");
   }
 
   function confirmarEncerrarEReiniciar() {
@@ -366,6 +372,7 @@ export default function HorasPage() {
 
   function handleTimerStop(seconds: number) {
     setTimerAtivo(false);
+    timerCtx.encerrar();
     if (seconds > 0 && tarefaAtiva) {
       const horasReg = Number((seconds / 3600).toFixed(2));
       const novo: Lancamento = {
@@ -591,7 +598,23 @@ export default function HorasPage() {
 
         {timerAtivo ? (
           <div className="rounded-lg border border-border bg-background/40 p-4 flex items-center gap-4 flex-wrap">
-            <Timer key={timerKey} onStop={handleTimerStop} onTick={(s) => setSegundosTimer(s)} />
+            <Timer
+              key={timerKey}
+              onStop={handleTimerStop}
+              onTick={(s) => setSegundosTimer(s)}
+              autoStart
+              onPause={() => {
+                timerCtx.pausar();
+                toast.info("Tarefa pausada.", {
+                  description: "Clique em play para retomar o registro.",
+                });
+              }}
+              onResume={() => timerCtx.retomar()}
+              onRequestStop={(s) => {
+                setSegundosParaGravar(s);
+                setConfirmStopOpen(true);
+              }}
+            />
             <div className="flex-1 min-w-[200px]">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Tarefa ativa</div>
               {tarefaAtiva ? (
@@ -1173,7 +1196,53 @@ export default function HorasPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: seleção de etapa para timer de vaga */}
+      {/* Dialog: confirmação de encerramento do timer */}
+      <Dialog open={confirmStopOpen} onOpenChange={(o) => !o && setConfirmStopOpen(false)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              Encerrar registro de horas?
+            </DialogTitle>
+            <DialogDescription className="pt-1 space-y-2">
+              <span className="block">
+                Você está prestes a encerrar o timer de{" "}
+                <strong className="text-foreground">{tarefaAtiva?.label}</strong>.
+              </span>
+              <span className="block text-warning font-medium">
+                Atenção: após encerrar, nenhum consultor poderá iniciar um novo timer nesta tarefa.
+              </span>
+              {!isAdmin && (
+                <span className="block text-muted-foreground text-xs">
+                  Apenas o administrador pode reabrir a tarefa para novos registros.
+                </span>
+              )}
+              <span className="block text-xs text-muted-foreground">
+                Horas a registrar:{" "}
+                <span className="font-data font-medium text-foreground">
+                  {(segundosParaGravar / 3600).toFixed(2)}h
+                </span>
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmStopOpen(false)}>
+              Cancelar — manter ativo
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setConfirmStopOpen(false);
+                handleTimerStop(segundosParaGravar);
+                setTimerKey((k) => k + 1);
+              }}
+            >
+              Sim, encerrar registro
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={etapaOpen} onOpenChange={(o) => !o && setEtapaOpen(false)}>
         <DialogContent>
           <DialogHeader>
