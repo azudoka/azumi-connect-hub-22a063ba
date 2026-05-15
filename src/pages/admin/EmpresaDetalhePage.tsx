@@ -4,8 +4,17 @@ import {
   Copy, Check, Download, Building2, Users, Briefcase, Clock,
   Receipt, FileSignature, LayoutGrid, ArrowLeft,
 } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/ui/tabs";
@@ -135,6 +144,19 @@ export default function EmpresaDetalhePage() {
 
   const [usuarios, setUsuarios] = useState(USUARIOS);
 
+  const [editarOpen, setEditarOpen] = useState(false);
+  const [editNome,   setEditNome]   = useState(empresa.nome);
+  const [editEmail,  setEditEmail]  = useState("contato@empresax.com.br");
+  const [editStatus, setEditStatus] = useState<"ativo" | "inativo">(
+    empresa.status === "ativa" ? "ativo" : "inativo"
+  );
+  const [editPlano, setEditPlano] = useState<Plano>(empresa.plano);
+
+  function confirmarEdicao() {
+    toast.success("Empresa atualizada.");
+    setEditarOpen(false);
+  }
+
   return (
     <div className="space-y-6">
       <Link to="/app/empresas" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
@@ -161,7 +183,12 @@ export default function EmpresaDetalhePage() {
           <div className="text-sm text-muted-foreground">Consultor responsável</div>
           <div className="font-medium">{empresa.consultor}</div>
         </div>
-        <Button className="rounded-[100px] bg-[#3B82F6] hover:bg-[#3B82F6]/90 text-white">Editar empresa</Button>
+        <Button
+          className="rounded-[100px] bg-[#3B82F6] hover:bg-[#3B82F6]/90 text-white"
+          onClick={() => setEditarOpen(true)}
+        >
+          Editar empresa
+        </Button>
       </div>
 
       <Tabs defaultValue="visao" className="w-full">
@@ -385,6 +412,67 @@ export default function EmpresaDetalhePage() {
           </div>
         </TabsContent>
       </Tabs>
+      {/* Dialog — Editar empresa */}
+      <Dialog open={editarOpen} onOpenChange={setEditarOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar empresa</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-nome">Nome da empresa</Label>
+              <Input
+                id="edit-nome"
+                value={editNome}
+                onChange={(e) => setEditNome(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-email">E-mail</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Status</Label>
+              <Select value={editStatus} onValueChange={(v) => setEditStatus(v as "ativo" | "inativo")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Plano (HRaaS)</Label>
+              <Select value={editPlano} onValueChange={(v) => setEditPlano(v as Plano)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="START">Start 15h</SelectItem>
+                  <SelectItem value="ONGOING">Ongoing 25h</SelectItem>
+                  <SelectItem value="GROWTH">Growth 40h</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditarOpen(false)}>Cancelar</Button>
+            <Button onClick={confirmarEdicao}>Salvar alterações</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
