@@ -63,7 +63,7 @@ import {
   MoreVertical, Eye, StickyNote, ChevronRight, UserX, Play, UserPlus, Link2,
   Copy, FileText, MessageCircle, Download, ListChecks, ThumbsDown, CalendarPlus,
   CalendarDays, Globe, Paperclip, X as XIcon, Plus, Mail, Phone, Briefcase, Circle,
-  Pencil, Trash2, GripVertical,
+  Pencil, Trash2, GripVertical, Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -243,15 +243,26 @@ export default function VagaDetalheAdmin() {
   const max = Math.max(...funil.map((f) => f.n), 1);
 
   const candidatosVaga = candidatos.filter((c) => c.vagaId === vaga.id);
-  const colunas = ["Triagem", "Quest.", "Entrevista Azumi", "Entrevista gestor", "Enviados", "Decisão", "Proposta", "Reprovados"] as const;
+  const colunas = [
+    "Recebido",
+    "Triagem",
+    "Questionário",
+    "Entrevista Azumi",
+    "Teste Técnico",
+    "Entrevista Cliente",
+    "Proposta",
+    "Contratado",
+    "Reprovado",
+    "Banco de Talentos",
+  ] as const;
   type Coluna = typeof colunas[number];
 
   // Posições da vaga (Doc Mestre — Etapa 6: bloquear contratações além do total).
   const posicoesVaga: number = (vaga as unknown as { posicoes?: number }).posicoes ?? 1;
 
-  // Estado do Kanban: candidato -> coluna (todos começam em "Triagem")
+  // Estado do Kanban: candidato -> coluna (todos começam em "Recebido")
   const [colunasEstado, setColunasEstado] = useState<Record<string, Coluna>>(
-    () => Object.fromEntries(candidatosVaga.map((c) => [c.id, "Triagem" as Coluna]))
+    () => Object.fromEntries(candidatosVaga.map((c) => [c.id, "Recebido" as Coluna]))
   );
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<Coluna | null>(null);
@@ -282,13 +293,19 @@ export default function VagaDetalheAdmin() {
   // Confirmação de desclassificação
   const [confirmarDesclId, setConfirmarDesclId] = useState<string | null>(null);
 
-  // Confirmação de envio ao cliente (coluna "Enviados") via Kanban
+  // Confirmação de mover para "Entrevista Cliente" via Kanban
   const [confirmarEnviadosId, setConfirmarEnviadosId] = useState<string | null>(null);
 
-  // Decisão final (coluna "Decisão") via Kanban
-  type OpcaoDecisao = "Contratado" | "Reprovado pelo cliente" | "Em negociação";
-  const [confirmarDecisaoId, setConfirmarDecisaoId] = useState<string | null>(null);
-  const [opcaoDecisao, setOpcaoDecisao] = useState<OpcaoDecisao | null>(null);
+  // Confirmação de contratação via Kanban
+  const [confirmarContratadoId, setConfirmarContratadoId] = useState<string | null>(null);
+
+  // Avaliação por estrelas (triagem interna)
+  const [avaliacaoEstrelas, setAvaliacaoEstrelas] = useState<Record<string, number>>({});
+
+  // Alerta: candidato movido sem timer ativo
+  const [alertaPlayOpen, setAlertaPlayOpen] = useState(false);
+  const [alertaPlayCandId, setAlertaPlayCandId] = useState<string | null>(null);
+  const [alertaPlayDestino, setAlertaPlayDestino] = useState<Coluna | null>(null);
 
   // ── Estado adicional (mock) — publicação, candidatos extras, eventos, chat
   const [publicacao, setPublicacao] = useState<PublicacaoStatus>("nao_publicada");
@@ -408,55 +425,40 @@ export default function VagaDetalheAdmin() {
     }
   }
 
-  function tentarMover(candId: string, coluna: Coluna): boolean {
+  function tentarMoverSemAlerta(candId: string, coluna: Coluna): boolean {
     if (colunasEstado[candId] === coluna) return false;
-    if (coluna === "Enviados") {
+    if (coluna === "Entrevista Cliente") {
       setConfirmarEnviadosId(candId);
       return true;
     }
-    if (coluna === "Decisão") {
-      setOpcaoDecisao(null);
-      setConfirmarDecisaoId(candId);
-      return true;
-    }
-    if (coluna === "Quest.") {
-      // Move + abre modal de envio de questionário (não bloqueia movimento).
+    if (coluna === "Questionário") {
       setColunasEstado((prev) => ({ ...prev, [candId]: coluna }));
       setEnviarQuestParaCand(candId);
       return true;
     }
     if (coluna === "Entrevista Azumi") {
-      // Entrevista interna com consultor Azumi — modal simples (sem gestor).
       setColunasEstado((prev) => ({ ...prev, [candId]: coluna }));
       setAgendarOpen(candId);
       return true;
     }
-    if (coluna === "Entrevista gestor") {
-      // Etapa 5 — Doc Mestre: agendamento com gestor (cliente), duas datas.
+    if (coluna === "Teste Técnico") {
       setColunasEstado((prev) => ({ ...prev, [candId]: coluna }));
-      const existente = getAgendamentoDoCandidato(candId);
-      if (!existente) {
-        setAgendarGestorOpen(candId);
-      }
       return true;
     }
     if (coluna === "Proposta") {
-      // Etapa 6 — Doc Mestre: exige aprovação do gestor (parecer "prosseguir").
       const parecer = getParecerGestor(candId);
       if (!parecer || parecer.decisao !== "prosseguir") {
         toast.error(
           "Este candidato ainda não foi aprovado pelo gestor. Registre o parecer antes de enviar proposta.",
         );
-        return true; // bloqueia o movimento
+        return true;
       }
-      // Bloqueia se todas as posições da vaga já foram preenchidas.
       if (vagaEncerrada && !idsContratados.includes(candId)) {
         toast.error(
           `Limite de posições preenchido (${posicoesPreenchidas}/${posicoesVaga}). Vaga encerrada para novas contratações.`,
         );
         return true;
       }
-      // Move + abre modal de envio de proposta.
       setColunasEstado((prev) => ({ ...prev, [candId]: coluna }));
       const propostaExistente = getPropostaAtiva(candId);
       if (!propostaExistente || propostaExistente.status === "expirada") {
@@ -464,12 +466,38 @@ export default function VagaDetalheAdmin() {
       }
       return true;
     }
-    if (coluna === "Reprovados") {
-      // Etapa 7 — Doc Mestre: simples movimento; botão "Enviar feedback" aparece no card.
+    if (coluna === "Contratado") {
+      if (vagaEncerrada && !idsContratados.includes(candId)) {
+        toast.error(
+          `Limite de posições preenchido (${posicoesPreenchidas}/${posicoesVaga}). Vaga encerrada para novas contratações.`,
+        );
+        return true;
+      }
+      setConfirmarContratadoId(candId);
+      return true;
+    }
+    if (coluna === "Reprovado") {
       setColunasEstado((prev) => ({ ...prev, [candId]: coluna }));
       return true;
     }
+    if (coluna === "Banco de Talentos") {
+      const cand = candidatosVaga.find((c) => c.id === candId);
+      setColunasEstado((prev) => ({ ...prev, [candId]: coluna }));
+      toast.info(`${cand?.nome ?? "Candidato"} adicionado ao banco de talentos. Perfil disponível para futuras oportunidades.`);
+      return true;
+    }
     return false;
+  }
+
+  function tentarMover(candId: string, coluna: Coluna): boolean {
+    const timerAtivo = localStorage.getItem("azumi_timer_ativo") === "true";
+    if (!timerAtivo && coluna !== "Recebido") {
+      setAlertaPlayCandId(candId);
+      setAlertaPlayDestino(coluna);
+      setAlertaPlayOpen(true);
+      return true;
+    }
+    return tentarMoverSemAlerta(candId, coluna);
   }
 
   /** Gera link público (mock) para o candidato responder o questionário. */
@@ -614,7 +642,14 @@ export default function VagaDetalheAdmin() {
     const id = draggingId;
     setDraggingId(null);
     setDragOverCol(null);
-    if (tentarMover(id, coluna)) return;
+    const timerAtivo = localStorage.getItem("azumi_timer_ativo") === "true";
+    if (!timerAtivo && coluna !== "Recebido") {
+      setAlertaPlayCandId(id);
+      setAlertaPlayDestino(coluna);
+      setAlertaPlayOpen(true);
+      return;
+    }
+    if (tentarMoverSemAlerta(id, coluna)) return;
     const cand = candidatosVaga.find((c) => c.id === id);
     setColunasEstado((prev) =>
       prev[id] === coluna ? prev : { ...prev, [id]: coluna }
@@ -625,7 +660,7 @@ export default function VagaDetalheAdmin() {
   }
 
   function handleCliqueEnviar() {
-    const total = candidatosVaga.filter(c => colunasEstado[c.id] === "Enviados").length;
+    const total = candidatosVaga.filter(c => colunasEstado[c.id] === "Entrevista Cliente").length;
     if (total > 3) {
       setExcedeuOpen(true);
     } else {
@@ -917,6 +952,8 @@ export default function VagaDetalheAdmin() {
                       {candidatosNaColuna.map((c) => {
                         const menuAberto = menuAbertoId === c.id;
                         const obsAberta = obsAbertaId === c.id;
+                        const isContratado = colunasEstado[c.id] === "Contratado" || idsContratados.includes(c.id);
+                        const isBancoTalentos = colunasEstado[c.id] === "Banco de Talentos";
                         return (
                         <li
                           key={c.id}
@@ -956,6 +993,7 @@ export default function VagaDetalheAdmin() {
                                   {c.cargo}
                                 </div>
                               </div>
+                              {!isContratado && (
                               <button
                                 type="button"
                                 aria-label="Mais ações"
@@ -968,6 +1006,7 @@ export default function VagaDetalheAdmin() {
                               >
                                 <MoreVertical className="h-4 w-4" />
                               </button>
+                              )}
                             </div>
 
                             {/* Linha 3: Tags (DISC) */}
@@ -980,7 +1019,42 @@ export default function VagaDetalheAdmin() {
                             {/* DISC bars */}
                             <DiscBars values={c.disc} compact />
 
+                            {/* Estrelas — visível apenas na Triagem */}
+                            {colunasEstado[c.id] === "Triagem" && (
+                              <div
+                                className="flex items-center gap-0.5 pt-0.5"
+                                title="Avaliação interna (não visível ao cliente)"
+                                onMouseDown={(e) => e.stopPropagation()}
+                              >
+                                {[1,2,3,4,5].map((n) => {
+                                  const nota = avaliacaoEstrelas[c.id] ?? 0;
+                                  return (
+                                    <button
+                                      key={n}
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setAvaliacaoEstrelas((prev) => ({
+                                          ...prev,
+                                          [c.id]: nota === n ? 0 : n,
+                                        }));
+                                      }}
+                                      className="text-muted-foreground hover:text-warning transition-colors"
+                                    >
+                                      <Star className={cn("h-3.5 w-3.5", n <= nota ? "fill-warning text-warning" : "")} />
+                                    </button>
+                                  );
+                                })}
+                                {avaliacaoEstrelas[c.id] ? (
+                                  <span className="text-[10px] text-muted-foreground ml-1">{avaliacaoEstrelas[c.id]}/5</span>
+                                ) : (
+                                  <span className="text-[10px] text-muted-foreground ml-1">Avaliar internamente</span>
+                                )}
+                              </div>
+                            )}
+
                             {/* Linha 4: Ações rápidas */}
+                            {!isContratado && (
                             <div className="flex items-center gap-1 pt-0.5">
                               <button
                                 type="button"
@@ -991,40 +1065,45 @@ export default function VagaDetalheAdmin() {
                               >
                                 <Eye className="h-3.5 w-3.5" />
                               </button>
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); setRelatorioOpenId(c.id); }}
-                                onMouseDown={(e) => e.stopPropagation()}
-                                title="Relatório"
-                                className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground"
-                              >
-                                <FileText className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); setDiscWhatsOpen(c.id); }}
-                                onMouseDown={(e) => e.stopPropagation()}
-                                title="WhatsApp"
-                                className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground"
-                              >
-                                <MessageCircle className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); setObsAbertaId(c.id); }}
-                                onMouseDown={(e) => e.stopPropagation()}
-                                title="Observação rápida"
-                                className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground"
-                              >
-                                <StickyNote className="h-3.5 w-3.5" />
-                              </button>
+                              {!isBancoTalentos && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setRelatorioOpenId(c.id); }}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    title="Relatório"
+                                    className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground"
+                                  >
+                                    <FileText className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setDiscWhatsOpen(c.id); }}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    title="WhatsApp"
+                                    className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground"
+                                  >
+                                    <MessageCircle className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setObsAbertaId(c.id); }}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    title="Observação rápida"
+                                    className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground"
+                                  >
+                                    <StickyNote className="h-3.5 w-3.5" />
+                                  </button>
+                                </>
+                              )}
                             </div>
+                            )}
                           </div>
 
                           {/* Bloco inferior: agendamento (separado, com fundo diferente) */}
                           {(() => {
                             const ev = eventos.find((e) => e.candidatoId === c.id);
-                            const podeAgendar = colunasEstado[c.id] === "Entrevista Azumi" || colunasEstado[c.id] === "Entrevista gestor";
+                            const podeAgendar = colunasEstado[c.id] === "Entrevista Azumi" || colunasEstado[c.id] === "Entrevista Cliente";
                             if (!ev && !podeAgendar) return null;
                             return (
                               <div className="border-t border-border bg-muted/40 px-3 py-2 flex items-center gap-2 text-[11px]">
@@ -1070,7 +1149,7 @@ export default function VagaDetalheAdmin() {
                           })()}
 
                           {/* Etapa 7 — botão Enviar feedback (rodapé) */}
-                          {colunasEstado[c.id] === "Reprovados" && (
+                          {colunasEstado[c.id] === "Reprovado" && (
                             <div className="border-t border-border bg-muted/40 px-3 py-2 flex items-center gap-1.5">
                               {jaTemFeedback(c.id) ? (
                                 <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -1120,6 +1199,20 @@ export default function VagaDetalheAdmin() {
                                   Salvar
                                 </button>
                               </div>
+                            </div>
+                          )}
+
+                          {isContratado && (
+                            <div className="border-t border-border bg-success/5 px-3 py-2 flex items-center gap-1.5 text-[11px] text-success font-medium">
+                              <CheckCircle2 className="h-3 w-3" />
+                              Contratado — processo encerrado
+                            </div>
+                          )}
+
+                          {isBancoTalentos && (
+                            <div className="border-t border-border bg-info/5 px-3 py-2 flex items-center gap-1.5 text-[11px] text-info">
+                              <Users className="h-3 w-3" />
+                              No banco de talentos
                             </div>
                           )}
 
@@ -1196,12 +1289,12 @@ export default function VagaDetalheAdmin() {
             <div>
               <h3 className="font-display font-semibold">Perfis selecionados para envio</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {candidatosVaga.filter(c => colunasEstado[c.id] === "Enviados").length} candidato(s) prontos para apresentação ao cliente
+                {candidatosVaga.filter(c => colunasEstado[c.id] === "Entrevista Cliente").length} candidato(s) prontos para apresentação ao cliente
               </p>
             </div>
             <button
               onClick={handleCliqueEnviar}
-              disabled={candidatosVaga.filter(c => colunasEstado[c.id] === "Enviados").length === 0}
+              disabled={candidatosVaga.filter(c => colunasEstado[c.id] === "Entrevista Cliente").length === 0}
               className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send className="h-4 w-4" /> Enviar para o cliente
@@ -1209,7 +1302,7 @@ export default function VagaDetalheAdmin() {
           </div>
 
           <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {candidatosVaga.filter(c => colunasEstado[c.id] === "Enviados").map((c) => {
+            {candidatosVaga.filter(c => colunasEstado[c.id] === "Entrevista Cliente").map((c) => {
               const declinio = declinios[c.id];
               return (
                 <li key={c.id} className="border border-border rounded-lg p-3 bg-background/40">
@@ -1300,7 +1393,7 @@ export default function VagaDetalheAdmin() {
                 </li>
               );
             })}
-            {candidatosVaga.filter(c => colunasEstado[c.id] === "Enviados").length === 0 && (
+            {candidatosVaga.filter(c => colunasEstado[c.id] === "Entrevista Cliente").length === 0 && (
               <li className="col-span-full text-center text-xs text-muted-foreground py-8">
                 Nenhum candidato marcado para envio ainda.
               </li>
@@ -1492,7 +1585,7 @@ export default function VagaDetalheAdmin() {
                 <h3 className="font-display text-lg font-semibold">Confirmar envio ao cliente?</h3>
                 <p className="text-sm text-muted-foreground mt-1">
                   Você está prestes a enviar{" "}
-                  <strong className="text-foreground">{candidatosVaga.filter(c => colunasEstado[c.id] === "Enviados").length} perfil(is)</strong>{" "}
+                  <strong className="text-foreground">{candidatosVaga.filter(c => colunasEstado[c.id] === "Entrevista Cliente").length} perfil(is)</strong>{" "}
                   para <strong className="text-foreground">{vaga.empresa}</strong>. Esta ação dispara
                   notificação ao cliente e inicia a contagem de SLA do parecer.
                 </p>
@@ -1532,7 +1625,7 @@ export default function VagaDetalheAdmin() {
                   await new Promise((r) => setTimeout(r, 800));
                   setEnviando(false);
                   setEnviarOpen(false);
-                  toast.success(`${candidatosVaga.filter(c => colunasEstado[c.id] === "Enviados").length} perfil(is) enviado(s) para ${vaga.empresa}.`, {
+                  toast.success(`${candidatosVaga.filter(c => colunasEstado[c.id] === "Entrevista Cliente").length} perfil(is) enviado(s) para ${vaga.empresa}.`, {
                     description: "O cliente foi notificado e tem 48h para emitir parecer.",
                   });
                 }}
@@ -1558,7 +1651,7 @@ export default function VagaDetalheAdmin() {
                 <h3 className="font-display text-lg font-semibold">Limite de perfis excedido</h3>
                 <p className="text-sm text-muted-foreground mt-1">
                   O contrato permite o envio de no máximo 3 perfis por rodada. Você selecionou{" "}
-                  <strong>{candidatosVaga.filter(c => colunasEstado[c.id] === "Enviados").length} perfis</strong>.
+                  <strong>{candidatosVaga.filter(c => colunasEstado[c.id] === "Entrevista Cliente").length} perfis</strong>.
                   Para prosseguir, justifique o motivo abaixo.
                 </p>
               </div>
@@ -1637,10 +1730,10 @@ export default function VagaDetalheAdmin() {
                   <Send className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-display text-lg font-semibold">Enviar para avaliação do cliente?</h3>
+                  <h3 className="font-display text-lg font-semibold">Mover para Entrevista Cliente?</h3>
                   <p className="text-sm text-muted-foreground mt-1">
                     O perfil de <strong className="text-foreground">{cand?.nome}</strong> será apresentado ao cliente{" "}
-                    <strong className="text-foreground">{vaga.empresa}</strong>. O cliente tem 48h para emitir parecer.
+                    <strong className="text-foreground">{vaga.empresa}</strong> para entrevista. O cliente tem 48h para emitir parecer.
                   </p>
                 </div>
               </div>
@@ -1655,7 +1748,7 @@ export default function VagaDetalheAdmin() {
                   onClick={() => {
                     const id = confirmarEnviadosId;
                     setConfirmarEnviadosId(null);
-                    if (id) moverCandidato(id, "Enviados");
+                    if (id) moverCandidato(id, "Entrevista Cliente");
                   }}
                   className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5"
                 >
@@ -1667,10 +1760,9 @@ export default function VagaDetalheAdmin() {
         );
       })()}
 
-      {/* Confirmação: Mover para "Decisão" final */}
-      {confirmarDecisaoId && (() => {
-        const cand = candidatosVaga.find((c) => c.id === confirmarDecisaoId);
-        const opcoes: OpcaoDecisao[] = ["Contratado", "Reprovado pelo cliente", "Em negociação"];
+      {/* Confirmação: Mover para "Contratado" */}
+      {confirmarContratadoId && (() => {
+        const cand = candidatosVaga.find((c) => c.id === confirmarContratadoId);
         return (
           <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
             <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
@@ -1679,64 +1771,77 @@ export default function VagaDetalheAdmin() {
                   <CheckCircle2 className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-display text-lg font-semibold">Mover para Decisão Final</h3>
+                  <h3 className="font-display text-lg font-semibold">Confirmar contratação?</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Selecione o desfecho para <strong className="text-foreground">{cand?.nome}</strong>:
+                    Marcar <strong className="text-foreground">{cand?.nome}</strong> como contratado para esta vaga.
                   </p>
                 </div>
               </div>
-              <div className="mt-4 space-y-2">
-                {opcoes.map((op) => (
-                  <label
-                    key={op}
-                    className={cn(
-                      "flex items-center gap-2.5 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors",
-                      opcaoDecisao === op
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:bg-secondary"
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="decisao-final"
-                      value={op}
-                      checked={opcaoDecisao === op}
-                      onChange={() => setOpcaoDecisao(op)}
-                      className="h-4 w-4 accent-primary"
-                    />
-                    <span className="text-sm font-medium">{op}</span>
-                  </label>
-                ))}
-              </div>
               <div className="mt-5 flex items-center justify-end gap-2">
                 <button
-                  onClick={() => { setConfirmarDecisaoId(null); setOpcaoDecisao(null); }}
+                  onClick={() => setConfirmarContratadoId(null)}
                   className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm"
                 >
                   Cancelar
                 </button>
                 <button
-                  disabled={!opcaoDecisao}
                   onClick={() => {
-                    const id = confirmarDecisaoId;
-                    const op = opcaoDecisao;
-                    const nome = cand?.nome ?? "Candidato";
-                    setConfirmarDecisaoId(null);
-                    setOpcaoDecisao(null);
-                    if (id && op) {
-                      moverCandidato(id, "Decisão");
-                      toast.success(`${nome} — ${op}`);
-                    }
+                    const id = confirmarContratadoId;
+                    setConfirmarContratadoId(null);
+                    if (id) moverCandidato(id, "Contratado");
                   }}
-                  className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-9 px-4 rounded-lg bg-success text-success-foreground text-sm font-medium inline-flex items-center gap-1.5"
                 >
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Confirmar
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Confirmar contratação
                 </button>
               </div>
             </div>
           </div>
         );
       })()}
+
+      {/* Alerta: candidato movido sem timer ativo */}
+      {alertaPlayOpen && alertaPlayCandId && alertaPlayDestino && (
+        <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-full bg-warning/15 text-warning flex items-center justify-center shrink-0">
+                <Play className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-display text-lg font-semibold">Você não deu play nessa vaga</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Tem alguma tarefa rodando? Deseja dar play nesta etapa antes de mover o candidato?
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                onClick={() => {
+                  const id = alertaPlayCandId;
+                  const dest = alertaPlayDestino;
+                  setAlertaPlayOpen(false);
+                  setAlertaPlayCandId(null);
+                  setAlertaPlayDestino(null);
+                  if (id && dest) tentarMoverSemAlerta(id, dest);
+                }}
+                className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm"
+              >
+                Mover sem play
+              </button>
+              <button
+                onClick={() => {
+                  setAlertaPlayOpen(false);
+                  navigate(`/app/horas?task_id=${vaga.id}&vaga=${encodeURIComponent(vaga.titulo)}`);
+                }}
+                className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5"
+              >
+                <Play className="h-3.5 w-3.5" /> Dar play agora
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal: Novo candidato (manual) ───────────────────────── */}
       {novoCandOpen && (
