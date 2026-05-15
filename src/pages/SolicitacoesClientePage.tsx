@@ -259,7 +259,6 @@ const FORM_INICIAL = {
 
 export default function SolicitacoesClientePage() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const empresaId = user?.empresaId ?? "";
 
   const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>(() =>
