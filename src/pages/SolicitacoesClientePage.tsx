@@ -64,6 +64,8 @@ interface MensagemHistorico {
   autor: string;
   texto: string;
   data: string; // ISO
+  enviadoEm?: number;
+  editadoEm?: string;
 }
 
 interface Solicitacao {
