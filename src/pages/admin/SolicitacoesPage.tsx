@@ -499,51 +499,32 @@ function AdminView() {
                       Sem mensagens ainda.
                     </p>
                   )}
-                  {(selected.historico ?? []).map((h, i) => {
-                    const isMe = h.autor.includes("Costa") ||
-                      h.autor.includes("Lima") ||
-                      h.autor.includes("Beatriz") ||
-                      h.autor.includes("Azumi") ||
-                      h.autor.includes("interno") ||
-                      h.autor === "Você";
-                    return (
-                      <div key={i}
-                        className={cn("flex gap-2 items-end",
-                          isMe && "flex-row-reverse")}>
-                        {!isMe && (
-                          <div className="h-7 w-7 rounded-md bg-gradient-brand flex items-center justify-center text-[10px] font-semibold text-white shrink-0">
-                            {h.autor.charAt(0)}
-                          </div>
-                        )}
-                        <div className={cn(
-                          "max-w-[78%] rounded-2xl px-3 py-2 text-sm shadow-sm",
-                          isMe
-                            ? "bg-primary text-primary-foreground rounded-br-sm"
-                            : "bg-secondary text-foreground rounded-bl-sm border border-border"
-                        )}>
-                          {!isMe && (
-                            <div className="text-[10px] font-semibold mb-0.5 text-primary">
-                              {h.autor}
-                            </div>
-                          )}
-                          <p className="break-words">{h.texto}</p>
-                          <div className={cn(
-                            "text-[10px] font-data mt-1 text-right",
-                            isMe ? "text-primary-foreground/70" : "text-muted-foreground"
-                          )}>
-                            {h.quando}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {(selected.historico ?? []).map((h, i) => (
+                    <MensagemChat
+                      key={i}
+                      mensagem={h}
+                      index={i}
+                      onEditar={(idx, texto, editadoEm) => {
+                        atualizarSolicitacao(selected.id, {
+                          historico: (selected.historico ?? []).map((m, j) =>
+                            j === idx ? { ...m, texto, editadoEm } : m
+                          ),
+                        });
+                      }}
+                      onExcluir={(idx) => {
+                        atualizarSolicitacao(selected.id, {
+                          historico: (selected.historico ?? []).filter((_, j) => j !== idx),
+                        });
+                      }}
+                    />
+                  ))}
                 </div>
 
                 {selected.status !== "finalizada" && selected.status !== "cancelada" && (
                   <RespostaInput
                     onEnviar={(texto) => {
                       const agora = format(new Date(), "dd/MM HH:mm");
-                      const nova = { autor: "Você", quando: agora, texto };
+                      const nova: HistoricoItem = { autor: "Você", quando: agora, texto, enviadoEm: Date.now() };
                       atualizarSolicitacao(selected.id, {
                         historico: [...(selected.historico ?? []), nova],
                       });
