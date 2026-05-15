@@ -5,7 +5,7 @@ import { ptBR } from "date-fns/locale";
 import {
   Clock, Timer as TimerIcon, PenSquare, Download, Play,
   CalendarIcon, ChevronDown, ChevronRight, AlertTriangle, Filter,
-  Briefcase,
+  Briefcase, MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -69,6 +69,21 @@ interface Lancamento {
   observacao?: string;     // detalhe extra (somente expandido)
   requerRevisao?: boolean;
   etapaVaga?: EtapaVaga;
+}
+
+type CanalInteracao = "WhatsApp" | "E-mail" | "Ligação" | "Visita presencial" | "Outro";
+
+interface Interacao {
+  id: string;
+  data: string;
+  canal: CanalInteracao;
+  empresaId: string;
+  empresaNome: string;
+  entregavel?: string;
+  duracaoMin: number;
+  descricao: string;
+  consultorId: string;
+  consultorNome: string;
 }
 
 // Projetos por empresa para o select dependente
@@ -383,6 +398,42 @@ export default function HorasPage() {
   const [mInicio, setMInicio] = useState<string>("");   // "HH:mm"
   const [mFim, setMFim] = useState<string>("");          // "HH:mm"
   const [mJustificativa, setMJustificativa] = useState<string>("");
+
+  // ── Interações externas ────────────────────────────────────────
+  const [interacoes, setInteracoes] = useState<Interacao[]>([]);
+  const [interacaoAberta, setInteracaoAberta] = useState<string>("");
+  const [iCanal, setICanal] = useState<CanalInteracao>("WhatsApp");
+  const [iEmpresa, setIEmpresa] = useState<string>("");
+  const [iEntregavel, setIEntregavel] = useState<string>("");
+  const [iData, setIData] = useState<Date | undefined>(undefined);
+  const [iDuracao, setIDuracao] = useState<string>("");
+  const [iDescricao, setIDescricao] = useState<string>("");
+
+  function salvarInteracao(e: React.FormEvent) {
+    e.preventDefault();
+    if (!iCanal || !iEmpresa || !iData || !iDuracao || !iDescricao.trim()) {
+      toast.error("Preencha todos os campos obrigatórios.");
+      return;
+    }
+    const empresa = empresas.find((emp) => emp.id === iEmpresa);
+    const nova: Interacao = {
+      id: `int_${Date.now()}`,
+      data: format(iData, "yyyy-MM-dd"),
+      canal: iCanal,
+      empresaId: iEmpresa,
+      empresaNome: empresa?.nome ?? iEmpresa,
+      entregavel: iEntregavel || undefined,
+      duracaoMin: Number(iDuracao),
+      descricao: iDescricao.trim(),
+      consultorId: "ab",
+      consultorNome: "Ana Beatriz",
+    };
+    setInteracoes((prev) => [nova, ...prev]);
+    toast.success(`Interação via ${iCanal} registrada.`);
+    setInteracaoAberta("");
+    setICanal("WhatsApp"); setIEmpresa(""); setIEntregavel("");
+    setIData(undefined); setIDuracao(""); setIDescricao("");
+  }
 
   const projetosDisponiveis = useMemo(
     () => (mEmpresa ? projetosPorEmpresa[mEmpresa] ?? [] : []),
@@ -732,6 +783,142 @@ export default function HorasPage() {
         </Accordion>
       </section>
 
+      {/* ───────── 2b. Interações externas ───────── */}
+      <section className="bg-card border border-border rounded-xl mb-6 overflow-hidden">
+        <Accordion type="single" collapsible value={interacaoAberta} onValueChange={setInteracaoAberta}>
+          <AccordionItem value="interacao" className="border-none">
+            <AccordionTrigger className="px-5 py-4 hover:no-underline">
+              <div className="flex items-center gap-2">
+                <div className="h-9 w-9 rounded-lg bg-info/15 text-info flex items-center justify-center">
+                  <MessageSquare className="h-4 w-4" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-display font-semibold text-sm">Registrar interação externa</h3>
+                  <p className="text-[11px] text-muted-foreground font-normal">
+                    WhatsApp, e-mail, ligação, visita presencial
+                  </p>
+                </div>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-5 pb-5">
+              <form onSubmit={salvarInteracao} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Canal */}
+                <div className="space-y-1.5 md:col-span-2">
+                  <Label>Canal <span className="text-destructive">*</span></Label>
+                  <div className="flex flex-wrap gap-2">
+                    {(["WhatsApp","E-mail","Ligação","Visita presencial","Outro"] as CanalInteracao[]).map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setICanal(c)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-full border text-xs transition-colors",
+                          iCanal === c
+                            ? "border-primary bg-primary/10 text-primary font-medium"
+                            : "border-border hover:bg-secondary/50"
+                        )}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Data */}
+                <div className="space-y-1.5">
+                  <Label>Data <span className="text-destructive">*</span></Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        type="button"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !iData && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {iData ? format(iData, "dd 'de' MMMM yyyy", { locale: ptBR }) : "Selecione uma data"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={iData}
+                        onSelect={setIData}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Empresa */}
+                <div className="space-y-1.5">
+                  <Label>Empresa <span className="text-destructive">*</span></Label>
+                  <Select value={iEmpresa} onValueChange={setIEmpresa}>
+                    <SelectTrigger><SelectValue placeholder="Selecione a empresa" /></SelectTrigger>
+                    <SelectContent>
+                      {empresas.filter((e) => projetosPorEmpresa[e.id]).map((e) => (
+                        <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Duração estimada */}
+                <div className="space-y-1.5">
+                  <Label>Duração estimada (min) <span className="text-destructive">*</span></Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={iDuracao}
+                    onChange={(e) => setIDuracao(e.target.value)}
+                    placeholder="Ex: 15"
+                  />
+                  {iDuracao && Number(iDuracao) > 0 && (
+                    <p className="text-[10px] text-muted-foreground">
+                      {Math.floor(Number(iDuracao) / 60) > 0
+                        ? `${Math.floor(Number(iDuracao) / 60)}h `
+                        : ""}
+                      {Number(iDuracao) % 60}min
+                    </p>
+                  )}
+                </div>
+
+                {/* Entregável relacionado (opcional) */}
+                <div className="space-y-1.5">
+                  <Label>
+                    Entregável relacionado
+                    <span className="ml-1 text-[10px] font-normal text-muted-foreground">(opcional)</span>
+                  </Label>
+                  <Input
+                    value={iEntregavel}
+                    onChange={(e) => setIEntregavel(e.target.value)}
+                    placeholder="Nome do entregável (se aplicável)"
+                  />
+                </div>
+
+                {/* Descrição */}
+                <div className="space-y-1.5 md:col-span-2">
+                  <Label>Descrição breve <span className="text-destructive">*</span></Label>
+                  <Textarea
+                    rows={3}
+                    value={iDescricao}
+                    onChange={(e) => setIDescricao(e.target.value)}
+                    placeholder="Resumo da interação…"
+                  />
+                </div>
+
+                <div className="md:col-span-2 flex justify-end">
+                  <Button type="submit">Registrar interação</Button>
+                </div>
+              </form>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </section>
+
       {/* ───────── 3. Extrato de Horas ───────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
         <KpiCard label="Total no período" value={`${totalHoras.toFixed(2)}h`} icon={Clock} />
@@ -913,6 +1100,49 @@ export default function HorasPage() {
                     </>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {interacoes.length > 0 && (
+          <div className="mt-4 border-t border-border pt-4">
+            <h4 className="text-xs font-medium uppercase tracking-wider text-muted-foreground px-4 mb-2">
+              Interações externas registradas
+            </h4>
+            <table className="w-full text-sm">
+              <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="text-left font-medium px-4 py-2">Data</th>
+                  <th className="text-left font-medium px-4 py-2">Canal</th>
+                  <th className="text-left font-medium px-4 py-2">Empresa</th>
+                  <th className="text-left font-medium px-4 py-2">Descrição</th>
+                  <th className="text-right font-medium px-4 py-2">Duração</th>
+                </tr>
+              </thead>
+              <tbody>
+                {interacoes.map((int) => (
+                  <tr key={int.id} className="border-t border-border hover:bg-secondary/20">
+                    <td className="px-4 py-2 font-data text-xs">
+                      {format(new Date(int.data), "dd/MM/yy", { locale: ptBR })}
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className="badge-pill bg-info/15 text-info border-info/30">
+                        {int.canal}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2">{int.empresaNome}</td>
+                    <td className="px-4 py-2 text-muted-foreground text-xs max-w-[200px] truncate">
+                      {int.descricao}
+                    </td>
+                    <td className="px-4 py-2 text-right font-data text-xs">
+                      {Math.floor(int.duracaoMin / 60) > 0
+                        ? `${Math.floor(int.duracaoMin / 60)}h `
+                        : ""}
+                      {int.duracaoMin % 60}min
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
