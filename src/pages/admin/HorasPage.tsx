@@ -372,6 +372,7 @@ export default function HorasPage() {
 
   function handleTimerStop(seconds: number) {
     setTimerAtivo(false);
+    timerCtx.encerrar();
     if (seconds > 0 && tarefaAtiva) {
       const horasReg = Number((seconds / 3600).toFixed(2));
       const novo: Lancamento = {
