@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SlaBar } from "@/components/SlaBar";
-import { vagas as vagasMock } from "@/data/mock";
+import { vagas as vagasMock, type StatusKey } from "@/data/mock";
 import { Plus, LayoutGrid, List, Filter, Info, AlertTriangle } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
