@@ -775,7 +775,8 @@ export default function HorasPage() {
               <tbody>
                 {filtrados.map((l) => {
                   const isOpen = expandido === l.id;
-                  const hasDetalhe = Boolean(l.justificativa || l.observacao);
+                  const obsVisivel = Boolean(l.observacao && !l.observacao.startsWith("Início"));
+                  const hasDetalhe = Boolean(l.justificativa || obsVisivel);
                   return (
                     <>
                       <tr
