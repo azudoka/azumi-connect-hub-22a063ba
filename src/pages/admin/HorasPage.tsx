@@ -36,6 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import { useAuth } from "@/context/AuthContext";
+import { useTimerGlobal } from "@/context/TimerContext";
 import { empresas, consultores } from "@/data/mock";
 
 // ────────────────────────────────────────────────────────────────────
