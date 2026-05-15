@@ -11,9 +11,25 @@ import {
   FileText,
   Plus,
   Send,
+  Star,
+  Target,
   TrendingUp,
   Wallet,
 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 import { PageHeader } from "@/components/PageHeader";
 import { KpiCard } from "@/components/KpiCard";
@@ -32,6 +48,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import type { StatusKey } from "@/data/mock";
 
@@ -148,6 +165,61 @@ const ENTREGAVEIS: EntregavelProx[] = [
 ];
 
 // =====================================================================
+// Mock — Operação
+// =====================================================================
+
+const ATRASO_POR_CONSULTOR = [
+  { consultor: "Ana B.", atrasados: 3 },
+  { consultor: "Camila T.", atrasados: 2 },
+  { consultor: "Rafael M.", atrasados: 1 },
+  { consultor: "Lucas P.", atrasados: 4 },
+  { consultor: "Marina S.", atrasados: 0 },
+];
+
+const ENGAJAMENTO_PIE = [
+  { name: "Aprovado", value: 14, color: "#22c55e" },
+  { name: "Pendente", value: 6,  color: "#f59e0b" },
+  { name: "Atrasado", value: 3,  color: "#ef4444" },
+];
+
+const ENGAJAMENTO_SLA = [
+  { label: "Kentaki Foods",   pct: 82 },
+  { label: "Tech Plural",     pct: 55 },
+  { label: "Alvo Digital",    pct: 91 },
+  { label: "Grupo Maverick",  pct: 67 },
+];
+
+const PRODUTIVIDADE = [
+  { semana: "S1", planejado: 38, realizado: 35 },
+  { semana: "S2", planejado: 42, realizado: 41 },
+  { semana: "S3", planejado: 40, realizado: 38 },
+  { semana: "S4", planejado: 45, realizado: 44 },
+];
+
+const NPS_LINHA = [
+  { mes: "Dez", nps: 62 },
+  { mes: "Jan", nps: 68 },
+  { mes: "Fev", nps: 71 },
+  { mes: "Mar", nps: 74 },
+  { mes: "Abr", nps: 78 },
+  { mes: "Mai", nps: 82 },
+];
+
+const NPS_DIST = [
+  { label: "Promotores",  pct: 65, color: "#22c55e" },
+  { label: "Neutros",     pct: 22, color: "#f59e0b" },
+  { label: "Detratores",  pct: 13, color: "#ef4444" },
+];
+
+const SLA_VAGAS = [
+  { vaga: "Dev Full Stack — Tech Plural",    diasAberta: 12, slaMax: 30 },
+  { vaga: "Analista RH — Kentaki Foods",     diasAberta: 24, slaMax: 30 },
+  { vaga: "Designer UX — Alvo Digital",      diasAberta: 8,  slaMax: 30 },
+  { vaga: "Gerente Comercial — Maverick",    diasAberta: 29, slaMax: 30 },
+  { vaga: "Coordenador Fiscal — Tech Plural",diasAberta: 5,  slaMax: 30 },
+];
+
+// =====================================================================
 // Página
 // =====================================================================
 
@@ -198,6 +270,14 @@ function AdminDashboard() {
         title={`${saudacao}, Ana 👋`}
         subtitle={dataCapitalizada}
       />
+
+      <Tabs defaultValue="visao-geral" className="mt-1">
+        <TabsList className="mb-5">
+          <TabsTrigger value="visao-geral">Visão Geral</TabsTrigger>
+          <TabsTrigger value="operacao">Operação</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="visao-geral">
 
       {/* =================== 1. KPIs =================== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -499,6 +579,252 @@ function AdminDashboard() {
           </Card>
         </div>
       </div>
+
+        </TabsContent>{/* end visao-geral */}
+
+        {/* =================== ABA OPERAÇÃO =================== */}
+        <TabsContent value="operacao">
+          <div className="space-y-6">
+
+            {/* BLOCO 1 — Tarefas em atraso por consultor */}
+            <Card className="p-5">
+              <div className="mb-4">
+                <h2 className="font-display text-base font-semibold flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  Entregáveis em atraso por consultor
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Distribuição dos atrasos ativos por responsável
+                </p>
+              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={ATRASO_POR_CONSULTOR} barSize={36}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis dataKey="consultor" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={28} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid hsl(var(--border))" }}
+                    formatter={(v: number) => [`${v} atraso(s)`, "Quantidade"]}
+                  />
+                  <Bar dataKey="atrasados" radius={[4, 4, 0, 0]}>
+                    {ATRASO_POR_CONSULTOR.map((entry) => (
+                      <Cell
+                        key={entry.consultor}
+                        fill={entry.atrasados === 0 ? "hsl(var(--success))" : entry.atrasados >= 3 ? "hsl(var(--destructive))" : "hsl(var(--warning))"}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+
+            {/* BLOCO 2 — Engajamento do cliente */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card className="p-5">
+                <div className="mb-4">
+                  <h2 className="font-display text-base font-semibold flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    Engajamento dos clientes
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Aprovações x pendências x atrasos
+                  </p>
+                </div>
+                <div className="flex items-center gap-6">
+                  <ResponsiveContainer width={160} height={160}>
+                    <PieChart>
+                      <Pie
+                        data={ENGAJAMENTO_PIE}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={48}
+                        outerRadius={70}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {ENGAJAMENTO_PIE.map((entry) => (
+                          <Cell key={entry.name} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid hsl(var(--border))" }}
+                        formatter={(v: number, name: string) => [`${v} entregáveis`, name]}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <ul className="space-y-2 flex-1">
+                    {ENGAJAMENTO_PIE.map((e) => (
+                      <li key={e.name} className="flex items-center gap-2 text-sm">
+                        <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: e.color }} />
+                        <span className="flex-1 text-muted-foreground">{e.name}</span>
+                        <span className="font-data font-semibold tabular-nums">{e.value}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </Card>
+
+              <Card className="p-5">
+                <div className="mb-4">
+                  <h2 className="font-display text-base font-semibold">SLA de resposta por empresa</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    % de respostas dentro do prazo acordado
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  {ENGAJAMENTO_SLA.map((s) => (
+                    <div key={s.label}>
+                      <div className="flex items-center justify-between text-sm mb-1.5">
+                        <span>{s.label}</span>
+                        <span className={cn("font-data font-semibold tabular-nums", s.pct >= 80 ? "text-success" : s.pct >= 60 ? "text-warning" : "text-destructive")}>
+                          {s.pct}%
+                        </span>
+                      </div>
+                      <Progress
+                        value={s.pct}
+                        className={cn("h-2", s.pct >= 80 ? "[&>div]:bg-success" : s.pct >= 60 ? "[&>div]:bg-warning" : "[&>div]:bg-destructive")}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+
+            {/* BLOCO 3 — Produtividade dos consultores */}
+            <Card className="p-5">
+              <div className="mb-4">
+                <h2 className="font-display text-base font-semibold flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  Produtividade da equipe — últimas 4 semanas
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Horas planejadas vs. realizadas
+                </p>
+              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={PRODUTIVIDADE} barCategoryGap="30%" barGap={4}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis dataKey="semana" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={32} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid hsl(var(--border))" }}
+                    formatter={(v: number, name: string) => [`${v}h`, name === "planejado" ? "Planejado" : "Realizado"]}
+                  />
+                  <Bar dataKey="planejado" fill="hsl(var(--primary) / 0.3)" radius={[4, 4, 0, 0]} name="planejado" />
+                  <Bar dataKey="realizado" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="realizado" />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="flex items-center gap-4 mt-2 justify-center">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="h-2.5 w-2.5 rounded-sm bg-primary/30" />
+                  Planejado
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="h-2.5 w-2.5 rounded-sm bg-primary" />
+                  Realizado
+                </div>
+              </div>
+            </Card>
+
+            {/* BLOCO 4 — NPS de satisfação */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card className="p-5">
+                <div className="mb-4">
+                  <h2 className="font-display text-base font-semibold flex items-center gap-2">
+                    <Star className="h-4 w-4 text-amber-400" />
+                    NPS — evolução mensal
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Nota média dos últimos 6 meses (0–100)
+                  </p>
+                </div>
+                <ResponsiveContainer width="100%" height={180}>
+                  <LineChart data={NPS_LINHA}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                    <XAxis dataKey="mes" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[50, 100]} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={32} />
+                    <Tooltip
+                      contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid hsl(var(--border))" }}
+                      formatter={(v: number) => [`${v}`, "NPS"]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="nps"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2.5}
+                      dot={{ r: 4, fill: "hsl(var(--primary))" }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Card>
+
+              <Card className="p-5">
+                <div className="mb-4">
+                  <h2 className="font-display text-base font-semibold">Distribuição NPS</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Promotores, neutros e detratores
+                  </p>
+                </div>
+                <div className="space-y-4 mt-2">
+                  {NPS_DIST.map((d) => (
+                    <div key={d.label}>
+                      <div className="flex items-center justify-between text-sm mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: d.color }} />
+                          {d.label}
+                        </div>
+                        <span className="font-data font-semibold tabular-nums">{d.pct}%</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div className="h-full rounded-full transition-all" style={{ width: `${d.pct}%`, background: d.color }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-5 pt-4 border-t border-border flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">NPS atual</span>
+                  <span className="font-data text-2xl font-bold text-success tabular-nums">82</span>
+                </div>
+              </Card>
+            </div>
+
+            {/* BLOCO 5 — SLA de vagas ativas */}
+            <Card className="p-5">
+              <div className="mb-4">
+                <h2 className="font-display text-base font-semibold flex items-center gap-2">
+                  <Briefcase className="h-4 w-4 text-primary" />
+                  SLA de vagas ativas (hunting)
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Dias em aberto vs. SLA máximo de 30 dias
+                </p>
+              </div>
+              <div className="space-y-4">
+                {SLA_VAGAS.map((v) => {
+                  const pct = Math.round((v.diasAberta / v.slaMax) * 100);
+                  const cor = pct >= 90 ? "bg-destructive" : pct >= 70 ? "bg-warning" : "bg-success";
+                  return (
+                    <div key={v.vaga}>
+                      <div className="flex items-center justify-between text-sm mb-1.5">
+                        <span className="truncate max-w-[65%]">{v.vaga}</span>
+                        <span className={cn("font-data font-semibold tabular-nums shrink-0", pct >= 90 ? "text-destructive" : pct >= 70 ? "text-warning" : "text-success")}>
+                          {v.diasAberta}d / {v.slaMax}d
+                        </span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div className={cn("h-full rounded-full transition-all", cor)} style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+
+          </div>
+        </TabsContent>{/* end operacao */}
+
+      </Tabs>
     </div>
   );
 }
