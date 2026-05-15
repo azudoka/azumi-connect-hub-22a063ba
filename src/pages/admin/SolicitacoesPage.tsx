@@ -522,6 +522,16 @@ function AdminView() {
                 <div className="font-medium">{selected.consultor}</div>
               </div>
 
+              {selected.obsInterna && (
+                <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 text-xs">
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 flex items-center gap-1">
+                    <Lock className="h-3 w-3" />
+                    Observação interna (somente equipe Azumi)
+                  </div>
+                  <p className="text-foreground">{selected.obsInterna}</p>
+                </div>
+              )}
+
               {/* Chat */}
               <div>
                 <div className="flex items-center gap-2 mb-3 text-sm font-medium">
