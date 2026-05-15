@@ -238,8 +238,9 @@ export default function ProjetoDetalhe() {
     return Math.round((concluidos / total) * 100) || 62;
   }, [entregaveis]);
 
-  function ativaTimerPara(codigo: string) {
-    navigate(`/app/horas?task_id=${codigo}`);
+  function ativaTimerPara(entregavel: Entregavel) {
+    const taskId = encodeURIComponent(entregavel.nome);
+    navigate(`/app/horas?entregavel=${taskId}&codigo=${entregavel.codigo}`);
   }
 
   function aplicarMudancaStatus(entId: string, novoStatus: EntregavelStatus) {
@@ -381,7 +382,7 @@ export default function ProjetoDetalhe() {
                       size="icon"
                       variant="outline"
                       disabled={bloqueado}
-                      onClick={() => ativaTimerPara(e.codigo)}
+                      onClick={() => ativaTimerPara(e)}
                       aria-label={`Iniciar timer para ${e.codigo}`}
                     >
                       {bloqueado ? <Lock className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -827,7 +828,7 @@ export default function ProjetoDetalhe() {
         entregavel={entregaveis.find((e) => e.id === panelOpen.entId) ?? null}
         onClose={() => setPanelOpen({ open: false, entId: null })}
         onPatch={(patch) => panelOpen.entId && patchEntregavel(panelOpen.entId, patch)}
-        onAbrirHoras={(codigo) => navigate(`/app/horas?task_id=${codigo}`)}
+        onAbrirHoras={(ent) => ativaTimerPara(ent)}
       />
     </div>
   );
@@ -1292,7 +1293,7 @@ function EntregavelPanelSheet({
   entregavel: Entregavel | null;
   onClose: () => void;
   onPatch: (patch: Partial<Entregavel>) => void;
-  onAbrirHoras: (codigo: string) => void;
+  onAbrirHoras: (entregavel: Entregavel) => void;
 }) {
   const [novaSubtarefa, setNovaSubtarefa] = useState("");
   const [novaSubtarefaH, setNovaSubtarefaH] = useState<number | "">("");
@@ -1412,7 +1413,7 @@ function EntregavelPanelSheet({
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onAbrirHoras(entregavel.codigo)}
+            onClick={() => onAbrirHoras(entregavel)}
             disabled={bloqueado}
             className="gap-1.5"
           >
@@ -1421,7 +1422,7 @@ function EntregavelPanelSheet({
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => onAbrirHoras(entregavel.codigo)}
+            onClick={() => onAbrirHoras(entregavel)}
             className="gap-1.5"
           >
             <Clock className="h-3.5 w-3.5" /> Ver horas

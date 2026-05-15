@@ -200,17 +200,34 @@ export default function HorasPage() {
   const [searchParams] = useSearchParams();
   useEffect(() => {
     const taskId = searchParams.get("task_id") ?? searchParams.get("taskId");
-    if (!taskId) return;
-    const tarefa =
-      tarefasFlat.find((t) => t.id === taskId) ??
-      tarefasFlat.find((t) => t.entregavel === taskId) ??
-      tarefasFlat.find((t) => t.id.endsWith(`::${taskId}`));
-    if (tarefa) {
-      setTEmpresa(tarefa.empresaId);
-      setTTarefaId(tarefa.id);
-      toast.info(`Tarefa pré-selecionada: ${tarefa.label}`);
-    } else {
-      toast.error("Tarefa não encontrada para este link.");
+    const entNome = searchParams.get("entregavel");
+    const codigo = searchParams.get("codigo");
+
+    if (taskId) {
+      const tarefa =
+        tarefasFlat.find((t) => t.id === taskId) ??
+        tarefasFlat.find((t) => t.entregavel === taskId) ??
+        tarefasFlat.find((t) => t.id.endsWith(`::${taskId}`));
+      if (tarefa) {
+        setTEmpresa(tarefa.empresaId);
+        setTTarefaId(tarefa.id);
+        toast.info(`Tarefa pré-selecionada: ${tarefa.label}`);
+        return;
+      }
+    }
+
+    if (entNome) {
+      const decoded = decodeURIComponent(entNome);
+      const tarefa = tarefasFlat.find((t) => t.entregavel === decoded);
+      if (tarefa) {
+        setTEmpresa(tarefa.empresaId);
+        setTTarefaId(tarefa.id);
+        toast.info(`Tarefa pré-selecionada: ${tarefa.label}`);
+        return;
+      }
+      if (codigo) {
+        toast.info(`Aberto para ${decoded} (${codigo}). Selecione a empresa manualmente.`);
+      }
     }
   }, [searchParams]);
 
