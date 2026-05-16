@@ -60,7 +60,7 @@ const BENEFICIO_LABEL: Record<string, string> = {
 import {
   ArrowLeft, Building2, MapPin, Send, MessageSquare, CheckCircle2, Clock,
   Users, FileQuestion, History, Filter, Loader2, AlertTriangle, Bot, User,
-  MoreVertical, Eye, StickyNote, ChevronRight, UserX, Play, UserPlus, Link2,
+  MoreVertical, Eye, StickyNote, ChevronRight, ChevronLeft, UserX, Play, UserPlus, Link2,
   Copy, FileText, MessageCircle, Download, ListChecks, ThumbsDown, CalendarPlus,
   CalendarDays, Globe, Paperclip, X as XIcon, Plus, Mail, Phone, Briefcase, Circle,
   Pencil, Trash2, GripVertical, Star,
@@ -1248,6 +1248,25 @@ export default function VagaDetalheAdmin() {
                                 className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary text-left"
                               >
                                 <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" /> Mover para próxima etapa
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMenuAbertoId(null);
+                                  const atual = colunasEstado[c.id];
+                                  const idx = colunas.indexOf(atual);
+                                  if (idx <= 0) {
+                                    toast.info(`${c.nome} já está na primeira etapa.`);
+                                    return;
+                                  }
+                                  const anterior = colunas[idx - 1];
+                                  setColunasEstado((prev) => ({ ...prev, [c.id]: anterior }));
+                                  toast.info(`${c.nome} retornado para ${anterior}.`);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary text-left"
+                              >
+                                <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />
+                                Retornar etapa anterior
                               </button>
                               <button
                                 type="button"
