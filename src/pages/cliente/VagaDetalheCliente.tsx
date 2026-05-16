@@ -117,7 +117,7 @@ export default function VagaDetalheCliente() {
 
   // Estado de modais
   const [fichaCandId, setFichaCandId] = useState<string | null>(null);
-  const [relatorioCandId, setRelatorioCandId] = useState<string | null>(null);
+  
   const [parecerCandId, setParecerCandId] = useState<string | null>(null);
   const [feedback1aLevaOpen, setFeedback1aLevaOpen] = useState(false);
   const [respostaGestorAgId, setRespostaGestorAgId] = useState<string | null>(null);
@@ -243,7 +243,7 @@ export default function VagaDetalheCliente() {
                 className="bg-card border border-border rounded-xl p-5 card-hover"
               >
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-gradient-brand flex items-center justify-center text-xs font-semibold text-white">
+                  <div className="h-10 w-10 rounded-md bg-gradient-brand flex items-center justify-center text-xs font-semibold text-white">
                     {c.nome
                       .split(" ")
                       .map((n) => n[0])
