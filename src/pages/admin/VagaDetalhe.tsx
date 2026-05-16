@@ -349,7 +349,7 @@ export default function VagaDetalheAdmin() {
   const [enviarQuestParaCand, setEnviarQuestParaCand] = useState<string | null>(null);
   /** Modal "Enviar via WhatsApp" — guarda candidatoId + questionarioId (opcional). */
   const [whatsTemplateOpen, setWhatsTemplateOpen] = useState<{ candidatoId: string; questionarioId?: string } | null>(null);
-  const [resumoOpen, setResumoOpen] = useState<string | null>(null);
+  
   const [discWhatsOpen, setDiscWhatsOpen] = useState<string | null>(null);
   const [associarQuestOpen, setAssociarQuestOpen] = useState<string | null>(null);
   const [declinarOpen, setDeclinarOpen] = useState<string | null>(null);
