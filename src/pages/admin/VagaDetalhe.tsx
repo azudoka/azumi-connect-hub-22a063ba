@@ -5,7 +5,7 @@ import { SlaBar } from "@/components/SlaBar";
 import { DiscBars } from "@/components/DiscBars";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { vagas, candidatos, etapasVaga, comentariosVaga, getGestorDaVaga, type JanelaDisponibilidade } from "@/data/mock";
-import { getParecerCliente, getFeedback1aLeva } from "@/data/atracaoClienteStore";
+import { getParecerCliente, getFeedback1aLeva, resetSeedDemo } from "@/data/atracaoClienteStore";
 import {
   criarAgendamento,
   enviarParaCandidatoConfirmar,
