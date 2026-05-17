@@ -63,8 +63,15 @@ import {
   MoreVertical, Eye, StickyNote, ChevronRight, ChevronLeft, UserX, Play, UserPlus, Link2,
   Copy, FileText, MessageCircle, Download, ListChecks, ThumbsDown, CalendarPlus,
   CalendarDays, Globe, Paperclip, X as XIcon, Plus, Mail, Phone, Briefcase, Circle,
-  Pencil, Trash2, GripVertical, Star, BookOpen,
+  Pencil, Trash2, GripVertical, Star, BookOpen, PauseCircle, ShieldOff, Ban,
 } from "lucide-react";
+
+const DISC_CONFIG = {
+  D: { nome: "Executor",    cor: "#EF4444", corTexto: "#fff" },
+  I: { nome: "Comunicador", cor: "#F59E0B", corTexto: "#fff" },
+  S: { nome: "Planejador",  cor: "#10B981", corTexto: "#fff" },
+  C: { nome: "Analista",    cor: "#3B82F6", corTexto: "#fff" },
+} as const;
 import { cn } from "@/lib/utils";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
