@@ -63,8 +63,8 @@ export default function Login() {
 
       <div className="relative z-10 w-full max-w-xl animate-scale-in">
         <div className="text-center mb-8">
-          <div className="inline-flex h-12 w-12 rounded-xl bg-gradient-brand items-center justify-center font-logo font-bold text-white text-xl shadow-violet">
-            A
+          <div className="inline-flex items-center justify-center">
+            <AzumiLogo product="Connect" size={26} />
           </div>
           <h1 className="mt-4 font-logo text-2xl md:text-3xl font-bold leading-tight">
             A plataforma que centraliza toda a gestão de RH da sua empresa.
