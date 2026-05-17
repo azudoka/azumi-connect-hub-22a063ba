@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth, type AuthUser } from "@/context/AuthContext";
+import { AzumiMark } from "@/components/brand/AzumiLogo";
 
 type PerfilItem = {
   key: string;
