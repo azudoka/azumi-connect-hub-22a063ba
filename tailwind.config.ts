@@ -61,6 +61,12 @@ export default {
           light: "hsl(var(--navy-light))",
           dark: "hsl(var(--navy-dark))",
         },
+        ocean: "hsl(var(--ocean))",
+        "azumi-blue": "hsl(var(--azumi-blue))",
+        "azul-destaque": "hsl(var(--azul-destaque))",
+        violeta: "hsl(var(--violeta))",
+        ice: "hsl(var(--ice))",
+        mint: "hsl(var(--mint))",
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
