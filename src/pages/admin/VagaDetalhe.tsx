@@ -63,7 +63,7 @@ import {
   MoreVertical, Eye, StickyNote, ChevronRight, ChevronLeft, UserX, Play, UserPlus, Link2,
   Copy, FileText, MessageCircle, Download, ListChecks, ThumbsDown, CalendarPlus,
   CalendarDays, Globe, Paperclip, X as XIcon, Plus, Mail, Phone, Briefcase, Circle,
-  Pencil, Trash2, GripVertical, Star,
+  Pencil, Trash2, GripVertical, Star, BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -1274,6 +1274,16 @@ export default function VagaDetalheAdmin() {
                                 className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary text-left"
                               >
                                 <Eye className="h-3.5 w-3.5 text-muted-foreground" /> Ver ficha
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMenuAbertoId(null);
+                                  toast.success("Abrindo currículo de " + c.nome + " (mock).");
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary text-left"
+                              >
+                                <FileText className="h-3.5 w-3.5 text-muted-foreground" /> Ver currículo
                               </button>
                               <button
                                 type="button"
@@ -3426,6 +3436,18 @@ const DADOS_EXTRA_MOCK: Record<string, {
   resumo: string; experiencias: { empresa: string; cargo: string; periodo: string }[];
   discStatus: "nao_solicitado" | "solicitado" | "concluido";
   cpf?: string;
+  linkedin?: string;
+  curriculo?: string;
+  escolaridade?: string;
+  idiomas?: string[];
+  discDetalhes?: {
+    perfil: string;
+    descricao: string;
+    pontosFortes: string[];
+    pontosAtencao: string[];
+    estiloMotivacao: string;
+    perguntasEntrevista: string[];
+  };
 }> = {
   c1: {
     email: "pedro.alves@email.com", telefone: "(11) 99876-1122", cidade: "São Paulo / SP",
@@ -3438,6 +3460,31 @@ const DADOS_EXTRA_MOCK: Record<string, {
     ],
     discStatus: "concluido",
     cpf: "123.456.789-00",
+    linkedin: "https://linkedin.com/in/pedro-alves",
+    curriculo: "curriculo_pedro_alves.pdf",
+    escolaridade: "Pós-graduação / MBA",
+    idiomas: ["Inglês avançado", "Espanhol intermediário"],
+    discDetalhes: {
+      perfil: "Analista (C dominante)",
+      descricao: "Alta atenção a detalhes, orientado a qualidade e precisão. Prefere ambientes estruturados com regras claras.",
+      pontosFortes: [
+        "Análise aprofundada de problemas",
+        "Alta qualidade na entrega",
+        "Organização e planejamento",
+        "Comprometimento com prazos",
+      ],
+      pontosAtencao: [
+        "Pode ser excessivamente perfeccionista",
+        "Dificuldade em delegar",
+        "Lentidão em situações de alta pressão",
+      ],
+      estiloMotivacao: "Ambientes com processos bem definidos, metas claras e reconhecimento pela qualidade do trabalho.",
+      perguntasEntrevista: [
+        "Como você lida quando precisa entregar algo rapidamente sem tempo para revisar?",
+        "Descreva um projeto onde sua atenção a detalhes fez diferença.",
+        "Como você reage quando suas análises são contestadas?",
+      ],
+    },
   },
 };
 
@@ -3641,6 +3688,16 @@ function CandidatoDetailSheet({
               </button>
             )}
             <button
+              onClick={() => {
+                toast.success(`Convite enviado para ${cand.nome} via WhatsApp (mock).`, {
+                  description: "Link da vaga copiado para a área de transferência.",
+                });
+              }}
+              className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-border hover:bg-secondary text-xs font-medium"
+            >
+              <UserPlus className="h-3.5 w-3.5" /> Convidar para vaga
+            </button>
+            <button
               onClick={() => onDeclinar(cand.id)}
               className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-destructive/30 text-destructive hover:bg-destructive/10 text-xs font-medium ml-auto"
             >
@@ -3690,6 +3747,50 @@ function CandidatoDetailSheet({
                 </div>
               </section>
 
+              {/* Bloco: Informações complementares */}
+              <section>
+                <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">Informações complementares</h3>
+                <div className="space-y-2">
+                  {/* Currículo */}
+                  <div className="rounded-md border border-border bg-background/40 px-3 py-2 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Currículo</div>
+                        <div className="text-sm truncate">{dados.curriculo ?? "Não enviado"}</div>
+                      </div>
+                    </div>
+                    {dados.curriculo && (
+                      <button
+                        onClick={() => toast.success("Abrindo currículo (mock).")}
+                        className="h-7 px-2.5 rounded-md border border-border hover:bg-secondary text-[11px] font-medium inline-flex items-center gap-1 shrink-0"
+                      >
+                        <Download className="h-3 w-3" /> Abrir
+                      </button>
+                    )}
+                  </div>
+                  {/* LinkedIn */}
+                  {dados.linkedin && (
+                    <DadoLinha icon={<Link2 className="h-3.5 w-3.5" />} label="LinkedIn" value={dados.linkedin} />
+                  )}
+                  {/* Escolaridade */}
+                  <DadoLinha icon={<BookOpen className="h-3.5 w-3.5" />} label="Escolaridade" value={dados.escolaridade ?? "—"} />
+                  {/* Idiomas */}
+                  {dados.idiomas && dados.idiomas.length > 0 && (
+                    <div className="rounded-md border border-border bg-background/40 px-3 py-2">
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Idiomas</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {dados.idiomas.map((idioma) => (
+                          <span key={idioma} className="text-xs px-2 py-0.5 rounded-full border border-border bg-secondary text-foreground">
+                            {idioma}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+
               {/* Bloco: Resumo e experiência */}
               <section>
                 <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">Resumo e experiência</h3>
@@ -3711,46 +3812,144 @@ function CandidatoDetailSheet({
           {/* ── Aba: Perfil DISC ── */}
           {fichaTab === "disc" && (
             <div className="space-y-4">
-          {/* Bloco: DISC e questionários */}
-          <section>
-            <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">Perfil DISC</h3>
 
-            <div className="rounded-lg border border-border p-3 mb-3">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <div className="text-sm font-medium">DISC</div>
-                  <div className="text-[11px] text-muted-foreground">
-                    Status: {dados.discStatus === "concluido" ? "Concluído"
-                          : dados.discStatus === "solicitado" ? "Solicitado"
-                          : "Não solicitado"}
-                    {cand.perfilDom && ` · Perfil dominante: ${cand.perfilDom}`}
+              {/* Barras DISC + status + botões */}
+              <div className="rounded-lg border border-border p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <div className="text-sm font-semibold">
+                      {dados.discDetalhes?.perfil ?? (cand.perfilDom ? `Perfil ${cand.perfilDom}` : "DISC")}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">
+                      {dados.discStatus === "concluido" ? "DISC concluído"
+                        : dados.discStatus === "solicitado" ? "DISC solicitado — aguardando resposta"
+                        : "DISC não solicitado"}
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => onSolicitarDisc(cand.id)}
+                      className="h-7 px-2 rounded-md border border-border text-[11px] font-medium hover:bg-secondary inline-flex items-center gap-1"
+                    >
+                      <MessageCircle className="h-3 w-3" /> Solicitar via WhatsApp
+                    </button>
+                    <button
+                      disabled={dados.discStatus !== "concluido"}
+                      onClick={() => toast.info("PDF DISC gerado (mock).")}
+                      className="h-7 px-2 rounded-md border border-border text-[11px] font-medium hover:bg-secondary inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Download className="h-3 w-3" /> PDF
+                    </button>
                   </div>
                 </div>
+                {cand.disc && <DiscBars values={cand.disc} />}
+                {cand.disc && (
+                  <div className="grid grid-cols-4 gap-2 mt-3">
+                    {(["D","I","S","C"] as const).map((fator) => (
+                      <div key={fator} className="rounded-md border border-border bg-background/40 p-2 text-center">
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{fator}</div>
+                        <div className="text-lg font-bold font-data mt-0.5">{cand.disc![fator]}</div>
+                        <div className="text-[10px] text-muted-foreground">%</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              {cand.disc && <DiscBars values={cand.disc} compact />}
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                <button
-                  onClick={() => onSolicitarDisc(cand.id)}
-                  className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border text-[11px] font-medium hover:bg-secondary"
-                >
-                  <MessageCircle className="h-3 w-3" /> Solicitar DISC via WhatsApp
-                </button>
-                <button
-                  onClick={() => toast.info(`PDF DISC de ${cand.nome} (mock).`)}
-                  disabled={dados.discStatus !== "concluido"}
-                  className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border text-[11px] font-medium hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Download className="h-3 w-3" /> Baixar PDF DISC
-                </button>
-              </div>
-            </div>
-          </section>
+
+              {/* Descrição do perfil */}
+              {dados.discDetalhes?.descricao && (
+                <div className="rounded-lg border border-border p-4">
+                  <h4 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2">Descrição do perfil</h4>
+                  <p className="text-sm text-foreground/90 leading-relaxed">{dados.discDetalhes.descricao}</p>
+                </div>
+              )}
+
+              {/* Pontos fortes */}
+              {dados.discDetalhes?.pontosFortes && (
+                <div className="rounded-lg border border-success/20 bg-success/5 p-4">
+                  <h4 className="text-xs uppercase tracking-wider font-semibold text-success mb-2">Pontos fortes</h4>
+                  <ul className="space-y-1">
+                    {dados.discDetalhes.pontosFortes.map((p, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-foreground/90">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" />
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Pontos de atenção */}
+              {dados.discDetalhes?.pontosAtencao && (
+                <div className="rounded-lg border border-warning/20 bg-warning/5 p-4">
+                  <h4 className="text-xs uppercase tracking-wider font-semibold text-warning mb-2">Pontos de atenção</h4>
+                  <ul className="space-y-1">
+                    {dados.discDetalhes.pontosAtencao.map((p, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-foreground/90">
+                        <AlertTriangle className="h-3.5 w-3.5 text-warning shrink-0 mt-0.5" />
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Estilo de motivação */}
+              {dados.discDetalhes?.estiloMotivacao && (
+                <div className="rounded-lg border border-border p-4">
+                  <h4 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2">Estilo de motivação</h4>
+                  <p className="text-sm text-foreground/90 leading-relaxed">{dados.discDetalhes.estiloMotivacao}</p>
+                </div>
+              )}
+
+              {/* Perguntas sugeridas */}
+              {dados.discDetalhes?.perguntasEntrevista && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                  <h4 className="text-xs uppercase tracking-wider font-semibold text-primary mb-3">
+                    Perguntas sugeridas para a entrevista com o gestor
+                  </h4>
+                  <ol className="space-y-2">
+                    {dados.discDetalhes.perguntasEntrevista.map((q, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-foreground/90">
+                        <span className="h-5 w-5 rounded-full bg-primary/15 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                          {i + 1}
+                        </span>
+                        {q}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+
             </div>
           )}
 
           {/* ── Aba: Processos ── */}
           {fichaTab === "processos" && (
             <div className="space-y-5">
+            {/* Candidatura atual */}
+            <div className="rounded-lg border border-border bg-background/40 p-3">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Candidatura atual</div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <div className="text-[10px] text-muted-foreground">Etapa</div>
+                  <div className="font-medium">{etapaAtual ?? "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-muted-foreground">Recebido em</div>
+                  <div className="font-medium font-data">28/04/2026</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-muted-foreground">Consultor</div>
+                  <div className="font-medium">Ana Beatriz</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-muted-foreground">Vaga</div>
+                  <div className="font-medium truncate">{tituloVaga}</div>
+                </div>
+              </div>
+            </div>
+
             <div className="rounded-lg border border-border p-3">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-sm font-medium">Questionários da vaga</div>
@@ -3956,11 +4155,11 @@ function CandidatoDetailSheet({
               return (
                 <ul className="space-y-2">
                   {itens.map((it, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs rounded-md border border-border bg-background/40 px-3 py-2">
+                    <li key={i} className="flex items-start gap-2 text-xs rounded-md border border-border bg-background/40 px-3 py-2.5">
                       <span className="mt-0.5 shrink-0">{it.icon}</span>
                       <div className="min-w-0 flex-1">
                         <div className="text-foreground">{it.texto}</div>
-                        <div className="text-[10px] text-muted-foreground font-data">{it.quando}</div>
+                        <div className="text-[10px] text-muted-foreground font-data mt-0.5">{it.quando || "—"}</div>
                       </div>
                     </li>
                   ))}
