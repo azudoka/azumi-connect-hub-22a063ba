@@ -907,6 +907,35 @@ export default function VagaDetalheAdmin() {
             </span>
           </div>
 
+          {/* Banner: cliente reprovou 3 perfis da 1ª leva */}
+          {(() => {
+            const fb = getFeedback1aLeva(vaga.id);
+            if (!fb) return null;
+            return (
+              <div className="mb-4 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 flex items-start gap-3">
+                <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                <div className="text-xs text-warning/90 leading-relaxed">
+                  <div className="font-semibold text-warning mb-1">
+                    Cliente reprovou os 3 perfis da 1ª leva
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Motivo: </span>
+                    {fb.motivoPrincipal}
+                  </div>
+                  {fb.direcionamentos && (
+                    <div className="mt-0.5">
+                      <span className="text-muted-foreground">Direcionamentos: </span>
+                      {fb.direcionamentos}
+                    </div>
+                  )}
+                  <div className="mt-1 text-warning/70">
+                    Prepare a 2ª leva ajustando o perfil conforme o feedback acima.
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Candidatos adicionados manualmente / convidados (mock — não entram no kanban ainda) */}
           {candidatosExtras.length > 0 && (
             <div className="mb-4 rounded-lg border border-dashed border-border bg-card p-3">
@@ -3458,6 +3487,7 @@ function CandidatoDetailSheet({
   useScrollLock(open);
   const { id: vagaIdParam } = useParams();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [fichaTab, setFichaTab] = useState<"dados" | "disc" | "processos">("dados");
   useEffect(() => {
     if (open && scrollAreaRef.current) {
       const t = setTimeout(() => {
@@ -3468,6 +3498,9 @@ function CandidatoDetailSheet({
       return () => clearTimeout(t);
     }
   }, [open, candidato?.id, candidatoExtra?.id]);
+  useEffect(() => {
+    setFichaTab("dados");
+  }, [candidato?.id, candidatoExtra?.id]);
   if (!open) return null;
 
   // Aceita tanto candidato "oficial" quanto extra (manual/convidado)
@@ -3492,7 +3525,6 @@ function CandidatoDetailSheet({
   };
 
   const etapaPodeAgendar = etapaAtual === "Entrevista Azumi" || etapaAtual === "Entrevista gestor" || etapaAtual === "Quest/Entrevista";
-  const ultimasMensagens = mensagensVaga.slice(-2);
   const questsDoCandidato = questionariosVaga.map((q) => {
     const resp = q.respostasPorCandidato[cand.id];
     return {
@@ -3615,43 +3647,73 @@ function CandidatoDetailSheet({
               <ThumbsDown className="h-3.5 w-3.5" /> Registrar declínio
             </button>
           </div>
+
+          {/* Abas da ficha */}
+          <div className="mt-4 flex border-b border-border -mx-5 px-5 gap-0">
+            {([
+              { key: "dados", label: "Dados Gerais" },
+              { key: "disc", label: "Perfil DISC" },
+              { key: "processos", label: "Processos" },
+            ] as const).map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setFichaTab(t.key)}
+                className={cn(
+                  "px-4 py-2.5 text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
+                  fichaTab === t.key
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </header>
 
         {/* Conteúdo com scroll */}
-        <div ref={scrollAreaRef} className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
-          {/* Bloco: Dados */}
-          <section>
-            <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">Dados do candidato</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              <DadoLinha icon={<FileText className="h-3.5 w-3.5" />} label="CPF" value={dados.cpf ?? "—"} />
-              <DadoLinha icon={<Mail className="h-3.5 w-3.5" />} label="E-mail" value={dados.email} />
-              <DadoLinha icon={<Phone className="h-3.5 w-3.5" />} label="Telefone" value={dados.telefone} />
-              <DadoLinha icon={<MapPin className="h-3.5 w-3.5" />} label="Cidade / UF" value={dados.cidade} />
-              <DadoLinha icon={<Briefcase className="h-3.5 w-3.5" />} label="Cargo pretendido" value={cand.cargo} />
-              <DadoLinha icon={<Users className="h-3.5 w-3.5" />} label="Origem" value={dados.origem} />
-              <DadoLinha icon={<Globe className="h-3.5 w-3.5" />} label="Pretensão salarial" value={dados.pretensao} />
+        <div ref={scrollAreaRef} className="flex-1 overflow-y-auto px-5 py-5">
+          {/* ── Aba: Dados Gerais ── */}
+          {fichaTab === "dados" && (
+            <div className="space-y-6">
+              {/* Bloco: Dados */}
+              <section>
+                <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">Dados do candidato</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  <DadoLinha icon={<FileText className="h-3.5 w-3.5" />} label="CPF" value={dados.cpf ?? "—"} />
+                  <DadoLinha icon={<Mail className="h-3.5 w-3.5" />} label="E-mail" value={dados.email} />
+                  <DadoLinha icon={<Phone className="h-3.5 w-3.5" />} label="Telefone" value={dados.telefone} />
+                  <DadoLinha icon={<MapPin className="h-3.5 w-3.5" />} label="Cidade / UF" value={dados.cidade} />
+                  <DadoLinha icon={<Briefcase className="h-3.5 w-3.5" />} label="Cargo pretendido" value={cand.cargo} />
+                  <DadoLinha icon={<Users className="h-3.5 w-3.5" />} label="Origem" value={dados.origem} />
+                  <DadoLinha icon={<Globe className="h-3.5 w-3.5" />} label="Pretensão salarial" value={dados.pretensao} />
+                </div>
+              </section>
+
+              {/* Bloco: Resumo e experiência */}
+              <section>
+                <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">Resumo e experiência</h3>
+                <p className="text-sm text-foreground/90 leading-relaxed mb-3">{dados.resumo}</p>
+                {dados.experiencias.length > 0 && (
+                  <ul className="space-y-2">
+                    {dados.experiencias.slice(0, 3).map((e, i) => (
+                      <li key={i} className="rounded-md border border-border bg-background/40 px-3 py-2">
+                        <div className="text-sm font-medium">{e.cargo} <span className="text-muted-foreground font-normal">— {e.empresa}</span></div>
+                        <div className="text-[11px] text-muted-foreground font-data">{e.periodo}</div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
             </div>
-          </section>
+          )}
 
-          {/* Bloco: Resumo e experiência */}
-          <section>
-            <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">Resumo e experiência</h3>
-            <p className="text-sm text-foreground/90 leading-relaxed mb-3">{dados.resumo}</p>
-            {dados.experiencias.length > 0 && (
-              <ul className="space-y-2">
-                {dados.experiencias.slice(0, 3).map((e, i) => (
-                  <li key={i} className="rounded-md border border-border bg-background/40 px-3 py-2">
-                    <div className="text-sm font-medium">{e.cargo} <span className="text-muted-foreground font-normal">— {e.empresa}</span></div>
-                    <div className="text-[11px] text-muted-foreground font-data">{e.periodo}</div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
+          {/* ── Aba: Perfil DISC ── */}
+          {fichaTab === "disc" && (
+            <div className="space-y-4">
           {/* Bloco: DISC e questionários */}
           <section>
-            <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">DISC e questionários</h3>
+            <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">Perfil DISC</h3>
 
             <div className="rounded-lg border border-border p-3 mb-3">
               <div className="flex items-center justify-between mb-2">
@@ -3682,7 +3744,13 @@ function CandidatoDetailSheet({
                 </button>
               </div>
             </div>
+          </section>
+            </div>
+          )}
 
+          {/* ── Aba: Processos ── */}
+          {fichaTab === "processos" && (
+            <div className="space-y-5">
             <div className="rounded-lg border border-border p-3">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-sm font-medium">Questionários da vaga</div>
@@ -3777,7 +3845,6 @@ function CandidatoDetailSheet({
                 </ul>
               )}
             </div>
-          </section>
 
           {/* Bloco: Proposta (Etapa 6 — Doc Mestre) */}
           <PropostaPanel candidatoId={cand.id} candidatoNome={cand.nome} />
@@ -3785,8 +3852,7 @@ function CandidatoDetailSheet({
           {/* Bloco: Parecer do cliente (lido do store compartilhado) */}
           {(() => {
             const parecer = getParecerCliente(cand.id);
-            const fb1aLeva = vagaIdParam ? getFeedback1aLeva(vagaIdParam) : null;
-            if (!parecer && !fb1aLeva) return null;
+            if (!parecer) return null;
             return (
               <section>
                 <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">
@@ -3854,23 +3920,6 @@ function CandidatoDetailSheet({
                     )}
                   </div>
                 ) : null}
-                {fb1aLeva && (
-                  <div className="mt-2 rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs space-y-1">
-                    <div className="font-medium text-warning">
-                      Cliente reprovou os 3 perfis da 1ª leva
-                    </div>
-                    <div>
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Motivo:</span>{" "}
-                      {fb1aLeva.motivoPrincipal}
-                    </div>
-                    {fb1aLeva.direcionamentos && (
-                      <div>
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Direcionamentos:</span>{" "}
-                        {fb1aLeva.direcionamentos}
-                      </div>
-                    )}
-                  </div>
-                )}
               </section>
             );
           })()}
@@ -3920,45 +3969,8 @@ function CandidatoDetailSheet({
             })()}
           </section>
 
-          {/* Bloco: Conversas (link p/ chat da vaga) */}
-          <section>
-            <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">Conversas da vaga</h3>
-            {/* TODO: numa próxima fase, filtrar histórico de chat por candidato. */}
-            {ultimasMensagens.length === 0 ? (
-              <div className="text-xs text-muted-foreground py-2">Sem mensagens ainda na vaga.</div>
-            ) : (
-              <ul className="space-y-2 mb-2">
-                {ultimasMensagens.map((m) => (
-                  <li key={m.id} className="rounded-md border border-border bg-background/40 px-3 py-2 text-xs">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="font-medium">{m.autor}</span>
-                      <span className="text-[10px] text-muted-foreground">{m.quando}</span>
-                      <span className={cn(
-                        "ml-auto text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded border",
-                        m.canal === "interno"
-                          ? "bg-muted/40 text-muted-foreground border-border"
-                          : "bg-warning/10 text-warning border-warning/30",
-                      )}>
-                        {m.canal === "interno" ? "Interno" : "Cliente"}
-                      </span>
-                    </div>
-                    <p className="text-foreground/80 line-clamp-2">{m.texto}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <button
-              onClick={() => {
-                onClose();
-                setTimeout(() => {
-                  document.querySelector('[data-vaga-chat]')?.scrollIntoView({ behavior: "smooth" });
-                }, 200);
-              }}
-              className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline"
-            >
-              <MessageSquare className="h-3.5 w-3.5" /> Ver todas as conversas da vaga
-            </button>
-          </section>
+            </div>
+          )}
         </div>
       </aside>
     </>
