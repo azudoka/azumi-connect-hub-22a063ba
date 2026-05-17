@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth, type AuthUser } from "@/context/AuthContext";
+import { AzumiMark } from "@/components/brand/AzumiLogo";
 
 type PerfilItem = {
   key: string;
@@ -77,7 +78,7 @@ export default function SelecaoPerfil() {
 
       <div className="relative z-10 max-w-5xl mx-auto">
         <div className="text-center mb-10 animate-fade-in">
-          <div className="inline-flex h-10 w-10 rounded-lg bg-gradient-brand items-center justify-center font-logo font-bold text-white">A</div>
+          <div className="inline-flex items-center justify-center"><AzumiMark size={36} /></div>
           <h1 className="mt-4 font-display text-3xl sm:text-4xl font-semibold">
             Bem-vindo(a) à <span className="text-gradient-brand">Azumi</span>
           </h1>

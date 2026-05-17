@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useAuth, type ModuloSlug } from "@/context/AuthContext";
 import { useModulos } from "@/context/ModulesContext";
 import type { ModuloId, PaginaId } from "@/config/modules";
+import { AzumiLogo } from "@/components/brand/AzumiLogo";
 
 type HubProfile = "lider" | "colaborador" | "ceo";
 
@@ -202,19 +203,7 @@ export function SidebarHub({ profile }: { profile: HubProfile }) {
     >
       {/* Header */}
       <div className="h-16 flex items-center px-4 border-b border-sidebar-border/60">
-        {collapsed ? (
-          <div className="h-9 w-9 rounded-lg bg-gradient-brand flex items-center justify-center font-logo font-bold text-white">A</div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-gradient-brand flex items-center justify-center font-logo font-bold text-white">A</div>
-            <div>
-              <div className="font-logo font-bold text-base text-gradient-brand leading-none">Azumi Hub</div>
-              <div className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] uppercase tracking-wider font-semibold">
-                {profileLabel[profile]}
-              </div>
-            </div>
-          </div>
-        )}
+        <AzumiLogo product="Hub" collapsed={collapsed} />
         <button
           onClick={() => setCollapsed((c) => !c)}
           className="ml-auto h-7 w-7 rounded-md hover:bg-sidebar-accent flex items-center justify-center text-muted-foreground"

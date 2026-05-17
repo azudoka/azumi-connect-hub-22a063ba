@@ -12,9 +12,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
-        ui: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
-        display: ["Sora", "Inter", "sans-serif"],
+        sans: ["Space Grotesk", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        ui: ["Space Grotesk", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["Sora", "Space Grotesk", "sans-serif"],
         data: ["JetBrains Mono", "ui-monospace", "monospace"],
         logo: ["Poppins", "Inter", "sans-serif"],
       },
@@ -61,6 +61,12 @@ export default {
           light: "hsl(var(--navy-light))",
           dark: "hsl(var(--navy-dark))",
         },
+        ocean: "hsl(var(--ocean))",
+        "azumi-blue": "hsl(var(--azumi-blue))",
+        "azul-destaque": "hsl(var(--azul-destaque))",
+        violeta: "hsl(var(--violeta))",
+        ice: "hsl(var(--ice))",
+        mint: "hsl(var(--mint))",
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",

@@ -11,6 +11,7 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissao, type Permissao } from "@/config/permissoes";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AzumiLogo } from "@/components/brand/AzumiLogo";
 
 interface SidebarConnectProps {
   variant?: "admin" | "cliente";
@@ -141,25 +142,7 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
     >
       {/* Logo */}
       <div className="h-16 flex items-center px-4 border-b border-sidebar-border/60">
-        {collapsed ? (
-          <div className="h-9 w-9 rounded-lg bg-gradient-brand flex items-center justify-center font-logo font-bold text-white">
-            A
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-gradient-brand flex items-center justify-center font-logo font-bold text-white">
-              A
-            </div>
-            <div>
-              <div className="font-logo font-bold text-base text-gradient-brand leading-none">
-                Azumi Connect
-              </div>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">
-                {papelLabel}
-              </div>
-            </div>
-          </div>
-        )}
+        <AzumiLogo product="Connect" collapsed={collapsed} />
         <button
           onClick={() => setCollapsed((c) => !c)}
           className="ml-auto h-7 w-7 rounded-md hover:bg-sidebar-accent flex items-center justify-center text-muted-foreground"
