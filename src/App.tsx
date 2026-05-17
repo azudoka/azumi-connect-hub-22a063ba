@@ -28,6 +28,8 @@ import Stub from "./pages/Stub";
 
 import AdminDashboard from "./pages/admin/DashboardPage";
 import Empresas from "./pages/admin/Empresas";
+import RelatoriosPage from "./pages/RelatoriosPage";
+import RelatorioDocumentoPage from "./pages/RelatorioDocumentoPage";
 import AtracaoRouter from "./pages/AtracaoRouter";
 import VagaDetalheAdmin from "./pages/admin/VagaDetalhe";
 import RelatorioFinalVagaPage from "./pages/admin/RelatorioFinalVagaPage";
@@ -181,6 +183,7 @@ const AppRoutes = () => (
       <Route path="/app/candidatos/:id" element={<Stub title="Perfil do candidato" subtitle="DISC, questionários, pareceres" />} />
       <Route path="/app/analytics" element={<Analytics />} />
       <Route path="/app/gestao-de-conta" element={<GestaoConta />} />
+      <Route path="/app/relatorios" element={<RelatoriosPage />} />
       <Route path="/app/comunicados" element={<ComunicadosPage />} />
       <Route path="/app/calendario" element={<CalendarioPage />} />
       <Route path="/app/documentos" element={<DocumentosPage />} />
@@ -206,6 +209,7 @@ const AppRoutes = () => (
       <Route path="/cliente/atracao" element={<VagasClientePage />} />
       <Route path="/cliente/atracao/:id" element={<VagaDetalheCliente />} />
       <Route path="/cliente/gestao-conta" element={<ClienteGestaoContaPage />} />
+      <Route path="/cliente/relatorios" element={<RelatoriosPage />} />
       <Route path="/cliente/hub-indisponivel" element={<ClienteHubIndisponivelPage />} />
       <Route path="/cliente/comunicados" element={<ClienteComunicadosPage />} />
       <Route path="/cliente/calendario" element={<ClienteCalendarioPage />} />
@@ -316,6 +320,17 @@ const AppRoutes = () => (
     }>
       <Route path="/hub/juridico/inicio" element={<Stub title="Jurídico" subtitle="Processos trabalhistas e compliance" />} />
       <Route path="/hub/juridico/processos" element={<Stub title="Processos Trabalhistas" />} />
+    </Route>
+
+    {/* Relatório documento — acessível por admin, consultor e cliente */}
+    <Route
+      element={
+        <PrivateRoute allowed={["admin", "consultor", "cliente"]}>
+          <AppLayout />
+        </PrivateRoute>
+      }
+    >
+      <Route path="/app/relatorios/:id/documento" element={<RelatorioDocumentoPage />} />
     </Route>
 
     {/* Portal do Cliente */}
