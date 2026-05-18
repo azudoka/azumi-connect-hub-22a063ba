@@ -154,7 +154,7 @@ export default function RelatorioDocumentoPage() {
 
   if (!report) return null;
 
-  const comp = report.company as { name: string } | null;
+  const comp = report.company as { nome: string } | null;
 
   return (
     <div>
@@ -171,8 +171,8 @@ export default function RelatorioDocumentoPage() {
           <div className="font-semibold text-sm truncate">
             {report.title ?? report.month_ref}
           </div>
-          {comp?.name && (
-            <div className="text-xs text-muted-foreground">{comp.name}</div>
+          {comp?.nome && (
+            <div className="text-xs text-muted-foreground">{comp.nome}</div>
           )}
         </div>
 
