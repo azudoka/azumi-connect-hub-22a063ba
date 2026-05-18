@@ -545,7 +545,7 @@ export default function RelatoriosPage() {
                               disabled={uploading === r.id}
                               onChange={(e) => {
                                 const f = e.target.files?.[0];
-                                if (f && r.company_id) handleUploadComprovante(r.id, f, r.company_id);
+                                if (f && r.empresa_id) handleUploadComprovante(r.id, f, r.empresa_id);
                               }}
                             />
                           </label>
