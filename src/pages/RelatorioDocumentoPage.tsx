@@ -10,10 +10,10 @@ import type { Report, TaskRow, SolRow, ReportStatus } from "@/components/relator
 const REPORT_SELECT = `
   id, title, status, month_ref, summary_text, risks_text, next_steps_text,
   total_hours_minutes, hours_deliverables_minutes, hours_solicitations_minutes,
-  reference_start, reference_end, consultant_name, consultant_job_title, company_id,
+  reference_start, reference_end, consultant_name, consultant_job_title, empresa_id,
   admin_approved_at, admin_name, published_at, client_signed_at, report_type,
   template_data,
-  company:companies(name, logo_url, monthly_hours)
+  company:empresas(nome, logo_url, monthly_hours)
 `.trim();
 
 const STATUS_LABELS: Record<ReportStatus, string> = {
