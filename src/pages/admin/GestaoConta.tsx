@@ -1,29 +1,172 @@
 import { PageHeader } from "@/components/PageHeader";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { boletos } from "@/data/mock";
-import { Plus, Download, FileText, AlertTriangle, Check, Clock as ClockIcon, X } from "lucide-react";
-import { SectionDivider } from "@/components/SectionDivider";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
+import {
+  Plus, Download, FileText, AlertTriangle, Check,
+  Clock as ClockIcon, X, Loader2, ExternalLink, Eye,
+} from "lucide-react";
 
 const tabs = ["Boletos", "Extrato de Horas", "Relatórios Mensais"] as const;
 
-const statusBoleto: Record<string, { label: string; cls: string; icon: any }> = {
-  pago: { label: "Pago", cls: "bg-success/15 text-success border-success/30", icon: Check },
-  vencendo: { label: "Vencendo", cls: "bg-warning/15 text-warning border-warning/30", icon: ClockIcon },
-  atrasado: { label: "Atrasado", cls: "bg-destructive/15 text-destructive border-destructive/30", icon: AlertTriangle },
-  cancelado: { label: "Cancelado", cls: "bg-muted text-muted-foreground border-border", icon: X },
+type InvoiceStatus = "pendente" | "pago" | "atrasado" | "cancelado";
+
+type Invoice = {
+  id: string;
+  empresa_id: string;
+  report_id?: string | null;
+  reference_month: string | null;
+  amount: number;
+  due_date: string;
+  boleto_url?: string | null;
+  status: InvoiceStatus;
+  paid_at?: string | null;
+  late_fee_applied?: boolean | null;
+  comprovante_url?: string | null;
+  notes?: string | null;
+  created_by?: string | null;
+  created_at: string;
+  empresa?: { id: string; nome: string; logo_url: string | null } | null;
 };
 
+type Empresa = { id: string; nome: string };
+
+const statusInvoice: Record<string, { label: string; cls: string; icon: React.ElementType }> = {
+  pago:      { label: "Pago",      cls: "bg-success/15 text-success border-success/30",            icon: Check },
+  pendente:  { label: "Em aberto", cls: "bg-warning/15 text-warning border-warning/30",             icon: ClockIcon },
+  atrasado:  { label: "Atrasado",  cls: "bg-destructive/15 text-destructive border-destructive/30", icon: AlertTriangle },
+  cancelado: { label: "Cancelado", cls: "bg-muted text-muted-foreground border-border",             icon: X },
+};
+
+function fmtDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const [y, m, d] = iso.split("T")[0].split("-");
+  if (!y || !m || !d) return iso;
+  return `${d}/${m}/${y}`;
+}
+
+function fmtMonthRef(ref: string | null | undefined): string {
+  if (!ref) return "—";
+  const months = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+  const [y, m] = ref.split("-");
+  const idx = parseInt(m, 10) - 1;
+  return `${months[idx] ?? m}/${y}`;
+}
+
+function calcularAtraso(invoice: Invoice): { diasAtraso: number; totalDevido: number } | null {
+  if (invoice.status === "pago" || invoice.status === "cancelado") return null;
+  const hoje = new Date();
+  const venc = new Date(invoice.due_date);
+  const diasAtraso = Math.floor((hoje.getTime() - venc.getTime()) / 86400000);
+  if (diasAtraso <= 0) return null;
+  const multa = invoice.amount * 0.02;
+  const juros = invoice.amount * 0.000333 * diasAtraso;
+  return { diasAtraso, totalDevido: invoice.amount + multa + juros };
+}
+
 export default function GestaoConta() {
+  const { usuario } = useAuth();
+  const navigate = useNavigate();
+  const isAdmin = usuario?.role === "admin";
+
   const [tab, setTab] = useState<typeof tabs[number]>("Boletos");
   const [novoOpen, setNovoOpen] = useState(false);
+  const [detalhesOpen, setDetalhesOpen] = useState(false);
+  const [detalhesInvoice, setDetalhesInvoice] = useState<Invoice | null>(null);
+
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loadingInvoices, setLoadingInvoices] = useState(true);
+  const [filtroEmpresa, setFiltroEmpresa] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState("");
+
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
+
+  const [formEmpresaId, setFormEmpresaId] = useState("");
+  const [formValor, setFormValor] = useState("");
+  const [formMes, setFormMes] = useState("");
+  const [formVenc, setFormVenc] = useState("");
+  const [formObs, setFormObs] = useState("");
+  const [formUrl, setFormUrl] = useState("");
+  const [formSaving, setFormSaving] = useState(false);
+
+  const fetchInvoices = useCallback(async () => {
+    setLoadingInvoices(true);
+    const { data, error } = await supabase
+      .from("invoices")
+      .select("*, empresa:empresas(id, nome, logo_url)")
+      .order("due_date", { ascending: false });
+    if (error) { toast.error("Erro ao carregar faturas."); }
+    else { setInvoices((data ?? []) as Invoice[]); }
+    setLoadingInvoices(false);
+  }, []);
+
+  useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
+
+  useEffect(() => {
+    supabase.from("empresas").select("id, nome").order("nome")
+      .then(({ data }) => { if (data) setEmpresas(data as Empresa[]); });
+  }, []);
+
+  const filtered = invoices.filter((inv) => {
+    const empNome = (inv.empresa as { nome: string } | null)?.nome ?? "";
+    if (filtroEmpresa && empNome !== filtroEmpresa) return false;
+    if (filtroStatus) {
+      const hoje = new Date();
+      const venc = new Date(inv.due_date);
+      const displayStatus = inv.status !== "pago" && inv.status !== "cancelado" && venc < hoje
+        ? "atrasado"
+        : inv.status;
+      if (displayStatus !== filtroStatus) return false;
+    }
+    return true;
+  });
+
+  const temAtrasado = filtered.some((inv) => {
+    if (inv.status === "pago" || inv.status === "cancelado") return false;
+    return new Date(inv.due_date) < new Date();
+  });
+
+  async function handleMarcarPago(invoiceId: string) {
+    const { error } = await supabase
+      .from("invoices")
+      .update({ status: "pago", paid_at: new Date().toISOString() })
+      .eq("id", invoiceId);
+    if (error) { toast.error("Erro ao atualizar."); return; }
+    toast.success("Boleto marcado como pago.");
+    fetchInvoices();
+  }
+
+  async function handleCriarBoleto(e: React.FormEvent) {
+    e.preventDefault();
+    if (!formEmpresaId || !formValor || !formVenc) {
+      toast.error("Preencha empresa, valor e vencimento."); return;
+    }
+    setFormSaving(true);
+    const { error } = await supabase.from("invoices").insert({
+      empresa_id: formEmpresaId,
+      amount: parseFloat(formValor),
+      reference_month: formMes || null,
+      due_date: formVenc,
+      notes: formObs || null,
+      boleto_url: formUrl || null,
+      status: "pendente",
+      created_by: usuario?.id ?? null,
+    });
+    setFormSaving(false);
+    if (error) { toast.error("Erro ao criar boleto."); return; }
+    toast.success("Boleto criado.");
+    setNovoOpen(false);
+    setFormEmpresaId(""); setFormValor(""); setFormMes("");
+    setFormVenc(""); setFormObs(""); setFormUrl("");
+    fetchInvoices();
+  }
 
   return (
     <div>
-      <PageHeader
-        title="Gestão de Conta"
-        subtitle="Boletos, extratos de horas e relatórios mensais"
-      />
+      <PageHeader title="Gestão de Conta" subtitle="Boletos, extratos de horas e relatórios mensais" />
 
       <div className="flex items-center gap-1 border-b border-border mb-5 overflow-x-auto">
         {tabs.map((t) => (
@@ -40,21 +183,42 @@ export default function GestaoConta() {
         ))}
       </div>
 
+      {/* ── Aba Boletos ──────────────────────────────────────────────── */}
       {tab === "Boletos" && (
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <select className="h-9 px-3 rounded-lg border border-border bg-card text-sm">
-              <option>Todas as empresas</option>
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <select
+              value={filtroEmpresa}
+              onChange={(e) => setFiltroEmpresa(e.target.value)}
+              className="h-9 px-3 rounded-lg border border-border bg-card text-sm"
+            >
+              <option value="">Todas as empresas</option>
+              {[...new Set(
+                invoices.map((i) => (i.empresa as { nome: string } | null)?.nome).filter(Boolean)
+              )].map((n) => <option key={n} value={n!}>{n}</option>)}
             </select>
-            <select className="h-9 px-3 rounded-lg border border-border bg-card text-sm">
-              <option>Todos os status</option>
+            <select
+              value={filtroStatus}
+              onChange={(e) => setFiltroStatus(e.target.value)}
+              className="h-9 px-3 rounded-lg border border-border bg-card text-sm"
+            >
+              <option value="">Todos os status</option>
+              <option value="pendente">Em aberto</option>
+              <option value="pago">Pago</option>
+              <option value="atrasado">Atrasado</option>
+              <option value="cancelado">Cancelado</option>
             </select>
-            <button onClick={() => setNovoOpen(true)} className="ml-auto h-9 px-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5">
-              <Plus className="h-4 w-4" /> Novo Boleto
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => setNovoOpen(true)}
+                className="ml-auto h-9 px-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5"
+              >
+                <Plus className="h-4 w-4" /> Novo Boleto
+              </button>
+            )}
           </div>
 
-          {boletos.some(b => b.status === "atrasado" || b.status === "vencendo") && (
+          {temAtrasado && (
             <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 mb-4 flex items-start gap-3">
               <AlertTriangle className="h-5 w-5 text-warning shrink-0" />
               <div className="text-sm">
@@ -64,139 +228,198 @@ export default function GestaoConta() {
             </div>
           )}
 
-          <div className="bg-card border border-border rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="text-left font-medium px-4 py-3">Empresa</th>
-                  <th className="text-right font-medium px-4 py-3">Valor</th>
-                  <th className="text-left font-medium px-4 py-3">Vencimento</th>
-                  <th className="text-left font-medium px-4 py-3">Status</th>
-                  <th className="text-right font-medium px-4 py-3">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {boletos.map((b) => {
-                  const s = statusBoleto[b.status];
-                  return (
-                    <tr key={b.id} className="border-t border-border hover:bg-secondary/30">
-                      <td className="px-4 py-3 font-medium">{b.empresa}</td>
-                      <td className="px-4 py-3 text-right font-data">R$ {b.valor.toLocaleString("pt-BR")}</td>
-                      <td className="px-4 py-3 font-data">{b.vencimento}</td>
-                      <td className="px-4 py-3">
-                        <span className={cn("badge-pill", s.cls)}>
-                          <s.icon className="h-3 w-3" /> {s.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button className="text-xs text-primary hover:underline">Detalhes</button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          {loadingInvoices ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="bg-card border border-border rounded-xl p-10 text-center">
+              <FileText className="h-7 w-7 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Nenhuma fatura encontrada.</p>
+            </div>
+          ) : (
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="text-left font-medium px-4 py-3">Empresa</th>
+                    <th className="text-left font-medium px-4 py-3">Período</th>
+                    <th className="text-right font-medium px-4 py-3">Valor</th>
+                    <th className="text-left font-medium px-4 py-3">Vencimento</th>
+                    <th className="text-left font-medium px-4 py-3">Status</th>
+                    <th className="text-right font-medium px-4 py-3">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((inv) => {
+                    const hoje = new Date();
+                    const venc = new Date(inv.due_date);
+                    const diffDias = Math.floor((venc.getTime() - hoje.getTime()) / 86400000);
+                    const isPago = inv.status === "pago";
+                    const isCancelado = inv.status === "cancelado";
+                    const isAtrasado = !isPago && !isCancelado && venc < hoje;
+                    const displayStatus: string = isAtrasado ? "atrasado" : inv.status;
+                    const s = statusInvoice[displayStatus] ?? statusInvoice["pendente"];
+                    const empNome = (inv.empresa as { nome: string } | null)?.nome ?? "—";
+
+                    return (
+                      <tr key={inv.id} className="border-t border-border hover:bg-secondary/30">
+                        <td className="px-4 py-3 font-medium">{empNome}</td>
+                        <td className="px-4 py-3 font-data text-xs">{fmtMonthRef(inv.reference_month)}</td>
+                        <td className="px-4 py-3 text-right font-data">
+                          R$ {inv.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-4 py-3 font-data">
+                          <div>{fmtDate(inv.due_date)}</div>
+                          {!isPago && !isCancelado && diffDias === 0 && (
+                            <span className="text-[10px] bg-destructive/15 text-destructive px-1.5 py-0.5 rounded-full">Vence hoje</span>
+                          )}
+                          {!isPago && !isCancelado && diffDias > 0 && diffDias <= 5 && (
+                            <span className="text-[10px] bg-warning/15 text-warning px-1.5 py-0.5 rounded-full">Vence em {diffDias}d</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={cn("badge-pill", s.cls)}>
+                            <s.icon className="h-3 w-3" /> {s.label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {isAdmin && !isPago && !isCancelado && (
+                              <button
+                                onClick={() => handleMarcarPago(inv.id)}
+                                className="text-xs text-emerald-600 hover:underline flex items-center gap-0.5"
+                              >
+                                <Check className="h-3 w-3" /> Pago
+                              </button>
+                            )}
+                            {inv.boleto_url && (
+                              <button
+                                onClick={() => window.open(inv.boleto_url!, "_blank")}
+                                className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                              >
+                                <ExternalLink className="h-3 w-3" /> 2ª via
+                              </button>
+                            )}
+                            <button
+                              onClick={() => { setDetalhesInvoice(inv); setDetalhesOpen(true); }}
+                              className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                            >
+                              <Eye className="h-3 w-3" /> Detalhes
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Aba Extrato de Horas ──────────────────────────────────────── */}
+      {tab === "Extrato de Horas" && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <select disabled className="h-9 px-3 rounded-lg border border-border bg-card text-sm opacity-50 cursor-not-allowed">
+              <option>Todas as empresas</option>
+            </select>
+            <select disabled className="h-9 px-3 rounded-lg border border-border bg-card text-sm opacity-50 cursor-not-allowed">
+              <option>Período atual</option>
+            </select>
+            <button disabled className="ml-auto h-8 px-3 rounded-lg border border-border text-xs flex items-center gap-1.5 opacity-50 cursor-not-allowed">
+              <Download className="h-3.5 w-3.5" /> Exportar
+            </button>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-10 flex flex-col items-center text-center gap-3">
+            <ClockIcon className="h-8 w-8 text-muted-foreground" />
+            <div>
+              <p className="font-medium text-sm">Extrato de horas disponível em breve</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+                As entradas de tempo serão registradas aqui quando o módulo de timer for integrado ao banco.
+              </p>
+            </div>
           </div>
         </div>
       )}
 
-      {tab === "Extrato de Horas" && (
-        <div className="space-y-5">
-          <div className="bg-card border border-border rounded-xl p-5">
-            <div className="flex items-center justify-between mb-3">
+      {/* ── Aba Relatórios Mensais ────────────────────────────────────── */}
+      {tab === "Relatórios Mensais" && (
+        <div className="bg-card border border-border rounded-xl p-10 flex flex-col items-center text-center gap-4">
+          <FileText className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <p className="font-medium text-sm">Os relatórios mensais são gerenciados na página de Relatórios</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Crie, aprove, publique e acompanhe a ciência do cliente em um só lugar.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/app/relatorios")}
+            className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5"
+          >
+            <FileText className="h-4 w-4" /> Ir para Relatórios
+          </button>
+        </div>
+      )}
+
+      {/* ── Modal Detalhes ────────────────────────────────────────────── */}
+      {detalhesOpen && detalhesInvoice && (
+        <div className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm flex items-center justify-center animate-fade-in p-4">
+          <div className="bg-card border border-border rounded-2xl shadow-elevated p-6 w-full max-w-md">
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <h3 className="font-display font-semibold">Horas — abril/2025</h3>
-                <p className="text-xs text-muted-foreground">80h contratadas · 61h consumidas</p>
+                <h2 className="font-display text-base font-semibold">Detalhes da fatura</h2>
+                <p className="text-xs text-muted-foreground">
+                  {(detalhesInvoice.empresa as { nome: string } | null)?.nome ?? "—"}
+                </p>
               </div>
-              <button className="h-8 px-3 rounded-lg border border-border text-xs flex items-center gap-1.5 hover:bg-secondary">
-                <Download className="h-3.5 w-3.5" /> Exportar
+              <button
+                onClick={() => setDetalhesOpen(false)}
+                className="h-8 w-8 rounded-md hover:bg-secondary flex items-center justify-center"
+              >
+                <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="h-3 rounded-full bg-muted overflow-hidden">
-              <div className="h-full rounded-full bg-gradient-brand" style={{ width: "76%" }} />
-            </div>
-            <div className="mt-2 flex justify-between text-xs font-data text-muted-foreground">
-              <span>76% consumido</span>
-              <span>19h restantes</span>
-            </div>
-          </div>
-
-          <div className="bg-card border border-border rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="text-left font-medium px-4 py-3">Data</th>
-                  <th className="text-left font-medium px-4 py-3">Empresa</th>
-                  <th className="text-left font-medium px-4 py-3">Atividade</th>
-                  <th className="text-left font-medium px-4 py-3">Consultor</th>
-                  <th className="text-right font-medium px-4 py-3">Horas</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { d: "22/04", e: "Kentaki Foods", a: "Triagem de currículos", c: "Ana Beatriz", h: 3.5 },
-                  { d: "22/04", e: "Studio Mira", a: "Workshop de cargos", c: "Camila Torres", h: 4.0 },
-                  { d: "21/04", e: "Tech Plural", a: "Entrevistas técnicas", c: "Ana Beatriz", h: 5.2 },
-                  { d: "21/04", e: "Alvo Digital", a: "Reunião de briefing", c: "Rafael Moura", h: 1.5 },
-                  { d: "20/04", e: "Grupo Maverick", a: "Apresentação de perfis", c: "Rafael Moura", h: 2.0 },
-                ].map((r, i) => (
-                  <tr key={i} className="border-t border-border hover:bg-secondary/30">
-                    <td className="px-4 py-3 font-data">{r.d}</td>
-                    <td className="px-4 py-3 font-medium">{r.e}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{r.a}</td>
-                    <td className="px-4 py-3">{r.c}</td>
-                    <td className="px-4 py-3 text-right font-data">{r.h.toFixed(1)}h</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {tab === "Relatórios Mensais" && (
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="text-left font-medium px-4 py-3">Período</th>
-                <th className="text-left font-medium px-4 py-3">Empresa</th>
-                <th className="text-left font-medium px-4 py-3">Status do cliente</th>
-                <th className="text-right font-medium px-4 py-3">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { p: "Mar/2025", e: "Kentaki Foods", s: "assinado" },
-                { p: "Mar/2025", e: "Studio Mira", s: "assinado" },
-                { p: "Mar/2025", e: "Tech Plural", s: "pendente" },
-                { p: "Mar/2025", e: "Alvo Digital", s: "atrasado" },
-              ].map((r, i) => (
-                <tr key={i} className="border-t border-border hover:bg-secondary/30">
-                  <td className="px-4 py-3 font-data">{r.p}</td>
-                  <td className="px-4 py-3 font-medium">{r.e}</td>
-                  <td className="px-4 py-3">
-                    <span className={cn("badge-pill",
-                      r.s === "assinado" && "bg-success/15 text-success border-success/30",
-                      r.s === "pendente" && "bg-warning/15 text-warning border-warning/30",
-                      r.s === "atrasado" && "bg-destructive/15 text-destructive border-destructive/30",
-                    )}>
-                      {r.s}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button className="text-xs text-primary hover:underline mr-3">Ver</button>
-                    <button className="text-xs text-primary hover:underline inline-flex items-center gap-1">
-                      <FileText className="h-3 w-3" /> Gerar
-                    </button>
-                  </td>
-                </tr>
+            <dl className="grid grid-cols-2 gap-3 text-sm">
+              {([
+                ["Período",       fmtMonthRef(detalhesInvoice.reference_month)],
+                ["Valor",         `R$ ${detalhesInvoice.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`],
+                ["Vencimento",    fmtDate(detalhesInvoice.due_date)],
+                ["Status",        detalhesInvoice.status],
+                ["Pago em",       fmtDate(detalhesInvoice.paid_at)],
+                ["Multa aplicada", detalhesInvoice.late_fee_applied ? "Sim" : "Não"],
+              ] as [string, string][]).map(([k, v]) => (
+                <div key={k}>
+                  <dt className="text-xs text-muted-foreground">{k}</dt>
+                  <dd className="font-medium font-data">{v}</dd>
+                </div>
               ))}
-            </tbody>
-          </table>
+              {detalhesInvoice.notes && (
+                <div className="col-span-2">
+                  <dt className="text-xs text-muted-foreground">Observação</dt>
+                  <dd className="text-sm">{detalhesInvoice.notes}</dd>
+                </div>
+              )}
+              {(() => {
+                const atr = calcularAtraso(detalhesInvoice);
+                if (!atr) return null;
+                return (
+                  <div className="col-span-2 rounded-lg bg-destructive/10 border border-destructive/20 p-3">
+                    <p className="text-xs text-destructive font-medium">
+                      {atr.diasAtraso}d de atraso — Total devido estimado:{" "}
+                      R$ {atr.totalDevido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                );
+              })()}
+            </dl>
+          </div>
         </div>
       )}
 
+      {/* ── Modal Novo Boleto ─────────────────────────────────────────── */}
       {novoOpen && (
         <div className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm flex justify-end animate-fade-in">
           <div className="h-full w-full max-w-md bg-card border-l border-border shadow-elevated p-6 overflow-y-auto animate-slide-in-right">
@@ -205,26 +428,79 @@ export default function GestaoConta() {
                 <h2 className="font-display text-lg font-semibold">Novo boleto</h2>
                 <p className="text-xs text-muted-foreground">Preencha os dados para emissão.</p>
               </div>
-              <button onClick={() => setNovoOpen(false)} className="h-8 w-8 rounded-md hover:bg-secondary flex items-center justify-center">
+              <button
+                onClick={() => setNovoOpen(false)}
+                className="h-8 w-8 rounded-md hover:bg-secondary flex items-center justify-center"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <form className="space-y-4">
-              <Field label="Empresa">
-                <select className="w-full h-10 px-3 rounded-lg bg-secondary border border-input focus:border-primary outline-none text-sm">
-                  <option>Kentaki Foods</option><option>Grupo Maverick</option><option>Studio Mira</option>
+            <form onSubmit={handleCriarBoleto} className="space-y-4">
+              <Field label="Empresa *">
+                <select
+                  value={formEmpresaId}
+                  onChange={(e) => setFormEmpresaId(e.target.value)}
+                  required
+                  className="w-full h-10 px-3 rounded-lg bg-secondary border border-input focus:border-primary outline-none text-sm"
+                >
+                  <option value="">Selecione...</option>
+                  {empresas.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
                 </select>
               </Field>
-              <Field label="Valor (R$)">
-                <input type="number" defaultValue={4800} className="w-full h-10 px-3 rounded-lg bg-secondary border border-input focus:border-primary outline-none text-sm font-data" />
+              <Field label="Valor (R$) *">
+                <input
+                  type="number"
+                  value={formValor}
+                  onChange={(e) => setFormValor(e.target.value)}
+                  required
+                  step="0.01"
+                  min="0"
+                  className="w-full h-10 px-3 rounded-lg bg-secondary border border-input focus:border-primary outline-none text-sm font-data"
+                />
               </Field>
-              <Field label="Vencimento">
-                <input type="date" className="w-full h-10 px-3 rounded-lg bg-secondary border border-input focus:border-primary outline-none text-sm font-data" />
+              <Field label="Mês de referência">
+                <input
+                  type="month"
+                  value={formMes}
+                  onChange={(e) => setFormMes(e.target.value)}
+                  className="w-full h-10 px-3 rounded-lg bg-secondary border border-input focus:border-primary outline-none text-sm font-data"
+                />
               </Field>
-              <Field label="Descrição">
-                <textarea rows={3} className="w-full p-3 rounded-lg bg-secondary border border-input focus:border-primary outline-none text-sm" placeholder="Referência do boleto…" />
+              <Field label="Vencimento *">
+                <input
+                  type="date"
+                  value={formVenc}
+                  onChange={(e) => setFormVenc(e.target.value)}
+                  required
+                  className="w-full h-10 px-3 rounded-lg bg-secondary border border-input focus:border-primary outline-none text-sm font-data"
+                />
               </Field>
-              <button onClick={(e) => { e.preventDefault(); setNovoOpen(false); }} className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-medium">Emitir boleto</button>
+              <Field label="URL do boleto">
+                <input
+                  type="url"
+                  value={formUrl}
+                  onChange={(e) => setFormUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full h-10 px-3 rounded-lg bg-secondary border border-input focus:border-primary outline-none text-sm"
+                />
+              </Field>
+              <Field label="Observação">
+                <textarea
+                  value={formObs}
+                  onChange={(e) => setFormObs(e.target.value)}
+                  rows={3}
+                  className="w-full p-3 rounded-lg bg-secondary border border-input focus:border-primary outline-none text-sm"
+                  placeholder="Referência do boleto…"
+                />
+              </Field>
+              <button
+                type="submit"
+                disabled={formSaving}
+                className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {formSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                Emitir boleto
+              </button>
             </form>
           </div>
         </div>
