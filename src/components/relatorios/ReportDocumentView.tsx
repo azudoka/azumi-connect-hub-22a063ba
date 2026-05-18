@@ -36,7 +36,7 @@ export type Report = {
   report_type: ReportType | null;
   template_data: Record<string, unknown>;
   company?: {
-    name: string;
+    nome: string;
     logo_url: string | null;
     monthly_hours: number;
   } | null;
