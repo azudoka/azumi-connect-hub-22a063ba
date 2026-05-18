@@ -105,12 +105,12 @@ export default function RelatorioDocumentoPage() {
     }
 
     if (newStatus === "published") {
-      const companyId = (report as Report & { company_id?: string }).company_id;
-      if (companyId) {
+      const empresaId = (report as Report & { empresa_id?: string }).empresa_id;
+      if (empresaId) {
         const { data: users } = await supabase
-          .from("users_profile")
+          .from("profiles")
           .select("id")
-          .eq("company_id", companyId)
+          .eq("empresa_id", empresaId)
           .eq("role", "cliente_user");
         if (users?.length) {
           await supabase.from("app_notifications").insert(
