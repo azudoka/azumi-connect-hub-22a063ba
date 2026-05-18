@@ -54,17 +54,17 @@ const STATUS_COLORS: Record<ReportStatus, string> = {
 const REPORT_SELECT = `
   id, title, status, month_ref, summary_text, risks_text, next_steps_text,
   total_hours_minutes, hours_deliverables_minutes, hours_solicitations_minutes,
-  reference_start, reference_end, consultant_name, consultant_job_title, company_id,
+  reference_start, reference_end, consultant_name, consultant_job_title, empresa_id,
   created_by_user_id, admin_approved_at, admin_name, client_opened_at, published_at,
   report_type, template_data, client_signed_at,
   boleto_url, boleto_vencimento, boleto_valor, comprovante_url, comprovante_uploaded_at,
-  company:companies(name, logo_url, monthly_hours)
+  company:empresas(nome, logo_url, monthly_hours)
 `.trim();
 
-type Company = { id: string; name: string; logo_url: string | null; monthly_hours: number; service_type?: string };
+type Company = { id: string; nome: string; logo_url: string | null; monthly_hours: number; service_type?: string };
 
 type ReportRow = Report & {
-  company_id?: string;
+  empresa_id?: string;
   client_opened_at?: string | null;
   boleto_url?: string | null;
   boleto_vencimento?: string | null;
