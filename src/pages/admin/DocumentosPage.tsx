@@ -357,6 +357,23 @@ export default function DocumentosPage() {
               <Input value={form.file_url} onChange={(e) => setForm((f) => ({ ...f, file_url: e.target.value }))} placeholder="https://..." />
             </div>
             <div className="space-y-1.5">
+              <Label>URL da capa (imagem)</Label>
+              <Input
+                value={form.capa_url}
+                onChange={(e) => setForm((f) => ({ ...f, capa_url: e.target.value }))}
+                placeholder="https://imagem.com/capa.jpg"
+              />
+              {form.capa_url && (
+                <div className="mt-2 rounded-lg overflow-hidden h-24 border border-border">
+                  <img
+                    src={form.capa_url}
+                    alt="preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => (e.currentTarget.style.display = "none")}
+                  />
+                </div>
+              )}
+            <div className="space-y-1.5">
               <Label>Upload de arquivo</Label>
               <Input type="file" accept="application/pdf" />
             </div>
