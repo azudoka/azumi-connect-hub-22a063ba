@@ -133,17 +133,42 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
     }))
     .filter((g) => g.items.length > 0);
 
+  const inactivityRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resetInactivity = () => {
+    if (inactivityRef.current) clearTimeout(inactivityRef.current);
+    inactivityRef.current = setTimeout(() => setCollapsed(true), 10000);
+  };
+  useEffect(() => {
+    resetInactivity();
+    window.addEventListener("mousemove", resetInactivity);
+    window.addEventListener("keydown", resetInactivity);
+    return () => {
+      if (inactivityRef.current) clearTimeout(inactivityRef.current);
+      window.removeEventListener("mousemove", resetInactivity);
+      window.removeEventListener("keydown", resetInactivity);
+    };
+  }, [collapsed]);
+
   return (
     <aside
       className={cn(
-        "flex flex-col shrink-0 border-r border-sidebar-border bg-gradient-sidebar transition-all duration-300",
-        collapsed ? "w-16" : "w-60"
+        "flex flex-col shrink-0 border-r border-sidebar-border transition-all duration-300",
+        collapsed ? "w-16 bg-[#F5F3FF]" : "w-60 bg-gradient-sidebar"
       )}
       aria-label="Navegação principal"
     >
       {/* Logo */}
       <div className="h-16 flex items-center px-4 border-b border-sidebar-border/60">
-        <AzumiLogo product="Connect" collapsed={collapsed} />
+        <div style={{ display: "flex", alignItems: "center", gap: collapsed ? 0 : 8 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#031D38,#8B5CF6)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <span style={{ color: "white", fontSize: 13, fontWeight: 800, fontFamily: "'Urbanist',sans-serif" }}>A</span>
+          </div>
+          {!collapsed && (
+            <span style={{ fontSize: 15, fontWeight: 800, color: "#0F172A", fontFamily: "'Urbanist',sans-serif", letterSpacing: "-0.02em" }}>
+              Connect
+            </span>
+          )}
+        </div>
         <button
           onClick={() => setCollapsed((c) => !c)}
           className="ml-auto h-7 w-7 rounded-md hover:bg-sidebar-accent flex items-center justify-center text-muted-foreground"
@@ -169,12 +194,20 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
                     to={it.to}
                     className={cn(
                       "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors",
-                      collapsed && "justify-center px-0"
+                      collapsed && "justify-center px-0 bg-[#8B5CF6]/10"
                     )}
                     activeClassName="!bg-primary/15 !text-foreground border-l-[3px] border-primary rounded-l-none ml-[3px]"
                   >
-                    <it.icon className="h-4 w-4 shrink-0" />
-                    {!collapsed && <span className="truncate">{it.label}</span>}
+                    {collapsed ? (
+                      <span title={it.label}>
+                        <it.icon className="h-5 w-5 shrink-0" />
+                      </span>
+                    ) : (
+                      <>
+                        <it.icon className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{it.label}</span>
+                      </>
+                    )}
                   </NavLink>
                 </li>
               ))}
@@ -182,37 +215,7 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
           </div>
         ))}
 
-        {variant === "admin" && (
-          <div>
-            {!collapsed && (
-              <div className="px-3 mb-1.5 flex items-center gap-2">
-                <Sparkles className="h-3 w-3 text-highlight" />
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-highlight">Hub</span>
-              </div>
-            )}
-            <ul className="space-y-0.5">
-              {[
-                { to: "/hub/lider/painel", icon: UserCog, label: "Meu Time (Líder)" },
-                { to: "/hub/colaborador/inicio", icon: Heart, label: "Colaborador" },
-                { to: "/hub/ceo/dashboard", icon: BarChart3, label: "CEO" },
-              ].map((it) => (
-                <li key={it.to}>
-                  <NavLink
-                    to={it.to}
-                    className={cn(
-                      "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors",
-                      collapsed && "justify-center px-0"
-                    )}
-                    activeClassName="!bg-primary/15 !text-foreground"
-                  >
-                    <it.icon className="h-4 w-4 shrink-0" />
-                    {!collapsed && <span className="truncate">{it.label}</span>}
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+
 
         {/* Configurações — sempre no final */}
         <div className="pt-2 mt-2 border-t border-sidebar-border/60">
