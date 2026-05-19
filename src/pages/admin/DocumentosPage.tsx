@@ -229,7 +229,19 @@ export default function DocumentosPage() {
           const Icon = cfg.icon;
           return (
             <div key={doc.id} className="bg-card border border-border rounded-2xl shadow-card overflow-hidden flex flex-col">
-              <div className="h-1.5" style={{ background: cfg.topo }} />
+              {doc.capa_url ? (
+                <>
+                  <img
+                    src={doc.capa_url}
+                    alt=""
+                    style={{ height: 110, width: "100%", objectFit: "cover", display: "block" }}
+                    onError={(e) => (e.currentTarget.style.display = "none")}
+                  />
+                  <div className="h-[3px]" style={{ background: cfg.topo }} />
+                </>
+              ) : (
+                <div className="h-1.5" style={{ background: cfg.topo }} />
+              )}
               <div className="p-5 flex flex-col gap-3 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium border", cfg.chip)}>
