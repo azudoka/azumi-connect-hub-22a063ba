@@ -279,16 +279,15 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
             <>
               <div className="my-2 h-px bg-sidebar-border/60" />
               {collapsed ? (
-                <NavTooltip label="Acessar Portal do Cliente">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); navigate("/portal"); }}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", padding: "10px 0", borderRadius: 8, color: "#8B5CF6", background: "none", border: "none", cursor: "pointer", transition: "background 0.15s" }}
-                    className="hover:bg-[#DDD6FE]"
-                  >
-                    <ExternalLink className="h-5 w-5 shrink-0" />
-                  </button>
-                </NavTooltip>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); navigate("/portal"); }}
+                  className="flex items-center justify-center w-full py-2.5 hover:bg-[#DDD6FE] transition-colors rounded-none border-0 bg-transparent cursor-pointer"
+                >
+                  <span title="Acessar Portal do Cliente">
+                    <ExternalLink className="h-4 w-4 shrink-0 text-[#8B5CF6]" />
+                  </span>
+                </button>
               ) : (
                 <button
                   type="button"
