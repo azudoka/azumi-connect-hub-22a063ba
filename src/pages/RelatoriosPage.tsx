@@ -220,20 +220,20 @@ export default function RelatoriosPage() {
       const text = await new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onload = (e) => resolve((e.target?.result as string) ?? "");
-        reader.readAsText(file, "utf-8");
+        reader.readAsText(file, "latin1");
       });
 
-      const valorMatch = text.match(/R\$\s*([\d.,]+)/);
+      const valorMatch = text.match(/R\$\s*([\d.]+,\d{2})/);
       if (valorMatch) {
         const valor = valorMatch[1].replace(/\./g, "").replace(",", ".");
         setFormBoletoValor(valor);
       }
-      const vencMatch = text.match(/[Vv]encimento[:\s]*(\d{2}\/\d{2}\/\d{4})/);
+      const vencMatch = text.match(/[Vv]encimento[^0-9]*(\d{2}\/\d{2}\/\d{4})/);
       if (vencMatch) {
         const [d, m, y] = vencMatch[1].split("/");
         setFormBoletoVencimento(`${y}-${m}-${d}`);
       }
-      const limiteMatch = text.match(/[Ll]imite[^:]*:\s*(\d{2}\/\d{2}\/\d{4})/);
+      const limiteMatch = text.match(/[Ll]imite[^0-9]*(\d{2}\/\d{2}\/\d{4})/);
       if (limiteMatch) {
         const [d, m, y] = limiteMatch[1].split("/");
         setFormBoletoDataLimite(`${y}-${m}-${d}`);
@@ -463,6 +463,7 @@ export default function RelatoriosPage() {
     setFormBoletoMulta("");
     setFormBoletoMora("");
     setFormBoletoDataLimite("");
+    setParsindoBoleto(false);
   }
 
 
@@ -1204,7 +1205,7 @@ export default function RelatoriosPage() {
                   <input
                     type="file"
                     accept="application/pdf"
-                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                     onChange={async (e) => {
                       const f = e.target.files?.[0];
                       if (!f) return;
@@ -1213,7 +1214,9 @@ export default function RelatoriosPage() {
                     }}
                   />
                   {parsindoBoleto ? (
-                    <span className="text-xs text-muted-foreground">Extraindo dados do PDF...</span>
+                    <span className="text-xs text-muted-foreground flex items-center justify-center gap-2">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Extraindo dados do PDF...
+                    </span>
                   ) : formBoletoFile ? (
                     <span className="text-xs text-emerald-600 font-medium">✓ {formBoletoFile.name}</span>
                   ) : (
