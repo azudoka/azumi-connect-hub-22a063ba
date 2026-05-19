@@ -100,42 +100,54 @@ const clienteGroups = [
   },
 ];
 
-/* ─── Tooltip roxo para modo retraído ─── */
+/* ─── Tooltip com position:fixed via portal — escapa de overflow:auto ─── */
 function NavTooltip({ label, children }: { label: string; children: React.ReactNode }) {
-  const [show, setShow] = useState(false);
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const ref = useRef<HTMLSpanElement | null>(null);
+  const show = () => {
+    const r = ref.current?.getBoundingClientRect();
+    if (r) setPos({ x: r.right + 8, y: r.top + r.height / 2 });
+  };
+  const hide = () => setPos(null);
   return (
-    <div
-      style={{ position: "relative", width: "100%" }}
-      onMouseEnter={() => setShow(true)}
-      onMouseLeave={() => setShow(false)}
-    >
-      {children}
-      {show && (
+    <>
+      <span
+        ref={ref}
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+      >
+        {children}
+      </span>
+      {pos && createPortal(
         <div
           style={{
-            position: "absolute",
-            left: "calc(100% + 8px)",
-            top: "50%",
+            position: "fixed",
+            left: pos.x,
+            top: pos.y,
             transform: "translateY(-50%)",
-            background: "#1E1B4B",
-            color: "white",
+            background: "#EDE9FE",
+            color: "#031D38",
             fontSize: 12,
             fontWeight: 500,
-            padding: "6px 10px",
-            borderRadius: 8,
+            padding: "4px 10px",
+            borderRadius: 6,
             whiteSpace: "nowrap",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            border: "1px solid #DDD6FE",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
             fontFamily: "'Urbanist',sans-serif",
-            zIndex: 50,
+            zIndex: 9999,
             pointerEvents: "none",
           }}
         >
           {label}
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 }
+
 
 export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
   const [collapsed, setCollapsed] = useState(false);
