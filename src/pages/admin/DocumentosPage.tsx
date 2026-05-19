@@ -131,6 +131,7 @@ export default function DocumentosPage() {
       versao: doc.versao,
       status: doc.status,
       file_url: doc.file_url ?? "",
+      capa_url: doc.capa_url ?? "",
     });
     setModalOpen(true);
   }
