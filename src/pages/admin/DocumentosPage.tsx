@@ -149,6 +149,7 @@ export default function DocumentosPage() {
         versao: form.versao,
         status: form.status,
         file_url: form.file_url || null,
+        capa_url: form.capa_url || null,
       } : d));
     } else {
       const novo: Documento = {
@@ -165,6 +166,7 @@ export default function DocumentosPage() {
         ciencias: 0,
         visualizacoes: 0,
         publicado_de_entregavel: false,
+        capa_url: form.capa_url || null,
       };
       setDocs((prev) => [novo, ...prev]);
     }
