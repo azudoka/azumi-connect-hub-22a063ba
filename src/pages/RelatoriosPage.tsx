@@ -220,20 +220,20 @@ export default function RelatoriosPage() {
       const text = await new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onload = (e) => resolve((e.target?.result as string) ?? "");
-        reader.readAsText(file, "utf-8");
+        reader.readAsText(file, "latin1");
       });
 
-      const valorMatch = text.match(/R\$\s*([\d.,]+)/);
+      const valorMatch = text.match(/R\$\s*([\d.]+,\d{2})/);
       if (valorMatch) {
         const valor = valorMatch[1].replace(/\./g, "").replace(",", ".");
         setFormBoletoValor(valor);
       }
-      const vencMatch = text.match(/[Vv]encimento[:\s]*(\d{2}\/\d{2}\/\d{4})/);
+      const vencMatch = text.match(/[Vv]encimento[^0-9]*(\d{2}\/\d{2}\/\d{4})/);
       if (vencMatch) {
         const [d, m, y] = vencMatch[1].split("/");
         setFormBoletoVencimento(`${y}-${m}-${d}`);
       }
-      const limiteMatch = text.match(/[Ll]imite[^:]*:\s*(\d{2}\/\d{2}\/\d{4})/);
+      const limiteMatch = text.match(/[Ll]imite[^0-9]*(\d{2}\/\d{2}\/\d{4})/);
       if (limiteMatch) {
         const [d, m, y] = limiteMatch[1].split("/");
         setFormBoletoDataLimite(`${y}-${m}-${d}`);
