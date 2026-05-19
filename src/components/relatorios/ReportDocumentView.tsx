@@ -286,32 +286,8 @@ export default function ReportDocumentView({ report, taskRows, solicitationRows,
                 Relatório de Prestação de Serviços
               </span>
             </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", lineHeight: 1.25, marginBottom: 14 }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", lineHeight: 1.25 }}>
               {report.title ?? `Relatório — ${fmtMonthRef(report.month_ref)}`}
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {type && (
-                <span style={{
-                  background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)",
-                  borderRadius: 20, padding: "3px 12px", fontSize: 11, color: "#fff", fontWeight: 600,
-                }}>
-                  {TYPE_LABELS[type]}
-                </span>
-              )}
-              <span style={{
-                background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)",
-                borderRadius: 20, padding: "3px 12px", fontSize: 11, color: "rgba(255,255,255,0.85)",
-                fontFamily: "JetBrains Mono, monospace"
-              }}>
-                {fmtMonthRef(report.month_ref)}
-              </span>
-              <span style={{
-                background: STATUS_COLORS[report.status] + "33",
-                border: `1px solid ${STATUS_COLORS[report.status]}66`,
-                borderRadius: 20, padding: "3px 12px", fontSize: 11, color: "#fff", fontWeight: 600,
-              }}>
-                {STATUS_LABELS[report.status]}
-              </span>
             </div>
           </div>
           {/* Logo do cliente */}
