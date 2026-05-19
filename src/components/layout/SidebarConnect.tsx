@@ -153,14 +153,10 @@ function NavTooltip({ label, children }: { label: string; children: React.ReactN
 export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { user } = useAuth();
   const { pode } = usePermissao();
   const [consultorOpen, setConsultorOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
 
   const groupsBase = variant === "admin" ? adminGroups : clienteGroups;
   const groups = groupsBase
