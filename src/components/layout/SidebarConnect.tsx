@@ -204,7 +204,7 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
                       </span>
                     ) : (
                       <>
-                        <it.icon className="h-4 w-4 shrink-0" />
+                        <it.icon className="h-4 w-4 shrink-0 text-[#8B5CF6]" />
                         <span className="truncate">{it.label}</span>
                       </>
                     )}
@@ -230,7 +230,7 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
                 )}
                 activeClassName="!bg-primary/15 !text-foreground"
               >
-                <Settings className="h-4 w-4 shrink-0" />
+                <Settings className="h-4 w-4 shrink-0 text-[#8B5CF6]" />
                 {!collapsed && <span className="truncate">Configurações</span>}
               </NavLink>
             );
@@ -248,7 +248,7 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
                 )}
                 aria-label="Acessar Portal do Cliente"
               >
-                <ExternalLink className="h-4 w-4 shrink-0" />
+                <ExternalLink className="h-4 w-4 shrink-0 text-[#8B5CF6]" />
                 {!collapsed && (
                   <span className="truncate">Acessar Portal do Cliente</span>
                 )}
