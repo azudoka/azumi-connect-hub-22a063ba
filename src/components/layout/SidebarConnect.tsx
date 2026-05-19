@@ -89,7 +89,7 @@ const clienteGroups = [
   {
     label: "Gestão",
     items: [
-      { to: "/cliente/gestao-conta", icon: Wallet, label: "Gestão de Conta" },
+      { to: "/cliente/gestao-conta", icon: Receipt, label: "Gestão de Conta" },
       { to: "/cliente/documentos", icon: FileText, label: "Documentos" },
     ],
   },
