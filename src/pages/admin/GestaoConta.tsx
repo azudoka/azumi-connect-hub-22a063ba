@@ -13,7 +13,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 
-const tabs = ["Boletos", "Extrato de Horas", "Relatórios Mensais"] as const;
+const tabs = ["Boletos", "Extrato de Horas"] as const;
 
 type InvoiceStatus = "pendente" | "pago" | "atrasado" | "cancelado";
 
