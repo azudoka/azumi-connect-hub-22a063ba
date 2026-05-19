@@ -54,8 +54,8 @@ const adminGroups = [
     label: "Gestão",
     items: [
       { to: "/app/clientes", icon: Building2, label: "Clientes" },
-      { to: "/app/financeiro", icon: Wallet, label: "Financeiro" },
-      { to: "/app/gestao-de-conta", icon: Wallet, label: "Gestão de Conta" },
+      { to: "/app/financeiro", icon: CreditCard, label: "Financeiro" },
+      { to: "/app/gestao-de-conta", icon: Receipt, label: "Gestão de Conta" },
       { to: "/app/relatorios", icon: BarChart3, label: "Relatórios" },
       { to: "/app/documentos", icon: FileText, label: "Documentos" },
       { to: "/app/auditoria", icon: ShieldCheck, label: "Auditoria" },
