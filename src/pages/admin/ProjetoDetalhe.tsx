@@ -899,6 +899,7 @@ export default function ProjetoDetalhe() {
             description: comentario ? `"${comentario}"` : undefined,
           });
           if (ent?.tipoDocumento) {
+            setPubEntId(entId);
             setDocsOficiaisOpen({ open: true, entId });
           }
         }}
