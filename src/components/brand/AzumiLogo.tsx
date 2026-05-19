@@ -71,7 +71,7 @@ export function AzumiLogo({
           className={`mt-1 font-data uppercase ${subColor}`}
           style={{ fontSize: 9, letterSpacing: "0.18em" }}
         >
-          · {product} ·
+          {product}
         </div>
       </div>
     </div>
