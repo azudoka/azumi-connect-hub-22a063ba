@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Building2, Users, Briefcase, Clock, MessagesSquare, Target,
   BarChart3, CreditCard, Receipt, FileText, ShieldCheck, Calendar, Megaphone, BookOpen,
-  Settings, LogOut, ExternalLink, Mail, Phone
+  Settings, ExternalLink, Mail, Phone
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
