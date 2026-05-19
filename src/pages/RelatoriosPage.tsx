@@ -205,6 +205,50 @@ export default function RelatoriosPage() {
   const [formHorasSolicitacoes, setFormHorasSolicitacoes] = useState("");
   const [formSaving, setFormSaving] = useState(false);
 
+  const [formBoletoFile, setFormBoletoFile] = useState<File | null>(null);
+  const [formBoletoUrl, setFormBoletoUrl] = useState("");
+  const [formBoletoVencimento, setFormBoletoVencimento] = useState("");
+  const [formBoletoValor, setFormBoletoValor] = useState("");
+  const [formBoletoMulta, setFormBoletoMulta] = useState("");
+  const [formBoletoMora, setFormBoletoMora] = useState("");
+  const [formBoletoDataLimite, setFormBoletoDataLimite] = useState("");
+  const [parsindoBoleto, setParsindoBoleto] = useState(false);
+
+  async function parseBoleto(file: File) {
+    setParsindoBoleto(true);
+    try {
+      const text = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve((e.target?.result as string) ?? "");
+        reader.readAsText(file, "utf-8");
+      });
+
+      const valorMatch = text.match(/R\$\s*([\d.,]+)/);
+      if (valorMatch) {
+        const valor = valorMatch[1].replace(/\./g, "").replace(",", ".");
+        setFormBoletoValor(valor);
+      }
+      const vencMatch = text.match(/[Vv]encimento[:\s]*(\d{2}\/\d{2}\/\d{4})/);
+      if (vencMatch) {
+        const [d, m, y] = vencMatch[1].split("/");
+        setFormBoletoVencimento(`${y}-${m}-${d}`);
+      }
+      const limiteMatch = text.match(/[Ll]imite[^:]*:\s*(\d{2}\/\d{2}\/\d{4})/);
+      if (limiteMatch) {
+        const [d, m, y] = limiteMatch[1].split("/");
+        setFormBoletoDataLimite(`${y}-${m}-${d}`);
+      }
+      const multaMatch = text.match(/MULTA DE ([\d,]+)%/i);
+      if (multaMatch) setFormBoletoMulta(multaMatch[1].replace(",", "."));
+      const moraMatch = text.match(/MORA DE ([\d,]+)%/i);
+      if (moraMatch) setFormBoletoMora(moraMatch[1].replace(",", "."));
+    } catch (e) {
+      console.error("Erro ao parsear boleto:", e);
+    } finally {
+      setParsindoBoleto(false);
+    }
+  }
+
   const [contextoRelatorios, setContextoRelatorios] = useState<{ month_ref: string; total_hours_minutes: number | null }[]>([]);
   const [contextoEmpresaHoras, setContextoEmpresaHoras] = useState(0);
   const [atracaoVagas] = useState<{ id: string; titulo: string; status: string }[]>([]);
