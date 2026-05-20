@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Minus, ChevronLeft, ChevronRight, Download, AlertTriangle } from "lucide-react";
+import { Plus, Minus, ChevronLeft, ChevronRight, Download, AlertTriangle, Lightbulb } from "lucide-react";
 import {
   DISC_QUESTIONS,
   calcularScores,
@@ -8,6 +8,7 @@ import {
   type DiscDim,
   type DiscScores,
 } from "./discQuestions";
+import PerfilIlustracao from "./PerfilIlustracao";
 
 const NAVY = "#031D38";
 const BLUE = "#034C8B";
