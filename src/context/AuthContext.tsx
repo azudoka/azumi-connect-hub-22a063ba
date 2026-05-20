@@ -64,7 +64,10 @@ export interface Usuario {
   modulos: ModuloPermissao[];
   isDemo: boolean;
   auditoria: boolean;
+  plano?: Plano | null;
+  trialExpiraEm?: string | null;
 }
+
 
 /**
  * Compat com o tipo antigo AuthUser, ainda usado em src/pages/Login.tsx e
