@@ -8,6 +8,7 @@ import {
   Plus,
   Trash2,
   UserCircle2,
+  Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -52,6 +53,116 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+
+// =====================================================================
+// Tipos & Mocks — Usuários da plataforma
+// =====================================================================
+
+type RoleUsuario = "admin" | "consultor" | "cliente_recorrente" | "cliente_avulso" | "trial";
+type StatusUsuario = "ativo" | "inativo" | "trial" | "pendente";
+
+interface PermissaoItem {
+  key: string;
+  label: string;
+  grupo: string;
+}
+
+interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  role: RoleUsuario;
+  status: StatusUsuario;
+  empresa?: string;
+  trialExpira?: string;
+  permissoes: string[];
+}
+
+const TODAS_PERMISSOES: PermissaoItem[] = [
+  { key: "projetos.ver",        label: "Ver projetos",              grupo: "Operações" },
+  { key: "projetos.editar",     label: "Editar projetos",           grupo: "Operações" },
+  { key: "horas.ver",           label: "Ver horas",                 grupo: "Operações" },
+  { key: "solicitacoes.ver",    label: "Ver solicitações",          grupo: "Operações" },
+  { key: "atracao.ver",         label: "Ver Atração & Hunting",     grupo: "Operações" },
+  { key: "clientes.ver",        label: "Ver clientes",              grupo: "Gestão" },
+  { key: "financeiro.ver",      label: "Ver financeiro",            grupo: "Gestão" },
+  { key: "gestao_conta.ver",    label: "Ver Gestão de Conta",       grupo: "Gestão" },
+  { key: "relatorios.ver",      label: "Ver relatórios",            grupo: "Gestão" },
+  { key: "relatorios.criar",    label: "Criar relatórios",          grupo: "Gestão" },
+  { key: "documentos.ver",      label: "Ver documentos",            grupo: "Gestão" },
+  { key: "documentos.criar",    label: "Criar documentos",          grupo: "Gestão" },
+  { key: "auditoria.ver",       label: "Ver auditoria",             grupo: "Gestão" },
+  { key: "calendario.ver",      label: "Ver calendário",            grupo: "Plataforma" },
+  { key: "calendario.criar",    label: "Criar eventos",             grupo: "Plataforma" },
+  { key: "comunicados.ver",     label: "Ver comunicados",           grupo: "Plataforma" },
+  { key: "comunicados.criar",   label: "Criar comunicados",         grupo: "Plataforma" },
+  { key: "analytics.ver",       label: "Ver analytics",             grupo: "Analytics" },
+  { key: "analytics.nps",       label: "Ver NPS",                   grupo: "Analytics" },
+  { key: "usuarios.gerenciar",  label: "Gerenciar usuários",        grupo: "Admin" },
+  { key: "empresas.ver",        label: "Ver empresas",              grupo: "Admin" },
+];
+
+const PERMISSOES_PADRAO: Record<RoleUsuario, string[]> = {
+  admin: TODAS_PERMISSOES.map((p) => p.key),
+  consultor: [
+    "projetos.ver","projetos.editar","solicitacoes.ver","atracao.ver",
+    "clientes.ver","relatorios.ver","relatorios.criar",
+    "documentos.ver","documentos.criar","auditoria.ver",
+    "calendario.ver","calendario.criar","comunicados.ver","comunicados.criar",
+    "analytics.ver","analytics.nps",
+  ],
+  cliente_recorrente: [
+    "projetos.ver","solicitacoes.ver","atracao.ver",
+    "gestao_conta.ver","relatorios.ver","documentos.ver",
+    "calendario.ver","comunicados.ver",
+  ],
+  cliente_avulso: [
+    "projetos.ver","solicitacoes.ver","atracao.ver","documentos.ver",
+  ],
+  trial: [],
+};
+
+const ROLE_LABEL: Record<RoleUsuario, string> = {
+  admin: "Administrador",
+  consultor: "Consultor",
+  cliente_recorrente: "Cliente Recorrente",
+  cliente_avulso: "Cliente Avulso",
+  trial: "Trial",
+};
+
+const STATUS_LABEL: Record<StatusUsuario, string> = {
+  ativo: "Ativo",
+  inativo: "Inativo",
+  trial: "Trial",
+  pendente: "Pendente",
+};
+
+const EMPRESAS_MOCK = ["Kentaki Foods", "Tech Plural", "Grupo Maverick", "Studio Mira", "Alvo Digital"];
+
+const USUARIOS_INICIAIS: Usuario[] = [
+  {
+    id: "u1", nome: "Patricia Lima", email: "patricia@azumirh.com.br",
+    role: "admin", status: "ativo",
+    permissoes: PERMISSOES_PADRAO.admin,
+  },
+  {
+    id: "u2", nome: "Ana Beatriz", email: "ana@azumirh.com.br",
+    role: "consultor", status: "ativo",
+    permissoes: PERMISSOES_PADRAO.consultor,
+  },
+  {
+    id: "u3", nome: "Mariana Souza", email: "mariana@kentaki.com",
+    role: "cliente_recorrente", status: "ativo", empresa: "Kentaki Foods",
+    permissoes: PERMISSOES_PADRAO.cliente_recorrente,
+  },
+  {
+    id: "u4", nome: "Carlos Demo", email: "carlos@empresa.com",
+    role: "trial", status: "trial", empresa: "Empresa Demo",
+    trialExpira: "2026-06-01",
+    permissoes: ["projetos.ver","atracao.ver"],
+  },
+];
 
 // =====================================================================
 // Tipos & Mock
@@ -103,7 +214,14 @@ const getAvatarTone = (nome: string) => {
 // =====================================================================
 
 export default function ConfiguracoesPage() {
+  const { usuario } = useAuth();
+  const isAdmin = usuario?.role === "admin";
   const [tab, setTab] = useState("perfil");
+
+  // ---- Usuários da plataforma ----
+  const [usuarios, setUsuarios] = useState<Usuario[]>(USUARIOS_INICIAIS);
+  const [convidarOpen, setConvidarOpen] = useState(false);
+  const [permissoesOpen, setPermissoesOpen] = useState<Usuario | null>(null);
 
   // ---- Perfil ----
   const [nome, setNome]         = useState("Ana Beatriz");
@@ -154,6 +272,7 @@ export default function ConfiguracoesPage() {
           <TabsTrigger value="perfil">Meu perfil</TabsTrigger>
           <TabsTrigger value="equipe">Equipe</TabsTrigger>
           <TabsTrigger value="sistema">Sistema</TabsTrigger>
+          {isAdmin && <TabsTrigger value="usuarios">Usuários</TabsTrigger>}
         </TabsList>
 
         {/* =================== PERFIL =================== */}
@@ -418,6 +537,117 @@ export default function ConfiguracoesPage() {
             </div>
           </Card>
         </TabsContent>
+
+        {/* =================== USUÁRIOS (admin) =================== */}
+        {isAdmin && (
+          <TabsContent value="usuarios" className="space-y-5">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <h3 className="font-display text-base font-semibold">Usuários da plataforma</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Gerencie acessos, roles e permissões individuais.
+                </p>
+              </div>
+              <Button onClick={() => setConvidarOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" /> Convidar usuário
+              </Button>
+            </div>
+
+            <Card className="overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Usuário</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Empresa</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Trial expira</TableHead>
+                    <TableHead className="w-[140px] text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {usuarios.map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback
+                              className="text-xs font-semibold"
+                              style={getAvatarTone(u.nome)}
+                            >
+                              {getIniciais(u.nome)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm leading-tight">{u.nome}</p>
+                            <p className="text-xs text-muted-foreground">{u.email}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">{ROLE_LABEL[u.role]}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{u.empresa ?? "—"}</TableCell>
+                      <TableCell>
+                        <span
+                          className={cn(
+                            "badge-pill border",
+                            u.status === "ativo" && "bg-success/15 text-success border-success/30",
+                            u.status === "inativo" && "bg-muted text-muted-foreground border-border",
+                            u.status === "trial" && "bg-amber-500/15 text-amber-600 border-amber-500/30",
+                            u.status === "pendente" && "bg-blue-500/15 text-blue-600 border-blue-500/30",
+                          )}
+                        >
+                          <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
+                          {STATUS_LABEL[u.status]}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {u.trialExpira
+                          ? new Date(u.trialExpira).toLocaleDateString("pt-BR")
+                          : "—"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8"
+                            onClick={() => setPermissoesOpen(u)}
+                          >
+                            <Shield className="h-3.5 w-3.5 mr-1" /> Permissões
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => toast.info("Em breve")}>
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                disabled={u.status === "inativo"}
+                                className="text-destructive focus:text-destructive"
+                                onClick={() =>
+                                  setUsuarios((prev) =>
+                                    prev.map((x) => (x.id === u.id ? { ...x, status: "inativo" } : x))
+                                  )
+                                }
+                              >
+                                Desativar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* =================== Dialog: Alterar senha =================== */}
@@ -464,6 +694,32 @@ export default function ConfiguracoesPage() {
 
       {/* =================== Dialog: Encerrar conta =================== */}
       <EncerrarContaDialog open={encerrarContaOpen} onOpenChange={setEncerrarContaOpen} />
+
+      {/* =================== Dialog: Convidar usuário =================== */}
+      <ConvidarUsuarioDialog
+        open={convidarOpen}
+        onOpenChange={setConvidarOpen}
+        onSave={(u) => {
+          setUsuarios((prev) => [
+            ...prev,
+            { ...u, id: `u-${Date.now()}`, permissoes: PERMISSOES_PADRAO[u.role] },
+          ]);
+          toast.success(`Convite enviado para ${u.email}`);
+        }}
+      />
+
+      {/* =================== Dialog: Permissões granulares =================== */}
+      {permissoesOpen && (
+        <PermissoesDialog
+          usuario={permissoesOpen}
+          onClose={() => setPermissoesOpen(null)}
+          onSave={(id, perms) => {
+            setUsuarios((prev) => prev.map((u) => (u.id === id ? { ...u, permissoes: perms } : u)));
+            toast.success("Permissões atualizadas");
+            setPermissoesOpen(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -742,6 +998,204 @@ function EncerrarContaDialog({
           >
             Encerrar conta permanentemente
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// =====================================================================
+// Dialog: Convidar usuário
+// =====================================================================
+
+function ConvidarUsuarioDialog({
+  open,
+  onOpenChange,
+  onSave,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onSave: (u: Omit<Usuario, "id" | "permissoes">) => void;
+}) {
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<RoleUsuario>("cliente_recorrente");
+  const [empresa, setEmpresa] = useState<string>("");
+  const [trialExpira, setTrialExpira] = useState("");
+  const [modulosTrial, setModulosTrial] = useState<string[]>([]);
+
+  const isTrial = role === "trial";
+  const MODULOS_TRIAL = ["Atração & Hunting", "Relatórios", "Documentos", "Calendário", "Comunicados"];
+
+  const reset = () => {
+    setNome(""); setEmail(""); setRole("cliente_recorrente");
+    setEmpresa(""); setTrialExpira(""); setModulosTrial([]);
+  };
+
+  const handleSave = () => {
+    if (!nome.trim() || !email.trim()) {
+      toast.error("Nome e e-mail obrigatórios.");
+      return;
+    }
+    if (isTrial && !trialExpira) {
+      toast.error("Defina a data de expiração do trial.");
+      return;
+    }
+    onSave({
+      nome: nome.trim(),
+      email: email.trim(),
+      role,
+      status: isTrial ? "trial" : "pendente",
+      empresa: empresa || undefined,
+      trialExpira: trialExpira || undefined,
+    });
+    reset();
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) reset(); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Convidar usuário</DialogTitle>
+          <DialogDescription>O usuário receberá um convite por e-mail.</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Nome <span className="text-destructive">*</span></Label>
+              <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome completo" />
+            </div>
+            <div className="space-y-2">
+              <Label>E-mail <span className="text-destructive">*</span></Label>
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@empresa.com" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Role</Label>
+            <Select value={role} onValueChange={(v) => setRole(v as RoleUsuario)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(ROLE_LABEL) as RoleUsuario[])
+                  .filter((r) => r !== "admin")
+                  .map((r) => (
+                    <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Empresa</Label>
+            <Select value={empresa} onValueChange={setEmpresa}>
+              <SelectTrigger><SelectValue placeholder="Selecione a empresa" /></SelectTrigger>
+              <SelectContent>
+                {EMPRESAS_MOCK.map((e) => (
+                  <SelectItem key={e} value={e}>{e}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {isTrial && (
+            <>
+              <div className="space-y-2">
+                <Label>Expiração do trial <span className="text-destructive">*</span></Label>
+                <Input type="date" value={trialExpira} onChange={(e) => setTrialExpira(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Módulos liberados no trial</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {MODULOS_TRIAL.map((m) => (
+                    <label key={m} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={modulosTrial.includes(m)}
+                        onChange={(e) =>
+                          setModulosTrial((prev) =>
+                            e.target.checked ? [...prev, m] : prev.filter((x) => x !== m)
+                          )
+                        }
+                        className="rounded"
+                      />
+                      {m}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={handleSave}>Enviar convite</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// =====================================================================
+// Dialog: Permissões granulares
+// =====================================================================
+
+function PermissoesDialog({
+  usuario,
+  onClose,
+  onSave,
+}: {
+  usuario: Usuario;
+  onClose: () => void;
+  onSave: (id: string, perms: string[]) => void;
+}) {
+  const [perms, setPerms] = useState<string[]>(usuario.permissoes);
+  const grupos = Array.from(new Set(TODAS_PERMISSOES.map((p) => p.grupo)));
+
+  const toggle = (key: string) =>
+    setPerms((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+
+  const resetParaPadrao = () => setPerms(PERMISSOES_PADRAO[usuario.role] ?? []);
+
+  return (
+    <Dialog open onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Permissões — {usuario.nome}</DialogTitle>
+          <DialogDescription>
+            {ROLE_LABEL[usuario.role]} · {usuario.email}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-5 max-h-[60vh] overflow-y-auto pr-1">
+          {grupos.map((grupo) => (
+            <div key={grupo}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                {grupo}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {TODAS_PERMISSOES.filter((p) => p.grupo === grupo).map((p) => (
+                  <label key={p.key} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={perms.includes(p.key)}
+                      onChange={() => toggle(p.key)}
+                      className="rounded"
+                    />
+                    {p.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={resetParaPadrao}>Restaurar padrão</Button>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button onClick={() => onSave(usuario.id, perms)}>Salvar permissões</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
