@@ -11,12 +11,16 @@ interface ModuloGuardProps {
 
 // Descrição curta do que cada módulo entrega — guia o cliente a entender o valor.
 const MODULO_DESCRICAO: Partial<Record<ModuloSlug, string>> = {
-  hub: "Plataforma de gestão de pessoas para sua equipe — colaboradores, líderes e CEO acessam dados, holerites, férias e termômetro de clima.",
   atracao: "Pipeline completo de recrutamento e seleção: vagas, candidatos, DISC, pareceres e shortlist da Azumi.",
-  horas: "Acompanhe o consumo de horas do seu pacote por projeto, frente e consultor.",
-  financeiro: "Boletos, notas fiscais e histórico financeiro consolidados em um só lugar.",
-  relatorios: "Relatórios mensais, NPS, indicadores de RH e diagnósticos da sua operação.",
-  documentos: "Biblioteca de políticas, manuais, fluxos e guias publicados pela Azumi.",
+  performance: "Ciclos de avaliação de desempenho, feedbacks e PDIs estruturados para sua equipe.",
+  governanca: "Auditoria, compliance interno e governança de processos de RH.",
+  regulamentacao: "Acompanhamento de NRs, convenções coletivas e exigências regulatórias.",
+  politicas: "Construção e revisão de políticas internas com a curadoria da Azumi.",
+  engenharia_pessoas: "Arquitetura de cargos, salários e trilhas de carreira.",
+  endomarketing: "Comunicação interna, pesquisa de clima e programas de engajamento.",
+  dp: "Departamento Pessoal: holerites, férias, afastamentos e CCT.",
+  contabilidade: "Folha de pagamento, FGTS, DARF, prazos e relatórios contábeis.",
+  juridico: "Processos trabalhistas, compliance e suporte jurídico de RH.",
 };
 
 export function ModuloGuard({ modulo, children, apenasOperar = false }: ModuloGuardProps) {
