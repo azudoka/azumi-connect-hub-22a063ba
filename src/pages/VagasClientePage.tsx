@@ -240,9 +240,11 @@ export default function VagasClientePage() {
   const empresaId = user?.empresaId ?? "";
   const pacote = planoToPacote(usuario?.plano);
 
-  const [vagas, setVagas] = useState<VagaMock[]>(() =>
-    MOCK.filter((v) => (empresaId ? v.empresaId === empresaId : true)),
-  );
+  const [vagas, setVagas] = useState<VagaMock[]>(() => {
+    const filtradas = MOCK.filter((v) => (empresaId ? v.empresaId === empresaId : true));
+    // Fallback demo: garante que vagas mock apareçam mesmo no perfil trial
+    return filtradas.length > 0 ? filtradas : MOCK;
+  });
   const [filtro, setFiltro] = useState<StatusVaga | "todas">("todas");
   const [vagaSelecionadaId, setVagaSelecionadaId] = useState<string | null>(null);
   const [feedbacks, setFeedbacks] = useState<Record<string, FeedbackAcao>>({});
