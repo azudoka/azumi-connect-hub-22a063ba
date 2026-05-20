@@ -1105,16 +1105,6 @@ function CamposPorTipo({
     );
   }
 
-  if (t === "horas_avulsas") {
-    return (
-      <>
-        <FieldText label="Quantidade estimada de horas" required type="number" value={get("horas")} onChange={(v) => setExtra("horas", v)} />
-        <FieldText label="Frente/área para aplicação" required value={form.titulo} onChange={(v) => setForm((f) => ({ ...f, titulo: v }))} />
-        <FieldText label="Justificativa" required multiline rows={3} value={form.descricao}
-          onChange={(v) => setForm((f) => ({ ...f, descricao: v }))} />
-      </>
-    );
-  }
 
   return null;
 }
