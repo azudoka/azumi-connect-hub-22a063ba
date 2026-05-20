@@ -440,28 +440,23 @@ export default function ClienteDashboard() {
             </div>
 
             {/* Coluna 3 — Agenda */}
-            <div className="bg-white border border-gray-200 rounded-xl p-4 min-h-[420px] flex flex-col">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-                Agenda
-              </p>
-              <div className="w-full overflow-hidden">
-                <Calendar
-                  mode="single"
-                  modifiers={{ evento: eventosAgendados }}
-                  modifiersClassNames={{
-                    evento: "bg-primary/20 text-primary font-semibold rounded-md",
-                  }}
-                  className="w-full rounded-md border-0 p-0"
-                />
+            <div className="bg-card border border-border rounded-xl p-4 flex flex-col gap-3 min-h-[420px]">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-primary" />
+                <h3 className="font-display font-semibold text-sm">Agenda</h3>
               </div>
-              <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
-                {eventosAgendados.slice(0, 2).map((d, i) => (
-                  <li key={i} className="flex items-center gap-2">
-                    <CalendarDays className="h-3 w-3 text-primary" />
-                    {d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
-                  </li>
-                ))}
-              </ul>
+              <MiniCalendario eventos={eventosAgendados} />
+              <div className="space-y-1 mt-1">
+                {eventosAgendados
+                  .filter((e) => e >= new Date())
+                  .slice(0, 3)
+                  .map((e, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <CalendarDays className="h-3 w-3 text-primary shrink-0" />
+                      <span>{e.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</span>
+                    </div>
+                  ))}
+              </div>
             </div>
           </div>
 
