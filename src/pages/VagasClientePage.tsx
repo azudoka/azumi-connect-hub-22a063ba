@@ -53,17 +53,17 @@ interface CandidatoEnviado {
   id: string;
   vagaId: string;
   nome: string;
+  cargo: string;
   parecer: string;
   enviado: boolean;
+  disc: { D: number; I: number; S: number; C: number };
 }
 
 const CANDIDATOS_MOCK: CandidatoEnviado[] = [
-  { id: "ca-01", vagaId: "v-01", nome: "Marina Souza", parecer: "Forte experiência em RH estratégico, perfil analítico e bom fit cultural.", enviado: true },
-  { id: "ca-02", vagaId: "v-01", nome: "Rafael Tavares", parecer: "Background sólido em recrutamento técnico, comunicação excelente.", enviado: true },
-  { id: "ca-03", vagaId: "v-01", nome: "Juliana Pires", parecer: "Perfil generalista de RH com experiência em multinacionais.", enviado: true },
-  { id: "ca-04", vagaId: "v-02", nome: "Carlos Mendes", parecer: "Coordenador financeiro com experiência em FP&A e fechamento contábil.", enviado: true },
-  { id: "ca-05", vagaId: "v-02", nome: "Patrícia Lima", parecer: "Forte em controladoria e gestão de equipes financeiras.", enviado: true },
-  { id: "ca-06", vagaId: "v-03", nome: "Diego Almeida", parecer: "Full Stack sênior, React/Node, contratado pelo cliente.", enviado: true },
+  { id: "ca-01", vagaId: "v-01", nome: "Marina Souza", cargo: "Gerente de TI", parecer: "Liderança técnica sólida em times de infra. Perfil executivo, comunica bem com áreas de negócio.", enviado: true, disc: { D: 78, I: 52, S: 38, C: 64 } },
+  { id: "ca-02", vagaId: "v-01", nome: "Rafael Tavares", cargo: "Gerente de TI", parecer: "Background em arquitetura cloud e governança. Forte em planejamento estratégico de TI.", enviado: true, disc: { D: 62, I: 44, S: 55, C: 82 } },
+  { id: "ca-03", vagaId: "v-01", nome: "Juliana Pires", cargo: "Gerente de TI", parecer: "Experiência em multinacionais com squads multidisciplinares. Excelente articuladora.", enviado: true, disc: { D: 55, I: 72, S: 60, C: 50 } },
+  { id: "ca-04", vagaId: "v-02", nome: "Patrícia Lima", cargo: "Analista de Marketing", parecer: "Contratada — campanhas de performance e branding integrado.", enviado: true, disc: { D: 48, I: 80, S: 58, C: 45 } },
 ];
 
 const FEEDBACK_LABEL: Record<FeedbackAcao, string> = {
