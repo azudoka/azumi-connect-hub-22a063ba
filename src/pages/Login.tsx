@@ -12,7 +12,7 @@ export default function Login() {
 
   useEffect(() => {
     if (user) {
-      navigate(user.papel === "admin" ? "/app/dashboard" : "/portal", {
+      navigate(user.papel === "admin" ? "/app/dashboard" : "/cliente/dashboard", {
         replace: true,
       });
     }
