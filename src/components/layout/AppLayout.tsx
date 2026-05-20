@@ -40,13 +40,6 @@ export function AppLayout({ variant: variantOverride }: AppLayoutProps) {
             <span className="text-[#031D38]">
               Você está em <strong>modo trial</strong> — explore a plataforma e fale com nossa equipe para contratar.
             </span>
-            <button
-              type="button"
-              onClick={() => setOpenUpgrade(true)}
-              className="ml-auto text-xs font-semibold text-[#8B5CF6] hover:underline"
-            >
-              Conheça os planos →
-            </button>
           </div>
         )}
         <main className="flex-1 overflow-y-auto">
