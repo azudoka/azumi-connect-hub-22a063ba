@@ -27,7 +27,7 @@ import {
   type DocumentoMock,
 } from "@/data/documentosMock";
 
-type Categoria = "Políticas" | "Manuais" | "Fluxos" | "Guias" | "Outro";
+type Categoria = "Políticas" | "Manuais" | "Fluxos" | "Guias" | "Relatórios" | "Onboarding" | "Outro";
 type Status = "publicado" | "rascunho";
 type Documento = DocumentoMock;
 
