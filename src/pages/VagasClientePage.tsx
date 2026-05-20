@@ -563,9 +563,11 @@ export default function VagasClientePage() {
               </Button>
             </article>
           ))}
-        </div>
+          </div>
+        </>
       )}
     </>
+
   );
 }
 
