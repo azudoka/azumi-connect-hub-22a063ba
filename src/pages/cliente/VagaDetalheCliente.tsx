@@ -496,7 +496,127 @@ export default function VagaDetalheCliente() {
           />
         );
       })()}
+
+      {/* Modal: solicitar alteração na vaga */}
+      {alteracaoOpen && (
+        <SolicitarAlteracaoModal
+          vagaTitulo={vaga.titulo}
+          onClose={() => setAlteracaoOpen(false)}
+          onSubmit={() => {
+            // TODO: conectar Supabase — tabela de solicitações de alteração
+            toast.success("Solicitação enviada para sua consultora.");
+            setAlteracaoOpen(false);
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+function DetalheItem({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+      <div className="min-w-0">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+        <div className="text-sm font-medium break-words">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+function SolicitarAlteracaoModal({
+  vagaTitulo,
+  onClose,
+  onSubmit,
+}: {
+  vagaTitulo: string;
+  onClose: () => void;
+  onSubmit: () => void;
+}) {
+  const motivos = [
+    "Salário incorreto",
+    "Requisitos desatualizados",
+    "Mudança de modalidade",
+    "Mudança de senioridade",
+    "Outro",
+  ];
+  const [selecionados, setSelecionados] = useState<string[]>([]);
+  const [detalhes, setDetalhes] = useState("");
+
+  function toggle(m: string) {
+    setSelecionados((s) => (s.includes(m) ? s.filter((x) => x !== m) : [...s, m]));
+  }
+
+  const podeEnviar = selecionados.length > 0 && detalhes.trim().length > 5;
+
+  return (
+    <ModalShell
+      title="Solicitar alteração na vaga"
+      subtitle={vagaTitulo}
+      onClose={onClose}
+      footer={
+        <>
+          <button
+            onClick={onClose}
+            className="h-9 px-4 rounded-lg border border-border text-sm font-medium hover:bg-secondary"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onSubmit}
+            disabled={!podeEnviar}
+            className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Enviar solicitação
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <div className="text-sm font-medium mb-2">Motivo da alteração</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {motivos.map((m) => {
+              const ativo = selecionados.includes(m);
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => toggle(m)}
+                  className={cn(
+                    "h-9 px-3 rounded-lg border text-sm font-medium text-left",
+                    ativo
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border hover:bg-secondary"
+                  )}
+                >
+                  {m}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium block mb-1.5">Detalhe a alteração desejada</label>
+          <textarea
+            value={detalhes}
+            onChange={(e) => setDetalhes(e.target.value)}
+            rows={4}
+            className="w-full rounded-lg border border-border bg-background p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            placeholder="Descreva o que precisa ser ajustado..."
+          />
+        </div>
+
+        <div className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2.5 flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+          <p className="text-xs text-warning leading-relaxed">
+            Alterações nos requisitos da vaga podem impactar o prazo e o cálculo do processo seletivo.
+          </p>
+        </div>
+      </div>
+    </ModalShell>
   );
 }
 
