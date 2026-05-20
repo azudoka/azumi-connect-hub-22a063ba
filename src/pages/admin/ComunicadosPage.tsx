@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { Plus, X, Send, Eye, Upload, Link2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 
