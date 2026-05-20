@@ -694,6 +694,32 @@ export default function ConfiguracoesPage() {
 
       {/* =================== Dialog: Encerrar conta =================== */}
       <EncerrarContaDialog open={encerrarContaOpen} onOpenChange={setEncerrarContaOpen} />
+
+      {/* =================== Dialog: Convidar usuário =================== */}
+      <ConvidarUsuarioDialog
+        open={convidarOpen}
+        onOpenChange={setConvidarOpen}
+        onSave={(u) => {
+          setUsuarios((prev) => [
+            ...prev,
+            { ...u, id: `u-${Date.now()}`, permissoes: PERMISSOES_PADRAO[u.role] },
+          ]);
+          toast.success(`Convite enviado para ${u.email}`);
+        }}
+      />
+
+      {/* =================== Dialog: Permissões granulares =================== */}
+      {permissoesOpen && (
+        <PermissoesDialog
+          usuario={permissoesOpen}
+          onClose={() => setPermissoesOpen(null)}
+          onSave={(id, perms) => {
+            setUsuarios((prev) => prev.map((u) => (u.id === id ? { ...u, permissoes: perms } : u)));
+            toast.success("Permissões atualizadas");
+            setPermissoesOpen(null);
+          }}
+        />
+      )}
     </div>
   );
 }
