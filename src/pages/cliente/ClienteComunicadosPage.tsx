@@ -182,8 +182,10 @@ function DetalheModal({ c, onClose, onReagir, onAddComentario }: { c: Comunicado
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
+
 }
 
 export default function ClienteComunicadosPage() {
