@@ -1,4 +1,4 @@
-import { Bell, Search, ChevronDown, AlertTriangle, ArrowRight, Eye, EyeOff, LogOut, User, Users, Settings, Sparkles, ArrowUp } from "lucide-react";
+import { Bell, Search, ChevronDown, AlertTriangle, ArrowRight, Eye, EyeOff, LogOut, User, Users, Settings, Sparkles, ArrowUp, Wrench } from "lucide-react";
 import { useFinanceiro } from "@/context/FinanceiroContext";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
