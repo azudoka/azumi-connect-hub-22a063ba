@@ -214,7 +214,14 @@ const getAvatarTone = (nome: string) => {
 // =====================================================================
 
 export default function ConfiguracoesPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [tab, setTab] = useState("perfil");
+
+  // ---- Usuários da plataforma ----
+  const [usuarios, setUsuarios] = useState<Usuario[]>(USUARIOS_INICIAIS);
+  const [convidarOpen, setConvidarOpen] = useState(false);
+  const [permissoesOpen, setPermissoesOpen] = useState<Usuario | null>(null);
 
   // ---- Perfil ----
   const [nome, setNome]         = useState("Ana Beatriz");
