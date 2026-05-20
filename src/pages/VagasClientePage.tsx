@@ -157,25 +157,57 @@ const ATRACAO_BULLETS: Record<PacoteKey, string[]> = {
 const WHATSAPP_CONSULTOR = "https://wa.me/5541999999999";
 
 // ---------- Form types ----------
+// ---------- Form types (mesmo modelo do admin /app/atracao) ----------
 type SolicitacaoTipo = "atracao" | "hunting";
+type TipoVaga = "operacional" | "tatico" | "gestao" | "hunting";
+
+const TIPOS_VAGA: { value: TipoVaga; label: string }[] = [
+  { value: "operacional", label: "Operacional" },
+  { value: "tatico", label: "Tático" },
+  { value: "gestao", label: "Gestão" },
+  { value: "hunting", label: "Hunt Executivo" },
+];
+
+const MODALIDADES = [
+  { value: "presencial", label: "Presencial" },
+  { value: "hibrido", label: "Híbrido" },
+  { value: "remoto", label: "Remoto" },
+] as const;
+
+const BENEFICIOS_OPCOES = [
+  { value: "vale_transporte", label: "Vale-transporte" },
+  { value: "vale_alimentacao", label: "Vale-alimentação" },
+  { value: "plano_saude", label: "Plano de saúde" },
+  { value: "plano_odontologico", label: "Plano odontológico" },
+  { value: "gympass", label: "Gympass" },
+  { value: "home_office", label: "Home office" },
+  { value: "bonus", label: "Bônus" },
+  { value: "seguro_vida", label: "Seguro de vida" },
+] as const;
+
 interface FormState {
-  cargo: string;
-  area: string;
-  nivel: string;
-  regime: string;
-  quantidade: string;
+  titulo: string;
+  empresa: string;
+  filial: string;
+  tipo: TipoVaga;
+  modalidade: string;
+  posicoes: string;
+  beneficios: string[];
   descricao: string;
-  faixa: string;
-  urgencia: string;
-  observacoes: string;
-  perfil: string;
   ciente: boolean;
 }
 const FORM_INIT: FormState = {
-  cargo: "", area: "", nivel: "", regime: "",
-  quantidade: "1", descricao: "", faixa: "",
-  urgencia: "media", observacoes: "", perfil: "", ciente: false,
+  titulo: "",
+  empresa: "",
+  filial: "",
+  tipo: "operacional",
+  modalidade: "presencial",
+  posicoes: "1",
+  beneficios: [],
+  descricao: "",
+  ciente: false,
 };
+
 
 export default function VagasClientePage() {
   const { user, usuario } = useAuth();
