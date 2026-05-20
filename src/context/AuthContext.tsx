@@ -28,9 +28,13 @@ export type Papel =
   | "lider"
   | "dp"
   | "contador"
-  | "juridico";
+  | "juridico"
+  | "trial";
 
 export type UserRole = Papel;
+
+export type Plano = "trial" | "start" | "ongoing" | "growth";
+
 
 export type ModuloSlug =
   | "atracao"
