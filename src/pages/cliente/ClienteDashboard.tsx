@@ -28,6 +28,8 @@ import {
   MessageSquareQuote,
   CalendarDays,
   GitBranch,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import { StatusBadge } from "@/components/StatusBadge";
