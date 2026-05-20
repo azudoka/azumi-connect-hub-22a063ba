@@ -966,26 +966,6 @@ function CamposPorTipo({
     );
   }
 
-  if (t === "rs") {
-    return (
-      <>
-        <FieldText label="Cargo" required value={form.titulo} onChange={(v) => setForm((f) => ({ ...f, titulo: v }))} />
-        <div className="grid grid-cols-2 gap-2">
-          <FieldText label="Área/Departamento" required value={get("area")} onChange={(v) => setExtra("area", v)} />
-          <FieldSelect label="Nível" value={get("nivel")} onChange={(v) => setExtra("nivel", v)}
-            options={["Estágio", "Júnior", "Pleno", "Sênior", "Especialista", "Liderança"]} />
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <FieldSelect label="Regime" value={get("regime")} onChange={(v) => setExtra("regime", v)}
-            options={["CLT", "PJ", "Estágio", "Temporário"]} />
-          <FieldText label="Nº de vagas" value={get("qtd")} onChange={(v) => setExtra("qtd", v)} type="number" />
-        </div>
-        <FieldText label="Faixa salarial (opcional)" value={get("faixa")} onChange={(v) => setExtra("faixa", v)} />
-        <FieldText label="Descrição da vaga" required multiline rows={3} value={form.descricao}
-          onChange={(v) => setForm((f) => ({ ...f, descricao: v }))} />
-      </>
-    );
-  }
 
   if (t === "hunting") {
     return (
