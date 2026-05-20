@@ -375,7 +375,14 @@ export default function SolicitacoesClientePage() {
 
   function abrirFormulario(key: TipoSolicitacao) {
     setForm(FORM_BASE);
-    setTipoForm(key);
+    setTipoIntro(key);
+  }
+
+  function continuarParaFormulario() {
+    if (!tipoIntro) return;
+    const k = tipoIntro;
+    setTipoIntro(null);
+    setTipoForm(k);
   }
 
   function buildSolicitacao(tipo: TipoConfig, geraCusto: boolean): Solicitacao {
