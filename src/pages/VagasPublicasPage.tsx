@@ -219,7 +219,7 @@ export default function VagasPublicasPage() {
 
       <Footer />
 
-      {modalBanco && <BancoTalentosModal onClose={() => setModalBanco(false)} />}
+      <CandidaturaModal open={modalBanco} onClose={() => setModalBanco(false)} modo="banco" />
     </div>
   );
 }
