@@ -85,6 +85,7 @@ export default function AtracaoLista() {
 
   // Sheet de nova vaga
   const [novaVagaOpen, setNovaVagaOpen] = useState(false);
+  const [bancoOpen, setBancoOpen] = useState(false);
 
   const TIPOS_VAGA = [
     { value: "operacional", label: "Operacional" },
