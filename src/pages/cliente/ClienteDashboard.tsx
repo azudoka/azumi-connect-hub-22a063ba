@@ -4,7 +4,6 @@ import {
   Briefcase,
   Target,
   Clock,
-  Plus,
   ArrowRight,
   Check,
   AlertTriangle,
@@ -24,16 +23,18 @@ import {
   LifeBuoy,
   KeyRound,
   ClipboardList,
+  ClipboardCheck,
   ShieldCheck,
   MessageSquareQuote,
   CalendarDays,
+  GitBranch,
 } from "lucide-react";
 
-import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SectionDivider } from "@/components/SectionDivider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
+import { Progress } from "@/components/ui/progress";
 import {
   Accordion,
   AccordionContent,
@@ -158,18 +159,22 @@ export default function ClienteDashboard() {
   return (
     <div>
       {/* HEADER */}
-      <div className="flex items-center gap-3 mb-1">
+      <div className="flex items-center gap-3 mb-6">
         {logoUrl && (
           <img
             src={logoUrl}
             alt={`Logo ${empresaNome}`}
-            className="h-9 w-9 rounded-lg object-contain border border-border bg-card shrink-0"
+            className="h-10 w-auto object-contain shrink-0"
           />
         )}
-        <PageHeader
-          title={`Bem-vindo(a), ${usuario?.nome?.split(" ")[0] ?? "cliente"}`}
-          subtitle={`Você está logado(a) como ${perfilLabel}. Sua consultora Azumi é ${consultoraNome}.`}
-        />
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight leading-10">
+            Bem-vindo(a), {usuario?.nome?.split(" ")[0] ?? "cliente"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Você está logado(a) como {perfilLabel}. Sua consultora Azumi é {consultoraNome}.
+          </p>
+        </div>
       </div>
 
       <Tabs defaultValue="visao-geral" className="w-full mt-4">
@@ -183,130 +188,146 @@ export default function ClienteDashboard() {
         <TabsContent value="visao-geral" className="mt-0">
           {/* 3 cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <DashCard
-              tone="projetos"
-              icon={Briefcase}
-              label="Projetos em andamento"
-              value={isTrial ? "0" : String(projetosKentaki)}
-              hint="ativos com a Azumi"
-            />
-            <DashCard
-              tone="alerta"
-              icon={FileCheck2}
-              label="Entregáveis aguardando parecer"
-              value={String(entregaveis.length)}
-              hint={entregaveis.length > 0 ? "ação pendente do cliente" : "tudo em dia"}
-              cta={entregaveis.length > 0 ? "Revisar agora" : undefined}
-            />
-            <DashCard
-              tone="horas"
-              icon={Timer}
-              label={`Horas do mês · ${filialAtiva}`}
-              value={isTrial ? "0h" : `${horasConsumidasFilial}h`}
-              hint={
-                isTrial
-                  ? "Sem plano contratado"
-                  : `Pacote: ${horasContratadasTotal}h · desta filial: ${horasFilial}h`
-              }
-            />
+            {/* Card 1 — Projetos */}
+            <div className="bg-white border border-gray-200 shadow-sm rounded-xl p-4">
+              <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                <Briefcase className="h-5 w-5 text-blue-500" />
+                Projetos em andamento
+              </div>
+              <div className="font-display font-bold text-3xl tabular-nums mt-2">
+                {isTrial ? "0" : projetosKentaki}
+              </div>
+              <div className="text-[11px] text-muted-foreground mt-0.5">ativos com a Azumi</div>
+            </div>
+
+            {/* Card 2 — Entregáveis */}
+            <div className="bg-amber-50 border border-amber-200 shadow-sm rounded-xl p-4">
+              <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                <ClipboardCheck className="h-5 w-5 text-amber-500" />
+                Entregáveis aguardando seu parecer
+              </div>
+              <div className="font-display font-bold text-3xl tabular-nums mt-2">{entregaveis.length}</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5">ação pendente de você</div>
+            </div>
+
+            {/* Card 3 — Horas */}
+            <div className="bg-blue-50 border border-blue-200 shadow-sm rounded-xl p-4">
+              <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                <Clock className="h-5 w-5 text-blue-500" />
+                Horas do mês · {filialAtiva}
+              </div>
+              <div className="font-display font-bold text-3xl tabular-nums mt-2">
+                {isTrial ? "0h" : `${horasConsumidasFilial}h / ${horasFilial}h`}
+              </div>
+              <div className="text-[11px] text-muted-foreground mt-0.5">
+                {isTrial ? "Sem plano contratado" : `Pacote: ${horasContratadasTotal}h · desta filial: ${horasFilial}h`}
+              </div>
+              {!isTrial && (
+                <Progress value={Math.min(100, (horasConsumidasFilial / horasFilial) * 100)} className="h-1.5 mt-3" />
+              )}
+            </div>
           </div>
+
 
           {/* 3 COLUNAS */}
           <SectionDivider>Visão do mês</SectionDivider>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
             {/* Coluna 1 — Entregáveis */}
-            <div className="bg-card border border-border rounded-xl p-4 flex flex-col">
-              <div className="flex items-center gap-2 mb-3">
-                <FileCheck2 className="h-4 w-4 text-warning" />
-                <h3 className="font-display font-semibold text-sm">Entregáveis aguardando parecer</h3>
-              </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-4 min-h-[420px] flex flex-col">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                Entregáveis aguardando parecer
+              </p>
               {entregaveis.length === 0 ? (
                 <div className="flex-1 flex items-center justify-center text-xs text-muted-foreground text-center py-6">
                   Nenhum entregável pendente no momento.
                 </div>
               ) : (
-                <ul className="divide-y divide-border -mx-1">
+                <div className="flex-1">
                   {entregaveis.map((e) => {
                     const Icone = categoriaIcone[e.categoria] ?? categoriaIcone.default;
                     return (
-                      <li key={e.id} className="px-1 py-3 flex items-start gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                          <Icone className="h-4 w-4" />
+                      <div key={e.id} className="border border-gray-100 rounded-lg p-3 mb-2 bg-gray-50">
+                        <div className="flex items-center gap-2">
+                          <Icone className="h-4 w-4 text-primary shrink-0" />
+                          <span className="font-medium text-sm truncate">{e.titulo}</span>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium truncate">{e.titulo}</div>
-                          <div className="text-xs text-muted-foreground truncate">{e.projeto}</div>
-                          <div className={cn(
-                            "text-[11px] font-data mt-0.5 inline-flex items-center gap-1",
-                            e.vencido ? "text-destructive font-semibold" : "text-muted-foreground"
-                          )}>
-                            <CalendarDays className="h-3 w-3" />
-                            Prazo: {e.prazo}{e.vencido && " · vencido"}
-                          </div>
+                        <div className="text-xs text-muted-foreground mt-1">{e.projeto}</div>
+                        <div className="flex items-center justify-between mt-2">
+                          {e.vencido ? (
+                            <span className="text-red-500 text-xs font-semibold">Vencido · {e.prazo}</span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">Prazo: {e.prazo}</span>
+                          )}
+                          <button className="text-primary text-xs font-medium inline-flex items-center gap-1">
+                            Revisar <ArrowRight className="h-3 w-3" />
+                          </button>
                         </div>
-                        <button className="text-xs text-primary font-medium inline-flex items-center gap-1 shrink-0">
-                          Revisar <ArrowRight className="h-3 w-3" />
-                        </button>
-                      </li>
+                      </div>
                     );
                   })}
-                </ul>
+                </div>
               )}
             </div>
 
             {/* Coluna 2 — Comunicado mais recente */}
-            <div className="bg-card border border-border rounded-xl overflow-hidden flex flex-col">
+            <div className="bg-white border border-gray-200 rounded-xl p-4 min-h-[420px] flex flex-col">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                Comunicado mais recente
+              </p>
               <button
                 onClick={() => setComunicadoOpen(true)}
-                className="aspect-[16/9] w-full bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center text-primary/60 hover:opacity-90 transition"
+                className="rounded-lg overflow-hidden border border-gray-100 text-left hover:opacity-95 transition"
               >
                 {comunicadoRecente.capa ? (
-                  <img src={comunicadoRecente.capa} alt="" className="w-full h-full object-cover" />
+                  <img src={comunicadoRecente.capa} alt="" className="w-full aspect-video object-cover" />
                 ) : (
-                  <ImageIcon className="h-8 w-8" />
+                  <div className="w-full aspect-video bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
+                    <Megaphone className="h-8 w-8 text-primary/60" />
+                  </div>
                 )}
+                <div className="p-3">
+                  <div className="font-semibold text-sm leading-snug">{comunicadoRecente.titulo}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {comunicadoRecente.data} · {comunicadoRecente.autor}
+                  </p>
+                </div>
               </button>
-              <div className="p-4 flex flex-col flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <Megaphone className="h-4 w-4 text-primary" />
-                  <span className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
-                    Comunicado mais recente
-                  </span>
-                </div>
-                <button
-                  onClick={() => setComunicadoOpen(true)}
-                  className="text-left text-sm font-display font-semibold leading-snug hover:text-primary transition"
+              <div className="mt-auto pt-3">
+                <Link
+                  to="/cliente/comunicados"
+                  className="text-primary text-sm font-medium inline-flex items-center gap-1"
                 >
-                  {comunicadoRecente.titulo}
-                </button>
-                <p className="text-xs text-muted-foreground mt-1">{comunicadoRecente.data}</p>
-                <div className="mt-auto pt-3">
-                  <Link
-                    to="/cliente/comunicados"
-                    className="text-xs text-primary font-medium inline-flex items-center gap-1"
-                  >
-                    Ver todos os comunicados <ArrowRight className="h-3 w-3" />
-                  </Link>
-                </div>
+                  Ver todos os comunicados <ArrowRight className="h-3 w-3" />
+                </Link>
               </div>
             </div>
 
-            {/* Coluna 3 — Calendário */}
-            <div className="bg-card border border-border rounded-xl p-3 flex flex-col">
-              <div className="flex items-center gap-2 mb-2 px-1">
-                <CalendarDays className="h-4 w-4 text-primary" />
-                <h3 className="font-display font-semibold text-sm">Agenda</h3>
+            {/* Coluna 3 — Agenda */}
+            <div className="bg-white border border-gray-200 rounded-xl p-4 min-h-[420px] flex flex-col">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                Agenda
+              </p>
+              <div className="w-full overflow-hidden">
+                <Calendar
+                  mode="single"
+                  modifiers={{ evento: eventosAgendados }}
+                  modifiersClassNames={{
+                    evento: "bg-primary/20 text-primary font-semibold rounded-md",
+                  }}
+                  className="w-full rounded-md border-0 p-0"
+                />
               </div>
-              <Calendar
-                mode="single"
-                modifiers={{ evento: eventosAgendados }}
-                modifiersClassNames={{
-                  evento: "bg-primary/20 text-primary font-semibold rounded-md",
-                }}
-                className="p-0 [&_table]:w-full flex-1"
-              />
+              <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+                {eventosAgendados.slice(0, 2).map((d, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    <CalendarDays className="h-3 w-3 text-primary" />
+                    {d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
+
 
           {/* VAGAS */}
           <SectionDivider>Suas vagas</SectionDivider>
@@ -321,28 +342,24 @@ export default function ClienteDashboard() {
               {vagasCliente.slice(0, 4).map((v) => (
                 <Link key={v.id} to={`/cliente/atracao/${v.id}`} className="bg-card border border-border rounded-xl p-5 card-hover">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                        <Target className="h-5 w-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="font-display font-semibold truncate">{v.titulo}</h3>
-                        <p className="text-xs text-muted-foreground inline-flex items-center gap-1 mt-0.5">
-                          <MapPin className="h-3 w-3" /> {v.filial}
-                        </p>
-                      </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold inline-flex items-center gap-2 truncate">
+                        <Briefcase className="h-4 w-4 text-primary shrink-0" />
+                        {v.titulo}
+                      </h3>
+                      <p className="text-sm text-muted-foreground inline-flex items-center gap-1 mt-1">
+                        <MapPin className="h-3.5 w-3.5" /> {v.filial}
+                      </p>
                     </div>
                     <StatusBadge status={v.status} />
                   </div>
-                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                    <div className="rounded-lg bg-secondary/40 px-3 py-2">
-                      <div className="text-muted-foreground text-[10px] uppercase tracking-wide">Etapa</div>
-                      <div className="font-medium truncate">{v.etapa}</div>
-                    </div>
-                    <div className="rounded-lg bg-secondary/40 px-3 py-2">
-                      <div className="text-muted-foreground text-[10px] uppercase tracking-wide">Perfis</div>
-                      <div className="font-data tabular-nums font-medium">{v.candidatosEnviados}</div>
-                    </div>
+                  <div className="mt-3 flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-secondary/60">
+                      <GitBranch className="h-3.5 w-3.5" /> {v.etapa}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-secondary/60">
+                      <Users className="h-3.5 w-3.5" /> {v.candidatosEnviados} perfis
+                    </span>
                   </div>
                   <div className="mt-3 inline-flex items-center gap-1 text-xs text-primary font-medium">
                     Ver detalhes <ArrowRight className="h-3 w-3" />
@@ -354,7 +371,7 @@ export default function ClienteDashboard() {
 
           {/* GUIA RÁPIDO */}
           <SectionDivider>Guia rápido</SectionDivider>
-          <div className="bg-card border border-border rounded-xl p-2 sm:p-5">
+          <div className="max-w-2xl bg-card border border-border rounded-xl p-2 sm:p-5">
             <div className="flex items-center gap-2 px-3 sm:px-0 pt-3 sm:pt-0 pb-2">
               <LifeBuoy className="h-4 w-4 text-primary" />
               <h3 className="font-display font-semibold text-sm">Dúvidas frequentes</h3>
@@ -378,6 +395,7 @@ export default function ClienteDashboard() {
               })}
             </Accordion>
           </div>
+
         </TabsContent>
 
         {/* TAB: PROJETOS */}
