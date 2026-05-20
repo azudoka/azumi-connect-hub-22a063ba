@@ -21,7 +21,9 @@ export default function Login() {
     dp:             "/hub/colaborador/inicio",
     contador:       "/hub/colaborador/inicio",
     juridico:       "/hub/colaborador/inicio",
+    trial:          "/cliente/dashboard",
   };
+
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [loading, setLoading] = useState(false);
