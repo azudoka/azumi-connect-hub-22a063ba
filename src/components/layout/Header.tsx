@@ -1,4 +1,4 @@
-import { Bell, Search, ChevronDown, AlertTriangle, ArrowRight, Eye, EyeOff, LogOut, User, Users, Settings } from "lucide-react";
+import { Bell, Search, ChevronDown, AlertTriangle, ArrowRight, Eye, EyeOff, LogOut, User, Users, Settings, Sparkles, ArrowUp } from "lucide-react";
 import { useFinanceiro } from "@/context/FinanceiroContext";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { consumoNotificacoes } from "@/data/mock";
 import { useAuth } from "@/context/AuthContext";
+import { UpgradePlanoModal } from "@/components/UpgradePlanoModal";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -22,10 +23,12 @@ interface HeaderProps {
 
 export function Header({ showSwitcher = true, context = "connect" }: HeaderProps) {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, usuario, logout } = useAuth();
   const { visivel, toggle } = useFinanceiro();
   const [openNotif, setOpenNotif] = useState(false);
+  const [openUpgrade, setOpenUpgrade] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+
 
   function switchContext() {
     if (context === "connect") {
