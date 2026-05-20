@@ -817,7 +817,7 @@ function FormularioTipo({
   const [aceiteTermo, setAceiteTermo] = useState(false);
   const termo = tipo.termoSempre ?? (statusCota.geraCusto ? tipo.termoExtra : undefined);
   const precisaAceite = !!termo;
-  const sla = slaTexto(pacote, form.urgencia);
+  
 
   function setExtra(k: string, v: string) {
     setForm((f) => ({ ...f, extras: { ...f.extras, [k]: v } }));
