@@ -61,11 +61,6 @@ export function AppLayout({ variant: variantOverride }: AppLayoutProps) {
           navigate("/app/horas");
         }}
       />
-      <UpgradePlanoModal
-        open={openUpgrade}
-        onClose={() => setOpenUpgrade(false)}
-        planoAtual={usuario?.plano ?? "trial"}
-      />
     </div>
   );
 }
