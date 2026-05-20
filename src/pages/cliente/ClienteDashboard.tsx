@@ -4,7 +4,6 @@ import {
   Briefcase,
   Target,
   Clock,
-  Plus,
   ArrowRight,
   Check,
   AlertTriangle,
@@ -24,16 +23,18 @@ import {
   LifeBuoy,
   KeyRound,
   ClipboardList,
+  ClipboardCheck,
   ShieldCheck,
   MessageSquareQuote,
   CalendarDays,
+  GitBranch,
 } from "lucide-react";
 
-import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SectionDivider } from "@/components/SectionDivider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
+import { Progress } from "@/components/ui/progress";
 import {
   Accordion,
   AccordionContent,
