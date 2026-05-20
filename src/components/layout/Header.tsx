@@ -116,7 +116,32 @@ export function Header({ showSwitcher = true, context = "connect" }: HeaderProps
             <LogOut className="h-4 w-4" />
           </button>
 
+          {/* Botão de upgrade/conversão */}
+          {(() => {
+            const role = usuario?.role;
+            const plano = usuario?.plano;
+            if (role === "admin" || role === "consultor") return null;
+            let cfg: { bg: string; icon: typeof Sparkles; label: string } | null = null;
+            if (role === "trial") cfg = { bg: "#8B5CF6", icon: Sparkles, label: "Conheça os planos" };
+            else if (plano === "start") cfg = { bg: "#3B82F6", icon: ArrowUp, label: "Upgrade para Ongoing" };
+            else if (plano === "ongoing") cfg = { bg: "#031D38", icon: ArrowUp, label: "Upgrade para Growth" };
+            if (!cfg) return null;
+            const Icon = cfg.icon;
+            return (
+              <button
+                type="button"
+                onClick={() => setOpenUpgrade(true)}
+                className="h-9 px-3 rounded-lg flex items-center gap-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                style={{ background: cfg.bg, fontFamily: "'Urbanist',sans-serif" }}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                <span className="hidden md:inline">{cfg.label}</span>
+              </button>
+            );
+          })()}
+
           {/* Sino de notificações */}
+
           <div className="relative" ref={notifRef}>
             <button
               onClick={() => setOpenNotif((v) => !v)}
