@@ -49,65 +49,8 @@ function Footer() {
   );
 }
 
-function BancoTalentosModal({ onClose }: { onClose: () => void }) {
-  const [enviado, setEnviado] = useState(false);
-  const [form, setForm] = useState({ nome: "", email: "", telefone: "", area: "", arquivo: null as File | null });
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.nome || !form.email || !form.arquivo) return;
-    setEnviado(true);
-  }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between rounded-t-xl px-6 py-4 text-white" style={{ background: BLUE }}>
-          <h3 className="text-lg font-semibold">Banco de Talentos</h3>
-          <button onClick={onClose} aria-label="Fechar"><X className="h-5 w-5" /></button>
-        </div>
-        {enviado ? (
-          <div className="p-8 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600 text-2xl">✓</div>
-            <p className="font-semibold text-slate-800">Cadastro enviado!</p>
-            <p className="mt-1 text-sm text-slate-600">Entraremos em contato quando surgir uma oportunidade.</p>
-            <button onClick={onClose} className="mt-5 rounded-lg px-4 py-2 text-white" style={{ background: BLUE }}>Fechar</button>
-          </div>
-        ) : (
-          <form onSubmit={submit} className="space-y-4 p-6">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Nome *</label>
-              <input required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none" />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Email *</label>
-              <input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none" />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Telefone</label>
-              <input value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none" />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Área de interesse</label>
-              <input value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none" />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Currículo *</label>
-              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-3 py-3 text-sm text-slate-600 hover:bg-slate-50">
-                <Upload className="h-4 w-4" />
-                <span className="truncate">{form.arquivo?.name ?? "Selecionar arquivo (PDF, DOC)"}</span>
-                <input required type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(e) => setForm({ ...form, arquivo: e.target.files?.[0] ?? null })} />
-              </label>
-            </div>
-            <button type="submit" className="w-full rounded-lg py-2.5 text-sm font-medium text-white" style={{ background: BLUE }}>
-              Enviar cadastro
-            </button>
-          </form>
-        )}
-      </div>
-    </div>
-  );
-}
 
 export default function VagasPublicasPage() {
   const [q, setQ] = useState("");
