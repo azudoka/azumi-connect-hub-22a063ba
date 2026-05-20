@@ -308,7 +308,8 @@ export default function SolicitacoesClientePage() {
   const [conversaAberta, setConversaAberta] = useState<Solicitacao | null>(null);
   const [cancelarSol, setCancelarSol] = useState<Solicitacao | null>(null);
 
-  // Fluxo: tipo escolhido -> formulário -> (modal de custo) -> enviado
+  // Fluxo: card -> aviso (intro) -> formulário -> (modal de custo) -> enviado
+  const [tipoIntro, setTipoIntro] = useState<TipoSolicitacao | null>(null);
   const [tipoForm, setTipoForm] = useState<TipoSolicitacao | null>(null);
   const [form, setForm] = useState(FORM_BASE);
   const [confirmCusto, setConfirmCusto] = useState<null | {
