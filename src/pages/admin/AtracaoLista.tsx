@@ -120,10 +120,29 @@ export default function AtracaoLista() {
   const [nBeneficios, setNBeneficios] = useState<string[]>([]);
   const [nDescricao, setNDescricao] = useState("");
 
+  // ---- Publicação no site (mock — não publica automaticamente) ----
+  const [pubAberto, setPubAberto] = useState(false);
+  const [pubPublicar, setPubPublicar] = useState(false);
+  const [pubConfidencial, setPubConfidencial] = useState(false);
+  const [pubLocal, setPubLocal] = useState("");
+  const [pubModalidade, setPubModalidade] = useState("presencial");
+  const [pubNivel, setPubNivel] = useState("pleno");
+  const [pubTurno, setPubTurno] = useState("integral");
+  const [pubContrato, setPubContrato] = useState("clt");
+  const [pubCarga, setPubCarga] = useState("");
+  const [pubSalDe, setPubSalDe] = useState("");
+  const [pubSalAte, setPubSalAte] = useState("");
+  const [pubACombinar, setPubACombinar] = useState(false);
+  const [pubDescricao, setPubDescricao] = useState("");
+
   function resetNovaVaga() {
     setNTitulo(""); setNEmpresa(""); setNFilial("");
     setNTipo("operacional"); setNModalidade("presencial");
     setNPosicoes("1"); setNBeneficios([]); setNDescricao("");
+    setPubAberto(false); setPubPublicar(false); setPubConfidencial(false);
+    setPubLocal(""); setPubModalidade("presencial"); setPubNivel("pleno");
+    setPubTurno("integral"); setPubContrato("clt"); setPubCarga("");
+    setPubSalDe(""); setPubSalAte(""); setPubACombinar(false); setPubDescricao("");
   }
 
   // Validação de plano: Hunt Executivo bloqueado no plano Ongoing.
