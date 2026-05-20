@@ -140,6 +140,99 @@ const iconTone = {
   horas:    "bg-emerald-500/15 text-emerald-600",
 };
 
+function MiniCalendario({ eventos }: { eventos: Date[] }) {
+  const hoje = new Date();
+  const [mes, setMes] = useState(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+
+  const diasSem = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+  const primeiroDia = new Date(mes.getFullYear(), mes.getMonth(), 1);
+  const ultimoDia = new Date(mes.getFullYear(), mes.getMonth() + 1, 0);
+  const offsetInicio = primeiroDia.getDay();
+
+  const totalCelulas = Math.ceil((ultimoDia.getDate() + offsetInicio) / 7) * 7;
+  const celulas = Array.from({ length: totalCelulas }, (_, i) => {
+    const dia = i - offsetInicio + 1;
+    return dia >= 1 && dia <= ultimoDia.getDate() ? dia : null;
+  });
+
+  const temEvento = (dia: number | null) => {
+    if (!dia) return false;
+    return eventos.some(
+      (e) =>
+        e.getFullYear() === mes.getFullYear() &&
+        e.getMonth() === mes.getMonth() &&
+        e.getDate() === dia,
+    );
+  };
+
+  const ehHoje = (dia: number | null) => {
+    if (!dia) return false;
+    return (
+      hoje.getFullYear() === mes.getFullYear() &&
+      hoje.getMonth() === mes.getMonth() &&
+      hoje.getDate() === dia
+    );
+  };
+
+  const nomeMes = mes.toLocaleString("pt-BR", { month: "long", year: "numeric" });
+
+  return (
+    <div className="w-full flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => setMes(new Date(mes.getFullYear(), mes.getMonth() - 1, 1))}
+          className="h-7 w-7 rounded-full border border-border flex items-center justify-center hover:bg-secondary"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+        </button>
+        <span className="text-xs font-semibold capitalize">{nomeMes}</span>
+        <button
+          type="button"
+          onClick={() => setMes(new Date(mes.getFullYear(), mes.getMonth() + 1, 1))}
+          className="h-7 w-7 rounded-full border border-border flex items-center justify-center hover:bg-secondary"
+        >
+          <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-7 gap-0">
+        {diasSem.map((d) => (
+          <div
+            key={d}
+            className="text-center text-[10px] font-semibold text-muted-foreground uppercase py-1"
+          >
+            {d[0]}
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-0">
+        {celulas.map((dia, i) => (
+          <div
+            key={i}
+            className={cn(
+              "relative flex items-center justify-center aspect-square text-xs rounded-md",
+              !dia && "invisible",
+              ehHoje(dia) && "bg-primary text-primary-foreground font-bold",
+              !ehHoje(dia) && dia && "hover:bg-secondary cursor-default",
+              temEvento(dia) && !ehHoje(dia) && "bg-primary/15 text-primary font-semibold",
+            )}
+          >
+            {dia}
+            {temEvento(dia) && !ehHoje(dia) && (
+              <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-primary" />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const REACOES = ["❤️", "👍", "🎉", "🔥", "😂"] as const;
+
 export default function ClienteDashboard() {
   const { usuario } = useAuth();
   const isTrial = usuario?.role === "trial";
