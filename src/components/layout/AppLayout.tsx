@@ -1,5 +1,4 @@
 import { Outlet, useNavigate } from "react-router-dom";
-import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { SidebarConnect } from "./SidebarConnect";
 import { Header } from "./Header";
@@ -7,7 +6,6 @@ import { useAuth } from "@/context/AuthContext";
 import { TimerFlutuante } from "@/components/TimerFlutuante";
 import { useTimerGlobal } from "@/context/TimerContext";
 import { TrialGuard } from "@/components/TrialGuard";
-import { UpgradePlanoModal } from "@/components/UpgradePlanoModal";
 
 interface AppLayoutProps {
   /**
