@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/accordion";
 import { toast } from "sonner";
 
-import { PageHeader } from "@/components/PageHeader";
+
 import { StatusBadge } from "@/components/StatusBadge";
 import { SectionDivider } from "@/components/SectionDivider";
 import { DiscBars } from "@/components/DiscBars";
