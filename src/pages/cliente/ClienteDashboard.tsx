@@ -4,28 +4,34 @@ import {
   Briefcase,
   Target,
   Clock,
-  MessagesSquare,
   Plus,
   ArrowRight,
   Check,
   AlertTriangle,
   Clock as ClockIcon,
   Receipt,
-  Users,
   GraduationCap,
   FileText,
   TrendingUp,
   Megaphone,
   Sparkles,
   HelpCircle,
-  X,
+  FileCheck2,
+  Timer,
+  MapPin,
+  Users,
+  Image as ImageIcon,
+  LifeBuoy,
+  KeyRound,
+  ClipboardList,
+  ShieldCheck,
+  MessageSquareQuote,
+  CalendarDays,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
-import { KpiCard } from "@/components/KpiCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SectionDivider } from "@/components/SectionDivider";
-import { ConsumoAlertCard } from "@/components/ConsumoAlertCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -35,7 +41,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { vagas, projetos, solicitacoes } from "@/data/mock";
+import { vagas, projetos } from "@/data/mock";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
@@ -61,9 +67,16 @@ const projetoIconePorTipo: Record<string, any> = {
   default: Briefcase,
 };
 
+// TODO: conectar Supabase — filiais da empresa e filial ativa do contexto do usuário
+const filiaisEmpresa = ["Matriz SP", "Filial RJ"];
+const filialAtiva = "Matriz SP";
+const horasContratadasTotal = 40;
+const horasConsumidasFilial = 12;
+const horasFilial = Math.round(horasContratadasTotal / filiaisEmpresa.length);
+
 const entregaveisAguardando = [
-  { id: "e1", projeto: "Atração — Gerente Comercial", titulo: "Shortlist de candidatos", prazo: "02/05/2026" },
-  { id: "e2", projeto: "Política de Home Office", titulo: "Revisão final do documento", prazo: "05/05/2026" },
+  { id: "e1", projeto: "Atração — Gerente Comercial", titulo: "Shortlist de candidatos", categoria: "atracao", prazo: "02/05/2026", vencido: true },
+  { id: "e2", projeto: "Política de Home Office", titulo: "Revisão final do documento", categoria: "politica", prazo: "05/06/2026", vencido: false },
 ];
 
 const projetosCliente = [
@@ -90,48 +103,52 @@ const comunicadoRecente = {
   titulo: "Atualização nos prazos de SLA do plano Ongoing",
   data: "18/05/2026",
   autor: "Ana Beatriz · Consultora Azumi",
+  capa: "/placeholder.svg",
   conteudo:
     "A partir de junho/2026 os SLAs de resposta para solicitações de Atração serão reduzidos de 48h para 24h úteis. Confira o detalhamento completo na sua área de comunicados ou fale diretamente com sua consultora para alinhar prioridades específicas do seu time.",
 };
 
+const categoriaIcone: Record<string, any> = {
+  atracao: Target,
+  politica: FileText,
+  onboarding: GraduationCap,
+  performance: TrendingUp,
+  default: FileCheck2,
+};
+
 const faqItems = [
-  {
-    q: "Como abro uma nova solicitação para minha consultora?",
-    a: "Use o botão 'Nova solicitação' no topo do painel ou acesse a aba Solicitações. Sua consultora recebe a notificação imediatamente.",
-  },
-  {
-    q: "Onde acompanho o consumo de horas do mês?",
-    a: "No card 'Consumo do mês' na visão geral. Você também pode ver o histórico completo em Financeiro > Histórico.",
-  },
-  {
-    q: "Posso adicionar mais usuários da minha empresa?",
-    a: "Sim. Em Gestão da conta > Usuários você pode convidar membros do seu RH e definir permissões.",
-  },
-  {
-    q: "Como aprovo um entregável enviado pela Azumi?",
-    a: "Os entregáveis aparecem em 'Aguardando seu parecer'. Clique em Revisar, leia o material e use Aprovar ou Solicitar ajuste.",
-  },
-  {
-    q: "Os candidatos veem meus dados de contato?",
-    a: "Não. Todo o fluxo de candidatos é mediado pela Azumi até a contratação efetiva.",
-  },
-  {
-    q: "Como funciona o NPS dos contratados?",
-    a: "Após cada contratação, você recebe um pop-up para avaliar o candidato. Esse retorno alimenta nossa qualidade de entrega.",
-  },
+  { q: "Como abro uma nova solicitação para minha consultora?", a: "Use o botão 'Nova solicitação' no topo do painel ou acesse a aba Solicitações. Sua consultora recebe a notificação imediatamente.", icon: MessageSquareQuote },
+  { q: "Onde acompanho o consumo de horas do mês?", a: "No card 'Horas do mês' na visão geral. Você também pode ver o histórico completo em Financeiro > Histórico.", icon: Timer },
+  { q: "Posso adicionar mais usuários da minha empresa?", a: "Sim. Em Gestão da conta > Usuários você pode convidar membros do seu RH e definir permissões.", icon: Users },
+  { q: "Como aprovo um entregável enviado pela Azumi?", a: "Os entregáveis aparecem em 'Aguardando seu parecer'. Clique em Revisar, leia o material e use Aprovar ou Solicitar ajuste.", icon: ClipboardList },
+  { q: "Os candidatos veem meus dados de contato?", a: "Não. Todo o fluxo de candidatos é mediado pela Azumi até a contratação efetiva.", icon: ShieldCheck },
+  { q: "Como funciona o NPS dos contratados?", a: "Após cada contratação, você recebe um pop-up para avaliar o candidato. Esse retorno alimenta nossa qualidade de entrega.", icon: KeyRound },
 ];
+
+// Estilos por tipo de card destacado
+const cardTone = {
+  projetos: "bg-primary/5 border-primary/20",
+  alerta:   "bg-warning/10 border-warning/30",
+  horas:    "bg-emerald-500/5 border-emerald-500/20",
+};
+const iconTone = {
+  projetos: "bg-primary/15 text-primary",
+  alerta:   "bg-warning/20 text-warning",
+  horas:    "bg-emerald-500/15 text-emerald-600",
+};
 
 export default function ClienteDashboard() {
   const { usuario } = useAuth();
   const isTrial = usuario?.role === "trial";
   const empresaNome = usuario?.empresaNome || "Kentaki Foods";
   const logoUrl = empresaLogos[empresaNome];
+  const perfilLabel = isTrial ? "Trial da conta" : "Admin da conta";
+  const consultoraNome = "Ana Beatriz";
 
   const projetosKentaki = projetos.filter((p) => p.empresaId === "kentaki" && p.status === "andamento").length + 1;
 
   const [comunicadoOpen, setComunicadoOpen] = useState(false);
 
-  // Trial: dados podem vir vazios; cards vazios viram CTA
   const vagasCliente = useMemo(
     () => (isTrial ? [] : vagas.filter((v) => v.empresaId === "kentaki")),
     [isTrial]
@@ -140,30 +157,22 @@ export default function ClienteDashboard() {
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-2">
+      {/* HEADER */}
+      <div className="flex items-center gap-3 mb-1">
         {logoUrl && (
           <img
             src={logoUrl}
             alt={`Logo ${empresaNome}`}
-            className="h-12 w-12 rounded-lg object-cover border border-border bg-card"
+            className="h-9 w-9 rounded-lg object-contain border border-border bg-card shrink-0"
           />
         )}
         <PageHeader
           title={`Bem-vindo(a), ${usuario?.nome?.split(" ")[0] ?? "cliente"}`}
-          subtitle={`Painel ${empresaNome} — acompanhe seus projetos, entregáveis e financeiro com a Azumi.`}
-          actions={
-            <button className="h-9 px-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5">
-              <Plus className="h-4 w-4" /> Nova solicitação
-            </button>
-          }
+          subtitle={`Você está logado(a) como ${perfilLabel}. Sua consultora Azumi é ${consultoraNome}.`}
         />
       </div>
-      <p className="text-xs text-muted-foreground mb-4 -mt-2">
-        Você está logada como <span className="font-medium text-foreground">Admin da conta</span>. Sua consultora Azumi é{" "}
-        <span className="font-medium text-foreground">Ana Beatriz</span>.
-      </p>
 
-      <Tabs defaultValue="visao-geral" className="w-full">
+      <Tabs defaultValue="visao-geral" className="w-full mt-4">
         <TabsList className="mb-4">
           <TabsTrigger value="visao-geral">Visão geral</TabsTrigger>
           <TabsTrigger value="projetos">Projetos</TabsTrigger>
@@ -172,71 +181,134 @@ export default function ClienteDashboard() {
 
         {/* TAB: VISÃO GERAL */}
         <TabsContent value="visao-geral" className="mt-0">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
-            <KpiCard label="Projetos em andamento" value={isTrial ? 0 : projetosKentaki} icon={Briefcase} />
-            <KpiCard label="Entregáveis aguardando seu parecer" value={entregaveis.length} icon={MessagesSquare} hint="Ver e aprovar" />
-            {!isTrial && <KpiCard label="Faturas em aberto" value={1} icon={Clock} hint="R$ 4.800,00" />}
-            {isTrial && (
-              <EmptyCta
-                titulo="Conheça o plano completo"
-                texto="Faturas e financeiro liberam após contratar um plano."
-                cta="Solicitar proposta"
-              />
-            )}
+          {/* 3 cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <DashCard
+              tone="projetos"
+              icon={Briefcase}
+              label="Projetos em andamento"
+              value={isTrial ? "0" : String(projetosKentaki)}
+              hint="ativos com a Azumi"
+            />
+            <DashCard
+              tone="alerta"
+              icon={FileCheck2}
+              label="Entregáveis aguardando parecer"
+              value={String(entregaveis.length)}
+              hint={entregaveis.length > 0 ? "ação pendente do cliente" : "tudo em dia"}
+              cta={entregaveis.length > 0 ? "Revisar agora" : undefined}
+            />
+            <DashCard
+              tone="horas"
+              icon={Timer}
+              label={`Horas do mês · ${filialAtiva}`}
+              value={isTrial ? "0h" : `${horasConsumidasFilial}h`}
+              hint={
+                isTrial
+                  ? "Sem plano contratado"
+                  : `Pacote: ${horasContratadasTotal}h · desta filial: ${horasFilial}h`
+              }
+            />
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            <KpiCard label="Vagas em aberto" value={isTrial ? 0 : vagasCliente.length + 2} icon={Target} />
-            <KpiCard label="Horas no mês" value={isTrial ? "0h" : "61h"} icon={Clock} hint={isTrial ? "Sem plano contratado" : "de 80h contratadas"} trend={isTrial ? undefined : { value: "76%", positive: true }} />
-            <KpiCard label="Solicitações abertas" value={isTrial ? 0 : solicitacoes.filter((s) => s.empresa === "Kentaki Foods").length + 1} icon={MessagesSquare} />
-          </div>
-
-          <SectionDivider>Consumo do mês</SectionDivider>
+          {/* 3 COLUNAS */}
+          <SectionDivider>Visão do mês</SectionDivider>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2">
-              {isTrial ? (
-                <EmptyCta
-                  titulo="Consumo aparece após contratar um plano"
-                  texto="No plano Ongoing você acompanha em tempo real as horas usadas pelo seu time."
-                  cta="Fale com a Azumi"
-                />
+            {/* Coluna 1 — Entregáveis */}
+            <div className="bg-card border border-border rounded-xl p-4 flex flex-col">
+              <div className="flex items-center gap-2 mb-3">
+                <FileCheck2 className="h-4 w-4 text-warning" />
+                <h3 className="font-display font-semibold text-sm">Entregáveis aguardando parecer</h3>
+              </div>
+              {entregaveis.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center text-xs text-muted-foreground text-center py-6">
+                  Nenhum entregável pendente no momento.
+                </div>
               ) : (
-                <ConsumoAlertCard context="cliente" empresaId="kentaki" limit={1} />
+                <ul className="divide-y divide-border -mx-1">
+                  {entregaveis.map((e) => {
+                    const Icone = categoriaIcone[e.categoria] ?? categoriaIcone.default;
+                    return (
+                      <li key={e.id} className="px-1 py-3 flex items-start gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                          <Icone className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium truncate">{e.titulo}</div>
+                          <div className="text-xs text-muted-foreground truncate">{e.projeto}</div>
+                          <div className={cn(
+                            "text-[11px] font-data mt-0.5 inline-flex items-center gap-1",
+                            e.vencido ? "text-destructive font-semibold" : "text-muted-foreground"
+                          )}>
+                            <CalendarDays className="h-3 w-3" />
+                            Prazo: {e.prazo}{e.vencido && " · vencido"}
+                          </div>
+                        </div>
+                        <button className="text-xs text-primary font-medium inline-flex items-center gap-1 shrink-0">
+                          Revisar <ArrowRight className="h-3 w-3" />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
             </div>
-            <div className="bg-card border border-border rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <CalendarMini />
+
+            {/* Coluna 2 — Comunicado mais recente */}
+            <div className="bg-card border border-border rounded-xl overflow-hidden flex flex-col">
+              <button
+                onClick={() => setComunicadoOpen(true)}
+                className="aspect-[16/9] w-full bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center text-primary/60 hover:opacity-90 transition"
+              >
+                {comunicadoRecente.capa ? (
+                  <img src={comunicadoRecente.capa} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <ImageIcon className="h-8 w-8" />
+                )}
+              </button>
+              <div className="p-4 flex flex-col flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <Megaphone className="h-4 w-4 text-primary" />
+                  <span className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
+                    Comunicado mais recente
+                  </span>
+                </div>
+                <button
+                  onClick={() => setComunicadoOpen(true)}
+                  className="text-left text-sm font-display font-semibold leading-snug hover:text-primary transition"
+                >
+                  {comunicadoRecente.titulo}
+                </button>
+                <p className="text-xs text-muted-foreground mt-1">{comunicadoRecente.data}</p>
+                <div className="mt-auto pt-3">
+                  <Link
+                    to="/cliente/comunicados"
+                    className="text-xs text-primary font-medium inline-flex items-center gap-1"
+                  >
+                    Ver todos os comunicados <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </div>
               </div>
+            </div>
+
+            {/* Coluna 3 — Calendário */}
+            <div className="bg-card border border-border rounded-xl p-3 flex flex-col">
+              <div className="flex items-center gap-2 mb-2 px-1">
+                <CalendarDays className="h-4 w-4 text-primary" />
+                <h3 className="font-display font-semibold text-sm">Agenda</h3>
+              </div>
+              <Calendar
+                mode="single"
+                modifiers={{ evento: eventosAgendados }}
+                modifiersClassNames={{
+                  evento: "bg-primary/20 text-primary font-semibold rounded-md",
+                }}
+                className="p-0 [&_table]:w-full flex-1"
+              />
             </div>
           </div>
 
-          <SectionDivider>Entregáveis aguardando seu parecer</SectionDivider>
-          {entregaveis.length === 0 ? (
-            <EmptyCta
-              titulo="Nenhum entregável no momento"
-              texto={isTrial ? "Comece um projeto com a Azumi para receber entregáveis revisáveis aqui." : "Volte mais tarde — sua consultora envia novos entregáveis assim que estiverem prontos."}
-              cta={isTrial ? "Solicitar proposta" : "Fale com a Azumi"}
-            />
-          ) : (
-            <div className="bg-card border border-border rounded-xl divide-y divide-border">
-              {entregaveis.map((e) => (
-                <div key={e.id} className="p-4 flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium">{e.titulo}</div>
-                    <div className="text-xs text-muted-foreground">{e.projeto}</div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground font-data">Prazo: {e.prazo}</span>
-                    <button className="text-xs text-primary font-medium inline-flex items-center gap-1">
-                      Revisar <ArrowRight className="h-3 w-3" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
+          {/* VAGAS */}
           <SectionDivider>Suas vagas</SectionDivider>
           {vagasCliente.length === 0 ? (
             <EmptyCta
@@ -248,18 +320,29 @@ export default function ClienteDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {vagasCliente.slice(0, 4).map((v) => (
                 <Link key={v.id} to={`/cliente/atracao/${v.id}`} className="bg-card border border-border rounded-xl p-5 card-hover">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-display font-semibold">{v.titulo}</h3>
-                      <p className="text-xs text-muted-foreground">{v.filial}</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <Target className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-display font-semibold truncate">{v.titulo}</h3>
+                        <p className="text-xs text-muted-foreground inline-flex items-center gap-1 mt-0.5">
+                          <MapPin className="h-3 w-3" /> {v.filial}
+                        </p>
+                      </div>
                     </div>
                     <StatusBadge status={v.status} />
                   </div>
-                  <div className="mt-3 flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">
-                      Etapa: <span className="text-foreground">{v.etapa}</span>
-                    </span>
-                    <span className="font-data">{v.candidatosEnviados} perfis</span>
+                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded-lg bg-secondary/40 px-3 py-2">
+                      <div className="text-muted-foreground text-[10px] uppercase tracking-wide">Etapa</div>
+                      <div className="font-medium truncate">{v.etapa}</div>
+                    </div>
+                    <div className="rounded-lg bg-secondary/40 px-3 py-2">
+                      <div className="text-muted-foreground text-[10px] uppercase tracking-wide">Perfis</div>
+                      <div className="font-data tabular-nums font-medium">{v.candidatosEnviados}</div>
+                    </div>
                   </div>
                   <div className="mt-3 inline-flex items-center gap-1 text-xs text-primary font-medium">
                     Ver detalhes <ArrowRight className="h-3 w-3" />
@@ -269,40 +352,30 @@ export default function ClienteDashboard() {
             </div>
           )}
 
-          {/* Comunicado mais recente */}
-          <SectionDivider>Comunicado mais recente</SectionDivider>
-          <div className="bg-card border border-border rounded-xl p-5 flex items-start gap-4">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <Megaphone className="h-5 w-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-display font-semibold text-sm">{comunicadoRecente.titulo}</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {comunicadoRecente.data} · {comunicadoRecente.autor}
-              </p>
-            </div>
-            <button
-              onClick={() => setComunicadoOpen(true)}
-              className="h-8 px-3 rounded-lg border border-border text-xs font-medium hover:bg-secondary inline-flex items-center gap-1.5 shrink-0"
-            >
-              Ver mais <ArrowRight className="h-3 w-3" />
-            </button>
-          </div>
-
-          {/* FAQ */}
-          <SectionDivider>Dúvidas frequentes</SectionDivider>
+          {/* GUIA RÁPIDO */}
+          <SectionDivider>Guia rápido</SectionDivider>
           <div className="bg-card border border-border rounded-xl p-2 sm:p-5">
             <div className="flex items-center gap-2 px-3 sm:px-0 pt-3 sm:pt-0 pb-2">
-              <HelpCircle className="h-4 w-4 text-primary" />
-              <h3 className="font-display font-semibold text-sm">Guia rápido</h3>
+              <LifeBuoy className="h-4 w-4 text-primary" />
+              <h3 className="font-display font-semibold text-sm">Dúvidas frequentes</h3>
             </div>
             <Accordion type="single" collapsible className="w-full">
-              {faqItems.map((item, i) => (
-                <AccordionItem key={i} value={`faq-${i}`}>
-                  <AccordionTrigger className="text-sm text-left px-3 sm:px-0">{item.q}</AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground px-3 sm:px-0">{item.a}</AccordionContent>
-                </AccordionItem>
-              ))}
+              {faqItems.map((item, i) => {
+                const Icone = item.icon ?? HelpCircle;
+                return (
+                  <AccordionItem key={i} value={`faq-${i}`}>
+                    <AccordionTrigger className="text-sm text-left px-3 sm:px-0">
+                      <span className="flex items-center gap-2.5">
+                        <Icone className="h-4 w-4 text-primary shrink-0" />
+                        {item.q}
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="text-sm text-muted-foreground px-3 sm:px-0 pl-9">
+                      {item.a}
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
             </Accordion>
           </div>
         </TabsContent>
@@ -363,9 +436,9 @@ export default function ClienteDashboard() {
         {!isTrial && (
           <TabsContent value="financeiro" className="mt-0">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-              <KpiCard label="Horas consumidas" value="61h" icon={Clock} hint="de 80h contratadas" trend={{ value: "76%", positive: true }} />
-              <KpiCard label="Faturas em aberto" value={1} icon={Receipt} hint="R$ 4.800,00" />
-              <KpiCard label="Plano contratado" value="Ongoing Premium" icon={Briefcase} hint="R$ 4.800,00 / mês" />
+              <DashCard tone="horas" icon={Timer} label={`Horas · ${filialAtiva}`} value={`${horasConsumidasFilial}h`} hint={`de ${horasFilial}h da filial`} />
+              <DashCard tone="alerta" icon={Receipt} label="Faturas em aberto" value="1" hint="R$ 4.800,00" />
+              <DashCard tone="projetos" icon={Briefcase} label="Plano contratado" value="Ongoing" hint="R$ 4.800,00 / mês" />
             </div>
 
             <div className="bg-card border border-border rounded-2xl shadow-card p-5">
@@ -442,20 +515,36 @@ export default function ClienteDashboard() {
 // Subcomponents
 // ─────────────────────────────────────────────────────────────────────
 
-function CalendarMini() {
+function DashCard({
+  tone,
+  icon: Icone,
+  label,
+  value,
+  hint,
+  cta,
+}: {
+  tone: keyof typeof cardTone;
+  icon: any;
+  label: string;
+  value: string;
+  hint?: string;
+  cta?: string;
+}) {
   return (
-    <div className="w-full">
-      <div className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1.5">
-        <ClockIcon className="h-3.5 w-3.5" /> Próximas reuniões
+    <div className={cn("rounded-xl border p-4 flex items-start gap-3", cardTone[tone])}>
+      <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center shrink-0", iconTone[tone])}>
+        <Icone className="h-5 w-5" />
       </div>
-      <Calendar
-        mode="single"
-        modifiers={{ evento: eventosAgendados }}
-        modifiersClassNames={{
-          evento: "bg-primary/15 text-primary font-semibold rounded-md",
-        }}
-        className="p-0 [&_table]:w-full"
-      />
+      <div className="min-w-0 flex-1">
+        <div className="text-xs text-muted-foreground">{label}</div>
+        <div className="font-display font-bold text-2xl tabular-nums leading-tight mt-0.5">{value}</div>
+        {hint && <div className="text-[11px] text-muted-foreground mt-0.5">{hint}</div>}
+        {cta && (
+          <button className="mt-2 text-xs font-semibold text-warning inline-flex items-center gap-1">
+            {cta} <ArrowRight className="h-3 w-3" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
