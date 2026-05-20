@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { X, Search, Mail, Phone, MapPin, GraduationCap, Briefcase, Calendar, Link2, AlertCircle, Eye, LinkIcon } from "lucide-react";
+import { X, Search, Mail, Phone, MapPin, GraduationCap, Briefcase, Calendar, Link2, AlertCircle, Eye, Link as LinkIcon } from "lucide-react";
 import {
   TALENTOS_MOCK,
   STATUS_LABEL,
