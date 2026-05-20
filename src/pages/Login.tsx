@@ -30,7 +30,7 @@ export default function Login() {
 
   const entrarComoCliente = () => {
     login({ id: "cliente-01", nome: "Kentaki Foods", papel: "cliente", empresaId: "kentaki" });
-    navigate("/portal", { replace: true });
+    navigate("/cliente/dashboard", { replace: true });
   };
 
   return (
