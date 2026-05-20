@@ -35,7 +35,7 @@ import {
 import { StatusBadge } from "@/components/StatusBadge";
 import { SectionDivider } from "@/components/SectionDivider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar } from "@/components/ui/calendar";
+// Calendar do shadcn removido — substituído por MiniCalendario inline neste arquivo.
 import { Progress } from "@/components/ui/progress";
 import {
   Accordion,
