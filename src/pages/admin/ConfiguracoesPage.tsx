@@ -537,6 +537,117 @@ export default function ConfiguracoesPage() {
             </div>
           </Card>
         </TabsContent>
+
+        {/* =================== USUÁRIOS (admin) =================== */}
+        {isAdmin && (
+          <TabsContent value="usuarios" className="space-y-5">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <h3 className="font-display text-base font-semibold">Usuários da plataforma</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Gerencie acessos, roles e permissões individuais.
+                </p>
+              </div>
+              <Button onClick={() => setConvidarOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" /> Convidar usuário
+              </Button>
+            </div>
+
+            <Card className="overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Usuário</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Empresa</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Trial expira</TableHead>
+                    <TableHead className="w-[140px] text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {usuarios.map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback
+                              className="text-xs font-semibold"
+                              style={getAvatarTone(u.nome)}
+                            >
+                              {getIniciais(u.nome)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm leading-tight">{u.nome}</p>
+                            <p className="text-xs text-muted-foreground">{u.email}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">{ROLE_LABEL[u.role]}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{u.empresa ?? "—"}</TableCell>
+                      <TableCell>
+                        <span
+                          className={cn(
+                            "badge-pill border",
+                            u.status === "ativo" && "bg-success/15 text-success border-success/30",
+                            u.status === "inativo" && "bg-muted text-muted-foreground border-border",
+                            u.status === "trial" && "bg-amber-500/15 text-amber-600 border-amber-500/30",
+                            u.status === "pendente" && "bg-blue-500/15 text-blue-600 border-blue-500/30",
+                          )}
+                        >
+                          <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
+                          {STATUS_LABEL[u.status]}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {u.trialExpira
+                          ? new Date(u.trialExpira).toLocaleDateString("pt-BR")
+                          : "—"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8"
+                            onClick={() => setPermissoesOpen(u)}
+                          >
+                            <Shield className="h-3.5 w-3.5 mr-1" /> Permissões
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => toast.info("Em breve")}>
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                disabled={u.status === "inativo"}
+                                className="text-destructive focus:text-destructive"
+                                onClick={() =>
+                                  setUsuarios((prev) =>
+                                    prev.map((x) => (x.id === u.id ? { ...x, status: "inativo" } : x))
+                                  )
+                                }
+                              >
+                                Desativar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* =================== Dialog: Alterar senha =================== */}
