@@ -8,6 +8,7 @@ import {
   Plus,
   Trash2,
   UserCircle2,
+  Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -52,6 +53,116 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+
+// =====================================================================
+// Tipos & Mocks — Usuários da plataforma
+// =====================================================================
+
+type RoleUsuario = "admin" | "consultor" | "cliente_recorrente" | "cliente_avulso" | "trial";
+type StatusUsuario = "ativo" | "inativo" | "trial" | "pendente";
+
+interface PermissaoItem {
+  key: string;
+  label: string;
+  grupo: string;
+}
+
+interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  role: RoleUsuario;
+  status: StatusUsuario;
+  empresa?: string;
+  trialExpira?: string;
+  permissoes: string[];
+}
+
+const TODAS_PERMISSOES: PermissaoItem[] = [
+  { key: "projetos.ver",        label: "Ver projetos",              grupo: "Operações" },
+  { key: "projetos.editar",     label: "Editar projetos",           grupo: "Operações" },
+  { key: "horas.ver",           label: "Ver horas",                 grupo: "Operações" },
+  { key: "solicitacoes.ver",    label: "Ver solicitações",          grupo: "Operações" },
+  { key: "atracao.ver",         label: "Ver Atração & Hunting",     grupo: "Operações" },
+  { key: "clientes.ver",        label: "Ver clientes",              grupo: "Gestão" },
+  { key: "financeiro.ver",      label: "Ver financeiro",            grupo: "Gestão" },
+  { key: "gestao_conta.ver",    label: "Ver Gestão de Conta",       grupo: "Gestão" },
+  { key: "relatorios.ver",      label: "Ver relatórios",            grupo: "Gestão" },
+  { key: "relatorios.criar",    label: "Criar relatórios",          grupo: "Gestão" },
+  { key: "documentos.ver",      label: "Ver documentos",            grupo: "Gestão" },
+  { key: "documentos.criar",    label: "Criar documentos",          grupo: "Gestão" },
+  { key: "auditoria.ver",       label: "Ver auditoria",             grupo: "Gestão" },
+  { key: "calendario.ver",      label: "Ver calendário",            grupo: "Plataforma" },
+  { key: "calendario.criar",    label: "Criar eventos",             grupo: "Plataforma" },
+  { key: "comunicados.ver",     label: "Ver comunicados",           grupo: "Plataforma" },
+  { key: "comunicados.criar",   label: "Criar comunicados",         grupo: "Plataforma" },
+  { key: "analytics.ver",       label: "Ver analytics",             grupo: "Analytics" },
+  { key: "analytics.nps",       label: "Ver NPS",                   grupo: "Analytics" },
+  { key: "usuarios.gerenciar",  label: "Gerenciar usuários",        grupo: "Admin" },
+  { key: "empresas.ver",        label: "Ver empresas",              grupo: "Admin" },
+];
+
+const PERMISSOES_PADRAO: Record<RoleUsuario, string[]> = {
+  admin: TODAS_PERMISSOES.map((p) => p.key),
+  consultor: [
+    "projetos.ver","projetos.editar","solicitacoes.ver","atracao.ver",
+    "clientes.ver","relatorios.ver","relatorios.criar",
+    "documentos.ver","documentos.criar","auditoria.ver",
+    "calendario.ver","calendario.criar","comunicados.ver","comunicados.criar",
+    "analytics.ver","analytics.nps",
+  ],
+  cliente_recorrente: [
+    "projetos.ver","solicitacoes.ver","atracao.ver",
+    "gestao_conta.ver","relatorios.ver","documentos.ver",
+    "calendario.ver","comunicados.ver",
+  ],
+  cliente_avulso: [
+    "projetos.ver","solicitacoes.ver","atracao.ver","documentos.ver",
+  ],
+  trial: [],
+};
+
+const ROLE_LABEL: Record<RoleUsuario, string> = {
+  admin: "Administrador",
+  consultor: "Consultor",
+  cliente_recorrente: "Cliente Recorrente",
+  cliente_avulso: "Cliente Avulso",
+  trial: "Trial",
+};
+
+const STATUS_LABEL: Record<StatusUsuario, string> = {
+  ativo: "Ativo",
+  inativo: "Inativo",
+  trial: "Trial",
+  pendente: "Pendente",
+};
+
+const EMPRESAS_MOCK = ["Kentaki Foods", "Tech Plural", "Grupo Maverick", "Studio Mira", "Alvo Digital"];
+
+const USUARIOS_INICIAIS: Usuario[] = [
+  {
+    id: "u1", nome: "Patricia Lima", email: "patricia@azumirh.com.br",
+    role: "admin", status: "ativo",
+    permissoes: PERMISSOES_PADRAO.admin,
+  },
+  {
+    id: "u2", nome: "Ana Beatriz", email: "ana@azumirh.com.br",
+    role: "consultor", status: "ativo",
+    permissoes: PERMISSOES_PADRAO.consultor,
+  },
+  {
+    id: "u3", nome: "Mariana Souza", email: "mariana@kentaki.com",
+    role: "cliente_recorrente", status: "ativo", empresa: "Kentaki Foods",
+    permissoes: PERMISSOES_PADRAO.cliente_recorrente,
+  },
+  {
+    id: "u4", nome: "Carlos Demo", email: "carlos@empresa.com",
+    role: "trial", status: "trial", empresa: "Empresa Demo",
+    trialExpira: "2026-06-01",
+    permissoes: ["projetos.ver","atracao.ver"],
+  },
+];
 
 // =====================================================================
 // Tipos & Mock
