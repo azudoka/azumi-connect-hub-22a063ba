@@ -134,6 +134,7 @@ function RootRedirect() {
     rh:            "/app/dashboard",
     rh_operacional:"/app/dashboard",
     cliente:       "/portal",
+    trial:         "/cliente/dashboard",
     colaborador:   "/hub/colaborador/inicio",
     lider:         "/hub/lider/painel",
     ceo:           "/hub/ceo/dashboard",
@@ -143,6 +144,7 @@ function RootRedirect() {
   };
   return <Navigate to={mapa[usuario.role] ?? "/login"} replace />;
 }
+
 
 // Redireciona /portal/projetos/:id → /cliente/projetos/:id preservando o id
 function PortalProjetoRedirect() {
@@ -195,7 +197,7 @@ const AppRoutes = () => (
     {/* Cliente ADM (mantido) */}
     <Route
       element={
-        <PrivateRoute allowed={["cliente"]}>
+        <PrivateRoute allowed={["cliente", "trial"]}>
           <AppLayout />
         </PrivateRoute>
       }
