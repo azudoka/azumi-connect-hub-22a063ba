@@ -15,7 +15,7 @@ import {
   Trash2,
   CalendarClock,
   Users,
-  UserSearch,
+  // UserSearch removido junto com tipo Hunting
   GraduationCap,
   Compass,
   Palette,
