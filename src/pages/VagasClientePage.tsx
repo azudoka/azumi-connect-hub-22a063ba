@@ -16,7 +16,7 @@ import {
   ThumbsDown,
   FileText,
   ArrowRight,
-  X,
+  
 } from "lucide-react";
 import { toast } from "sonner";
 import { candidatosComRelatorioPorVaga } from "@/data/atracaoClienteStore";
