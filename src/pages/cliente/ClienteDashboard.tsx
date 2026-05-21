@@ -44,6 +44,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { vagas, projetos } from "@/data/mock";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -54,11 +55,37 @@ const empresaLogos: Record<string, string> = {
 };
 
 // TODO: conectar Supabase — agendamentos do cliente
-const eventosAgendados = [
-  new Date(2026, 4, 21),
-  new Date(2026, 4, 23),
-  new Date(2026, 4, 28),
-  new Date(2026, 5, 3),
+type EventoTipo = "prazo" | "reuniao" | "entrevista" | "ferias" | "feriado" | "comunicado";
+
+const eventoTipoCor: Record<EventoTipo, string> = {
+  prazo: "#F97316",
+  reuniao: "#3B82F6",
+  entrevista: "#8B5CF6",
+  ferias: "#10B981",
+  feriado: "#EC4899",
+  comunicado: "#06B6D4",
+};
+const eventoTipoLabel: Record<EventoTipo, string> = {
+  prazo: "Prazo",
+  reuniao: "Reunião",
+  entrevista: "Entrevista",
+  ferias: "Férias",
+  feriado: "Feriado",
+  comunicado: "Comunicado",
+};
+
+interface EventoAgendado {
+  data: Date;
+  titulo: string;
+  tipo: EventoTipo;
+  hora?: string;
+}
+
+const eventosAgendados: EventoAgendado[] = [
+  { data: new Date(2026, 4, 21), titulo: "Feriado — Tiradentes", tipo: "feriado" },
+  { data: new Date(2026, 4, 23), titulo: "Reunião de alinhamento mensal", tipo: "reuniao", hora: "09:00" },
+  { data: new Date(2026, 4, 28), titulo: "Entrevista — Dev Pleno", tipo: "entrevista", hora: "14:30" },
+  { data: new Date(2026, 5, 3), titulo: "Prazo — Aprovação cronograma", tipo: "prazo" },
 ];
 
 // TODO: conectar Supabase — mapear "tipo" do projeto para ícone
@@ -140,7 +167,8 @@ const iconTone = {
   horas:    "bg-emerald-500/15 text-emerald-600",
 };
 
-function MiniCalendario({ eventos }: { eventos: Date[] }) {
+
+function MiniCalendario({ eventos }: { eventos: EventoAgendado[] }) {
   const hoje = new Date();
   const [mes, setMes] = useState(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
 
@@ -156,13 +184,13 @@ function MiniCalendario({ eventos }: { eventos: Date[] }) {
     return dia >= 1 && dia <= ultimoDia.getDate() ? dia : null;
   });
 
-  const temEvento = (dia: number | null) => {
-    if (!dia) return false;
-    return eventos.some(
+  const eventosDoDia = (dia: number | null) => {
+    if (!dia) return [] as EventoAgendado[];
+    return eventos.filter(
       (e) =>
-        e.getFullYear() === mes.getFullYear() &&
-        e.getMonth() === mes.getMonth() &&
-        e.getDate() === dia,
+        e.data.getFullYear() === mes.getFullYear() &&
+        e.data.getMonth() === mes.getMonth() &&
+        e.data.getDate() === dia,
     );
   };
 
@@ -209,23 +237,71 @@ function MiniCalendario({ eventos }: { eventos: Date[] }) {
       </div>
 
       <div className="grid grid-cols-7 gap-0">
-        {celulas.map((dia, i) => (
-          <div
-            key={i}
-            className={cn(
-              "relative flex items-center justify-center aspect-square text-xs rounded-md",
-              !dia && "invisible",
-              ehHoje(dia) && "bg-primary text-primary-foreground font-bold",
-              !ehHoje(dia) && dia && "hover:bg-secondary cursor-default",
-              temEvento(dia) && !ehHoje(dia) && "bg-primary/15 text-primary font-semibold",
-            )}
-          >
-            {dia}
-            {temEvento(dia) && !ehHoje(dia) && (
-              <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-primary" />
-            )}
-          </div>
-        ))}
+        {celulas.map((dia, i) => {
+          const evs = eventosDoDia(dia);
+          const tem = evs.length > 0;
+          const hoje_ = ehHoje(dia);
+          const cell = (
+            <div
+              className={cn(
+                "relative flex items-center justify-center aspect-square text-xs rounded-md w-full",
+                !dia && "invisible",
+                hoje_ && "bg-primary text-primary-foreground font-bold",
+                !hoje_ && tem && "bg-primary/10 font-semibold cursor-pointer hover:bg-primary/20",
+                !hoje_ && !tem && dia && "hover:bg-secondary",
+              )}
+            >
+              {dia}
+              {tem && !hoje_ && (
+                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
+                  {evs.slice(0, 3).map((e, idx) => (
+                    <span
+                      key={idx}
+                      className="h-1 w-1 rounded-full"
+                      style={{ background: eventoTipoCor[e.tipo] }}
+                    />
+                  ))}
+                </span>
+              )}
+            </div>
+          );
+
+          if (!dia || !tem) {
+            return <div key={i}>{cell}</div>;
+          }
+
+          return (
+            <Popover key={i}>
+              <PopoverTrigger asChild>
+                <button type="button" className="contents">{cell}</button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-3" align="center">
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase mb-2">
+                  {dia} de {mes.toLocaleString("pt-BR", { month: "long" })}
+                </div>
+                <div className="flex flex-col gap-2">
+                  {evs.map((e, idx) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <span
+                        className="h-2 w-2 rounded-full mt-1.5 shrink-0"
+                        style={{ background: eventoTipoCor[e.tipo] }}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-medium text-foreground leading-tight">
+                          {e.titulo}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5">
+                          {eventoTipoLabel[e.tipo]}
+                          {e.hora ? ` · ${e.hora}` : ""}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          );
+        })}
       </div>
     </div>
   );
@@ -442,14 +518,22 @@ export default function ClienteDashboard() {
                 <h3 className="font-display font-semibold text-sm">Agenda</h3>
               </div>
               <MiniCalendario eventos={eventosAgendados} />
-              <div className="space-y-1 mt-1">
+              <div className="space-y-1.5 mt-1">
                 {eventosAgendados
-                  .filter((e) => e >= new Date())
+                  .filter((e) => e.data >= new Date(new Date().setHours(0, 0, 0, 0)))
+                  .sort((a, b) => a.data.getTime() - b.data.getTime())
                   .slice(0, 3)
                   .map((e, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <CalendarDays className="h-3 w-3 text-primary shrink-0" />
-                      <span>{e.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</span>
+                    <div key={i} className="flex items-center gap-2 text-xs">
+                      <span
+                        className="h-2 w-2 rounded-full shrink-0"
+                        style={{ background: eventoTipoCor[e.tipo] }}
+                      />
+                      <span className="text-muted-foreground shrink-0">
+                        {e.data.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                        {e.hora ? ` · ${e.hora}` : ""}
+                      </span>
+                      <span className="truncate text-foreground">{e.titulo}</span>
                     </div>
                   ))}
               </div>
