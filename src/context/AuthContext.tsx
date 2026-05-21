@@ -70,6 +70,8 @@ export interface Usuario {
   trialExpiraEm?: string | null;
   avatarUrl?: string | null;
   inativo?: boolean;
+  /** Cliente contratou o produto Hub? Define se vê o Hub real ou a apresentação. */
+  hubContratado?: boolean;
 }
 
 
