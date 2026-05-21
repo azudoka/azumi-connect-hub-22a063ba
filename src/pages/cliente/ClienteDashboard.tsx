@@ -47,6 +47,12 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { vagas, projetos } from "@/data/mock";
 import { useAuth } from "@/context/AuthContext";
+import {
+  vagasDemo,
+  projetosDemo,
+  comunicadosDemo,
+  eventosDemo,
+} from "@/data/mockDemoData";
 import { cn } from "@/lib/utils";
 
 // TODO: conectar Supabase — logo_url da tabela empresas
@@ -339,10 +345,55 @@ export default function ClienteDashboard() {
   }
 
   const vagasCliente = useMemo(
-    () => (isTrial ? [] : vagas.filter((v) => v.empresaId === "kentaki")),
+    () =>
+      isTrial
+        ? vagasDemo.map((v) => ({
+            id: v.id,
+            titulo: v.titulo,
+            filial: "Empresa Demo",
+            status: (v.status === "andamento" ? "ativa" : "concluida") as any,
+            etapa: v.etapa,
+            candidatosEnviados: v.perfisEnviados,
+          }))
+        : vagas.filter((v) => v.empresaId === "kentaki"),
     [isTrial]
   );
-  const entregaveis = isTrial ? [] : entregaveisAguardando;
+
+  const entregaveis = useMemo(() => {
+    if (!isTrial) return entregaveisAguardando;
+    return projetosDemo.flatMap((p) =>
+      p.entregaveis
+        .filter((e) => e.status === "aguardando_parecer")
+        .map((e) => ({
+          id: e.id,
+          projeto: p.nome,
+          titulo: e.titulo,
+          categoria: "default",
+          prazo: "—",
+          vencido: false,
+        }))
+    );
+  }, [isTrial]);
+
+  const comunicadoExibir = isTrial
+    ? {
+        id: comunicadosDemo[0]?.id ?? "demo-cm",
+        titulo: comunicadosDemo[0]?.titulo ?? "",
+        data: comunicadosDemo[0]?.data ?? "",
+        autor: "Ana Beatriz · Consultora Azumi",
+        capa: "/placeholder.svg",
+        conteudo: comunicadosDemo[0]?.resumo ?? "",
+      }
+    : comunicadoRecente;
+
+  const eventosExibir: EventoAgendado[] = isTrial
+    ? eventosDemo.map((e) => ({
+        data: new Date(e.data),
+        titulo: e.titulo,
+        tipo: e.tipo as EventoTipo,
+        hora: e.hora,
+      }))
+    : eventosAgendados;
 
   return (
     <div>
@@ -470,9 +521,9 @@ export default function ClienteDashboard() {
                   <Megaphone className="h-8 w-8 text-primary/40" />
                 </div>
                 <div className="p-3">
-                  <div className="font-semibold text-sm leading-snug">{comunicadoRecente.titulo}</div>
+                  <div className="font-semibold text-sm leading-snug">{comunicadoExibir.titulo}</div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {comunicadoRecente.data} · {comunicadoRecente.autor}
+                    {comunicadoExibir.data} · {comunicadoExibir.autor}
                   </p>
                 </div>
               </button>
@@ -517,9 +568,9 @@ export default function ClienteDashboard() {
                 <CalendarDays className="h-4 w-4 text-primary" />
                 <h3 className="font-display font-semibold text-sm">Agenda</h3>
               </div>
-              <MiniCalendario eventos={eventosAgendados} />
+              <MiniCalendario eventos={eventosExibir} />
               <div className="space-y-1.5 mt-1">
-                {eventosAgendados
+                {eventosExibir
                   .filter((e) => e.data >= new Date(new Date().setHours(0, 0, 0, 0)))
                   .sort((a, b) => a.data.getTime() - b.data.getTime())
                   .slice(0, 3)
@@ -728,13 +779,13 @@ export default function ClienteDashboard() {
               <Megaphone className="h-5 w-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="font-display font-semibold text-base">{comunicadoRecente.titulo}</h3>
+              <h3 className="font-display font-semibold text-base">{comunicadoExibir.titulo}</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {comunicadoRecente.data} · {comunicadoRecente.autor}
+                {comunicadoExibir.data} · {comunicadoExibir.autor}
               </p>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground leading-relaxed mt-2">{comunicadoRecente.conteudo}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed mt-2">{comunicadoExibir.conteudo}</p>
         </DialogContent>
       </Dialog>
     </div>

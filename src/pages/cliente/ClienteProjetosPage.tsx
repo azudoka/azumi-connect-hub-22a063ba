@@ -10,13 +10,16 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { cn } from "@/lib/utils";
 import { useProjetosClienteStore } from "@/data/useProjetosClienteStore";
+import { projetosDemo } from "@/data/mockDemoData";
+import type { ProjetoCliente, EntregavelStatus } from "@/data/projetosCliente";
 import { CronogramasTab } from "./CronogramasTab";
 
 type Aba = "projetos" | "cronogramas";
 
 export default function ClienteProjetosPage() {
-  const { user } = useAuth();
+  const { user, usuario } = useAuth();
   const empresaId = user?.empresaId ?? "";
+  const isDemoUser = usuario?.role === "trial";
 
   const projetos = useProjetosClienteStore((s) =>
     s.projetos.filter((p) => (empresaId ? p.empresaId === empresaId : true))
@@ -24,6 +27,42 @@ export default function ClienteProjetosPage() {
   const cronogramas = useProjetosClienteStore((s) =>
     s.cronogramas.filter((c) => (empresaId ? c.empresaId === empresaId : true))
   );
+
+  const projetosDemoMapped = useMemo<ProjetoCliente[]>(
+    () =>
+      projetosDemo.map((p) => ({
+        id: p.id,
+        codigo: p.id.toUpperCase(),
+        nome: p.nome,
+        empresaId: "empresa-demo",
+        consultor: "Ana Beatriz",
+        consultorIniciais: "AB",
+        status: "andamento",
+        frente: "Demo",
+        entregaveis: p.entregaveis.map((e) => {
+          const status: EntregavelStatus =
+            e.status === "aprovado"
+              ? "aprovado_cliente"
+              : e.status === "aguardando_parecer"
+              ? "aprovacao_cliente"
+              : "em_andamento";
+          return {
+            id: e.id,
+            codigo: e.id.toUpperCase(),
+            nome: e.titulo,
+            frente: "Demo",
+            complexidade: "C2",
+            status,
+            prazo: new Date().toISOString(),
+            subtarefas: 0,
+            tipoDocumento: false,
+          };
+        }),
+      })),
+    []
+  );
+
+  const projetosExibir = isDemoUser ? projetosDemoMapped : projetos;
 
   const [aba, setAba] = useState<Aba>("projetos");
 
@@ -59,7 +98,7 @@ export default function ClienteProjetosPage() {
       </div>
 
       {aba === "projetos" ? (
-        projetos.length === 0 ? (
+        projetosExibir.length === 0 ? (
           <Card className="glass">
             <CardContent className="p-0">
               <EmptyState
@@ -71,7 +110,7 @@ export default function ClienteProjetosPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {projetos.map((p) => {
+            {projetosExibir.map((p) => {
               const total = p.entregaveis.length;
               const aprovados = p.entregaveis.filter(
                 (e) => e.status === "aprovado_cliente"

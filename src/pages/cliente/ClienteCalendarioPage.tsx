@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, X, Clock, MapPin, ExternalLink, Download } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { useAuth } from "@/context/AuthContext";
+import { eventosDemo } from "@/data/mockDemoData";
 
 const U: React.CSSProperties = { fontFamily: "'Urbanist',sans-serif" };
 
@@ -192,6 +194,8 @@ function Modal({ open, onClose, children }: { open: boolean; onClose: () => void
 }
 
 export default function ClienteCalendarioPage() {
+  const { usuario } = useAuth();
+  const isDemoUser = usuario?.role === "trial";
   const [view, setView] = useState<"mes" | "semana">("mes");
   const [cursor, setCursor] = useState(new Date(Y0, M0, 1));
   const [anoFiltro, setAnoFiltro] = useState(Y0);
@@ -208,15 +212,31 @@ export default function ClienteCalendarioPage() {
     setCursor(new Date(ano, cursor.getMonth(), 1));
   }
 
+  const eventosLista: Evento[] = useMemo(() => {
+    if (!isDemoUser) return EVENTOS_CLIENTE;
+    return eventosDemo.map((e) => {
+      const d = new Date(e.data);
+      const tipo: EventoTipo = e.tipo === "feriado" ? "feriado_nacional" : (e.tipo as EventoTipo);
+      return {
+        id: e.id,
+        titulo: e.titulo,
+        data: fmt(d),
+        hora: e.hora,
+        tipo,
+      };
+    });
+  }, [isDemoUser]);
+
   const eventosPorData = useMemo(() => {
     const m = new Map<string, Evento[]>();
-    EVENTOS_CLIENTE.forEach((e) => {
+    eventosLista.forEach((e) => {
       const arr = m.get(e.data) ?? [];
       arr.push(e);
       m.set(e.data, arr);
     });
     return m;
-  }, []);
+  }, [eventosLista]);
+
 
   const cells = useMemo(() => {
     if (view === "mes") {
