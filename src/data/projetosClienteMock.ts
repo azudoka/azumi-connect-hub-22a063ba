@@ -106,53 +106,6 @@ export const PROJETOS_MOCK: ProjetoCliente[] = [
       },
     ],
   },
-];
-
-export const CRONOGRAMAS_MOCK: CronogramaCliente[] = [
-  {
-    id: "cron-001",
-    codigo: "CRON-2026-0003",
-    nome: "Programa de Liderança 2026",
-    empresaId: "kentaki",
-    consultor: "Ana Beatriz",
-    enviadoEm: DAYS_AGO(2),
-    alteracoesUsadas: 0,
-    status: "aguardando_aprovacao_cliente",
-    entregaveis: [
-      {
-        id: "cent-001",
-        nome: "Kick-off e diagnóstico de lideranças",
-        frente: "Liderança",
-        complexidade: "C1",
-        prazo: DAYS_AHEAD(10),
-        tempoEstimado: "8h",
-      },
-      {
-        id: "cent-002",
-        nome: "Entrevistas com líderes-chave",
-        frente: "Liderança",
-        complexidade: "C1",
-        prazo: DAYS_AHEAD(18),
-        tempoEstimado: "12h",
-      },
-      {
-        id: "cent-003",
-        nome: "Trilha de desenvolvimento — desenho",
-        frente: "Liderança",
-        complexidade: "C2",
-        prazo: DAYS_AHEAD(30),
-        tempoEstimado: "20h",
-      },
-      {
-        id: "cent-004",
-        nome: "Plano de mentoria e PDI",
-        frente: "Liderança",
-        complexidade: "C2",
-        prazo: DAYS_AHEAD(45),
-        tempoEstimado: "16h",
-      },
-    ],
-  },
   {
     id: "proj-valore-1",
     codigo: "PROJ-2026-VAL01",
@@ -201,3 +154,51 @@ export const CRONOGRAMAS_MOCK: CronogramaCliente[] = [
     ],
   },
 ];
+
+
+export const CRONOGRAMAS_MOCK: CronogramaCliente[] = [
+  {
+    id: "cron-001",
+    codigo: "CRON-2026-0003",
+    nome: "Programa de Liderança 2026",
+    empresaId: "kentaki",
+    consultor: "Ana Beatriz",
+    enviadoEm: DAYS_AGO(2),
+    alteracoesUsadas: 0,
+    status: "aguardando_aprovacao_cliente",
+    entregaveis: [
+      {
+        id: "cent-001",
+        nome: "Kick-off e diagnóstico de lideranças",
+        frente: "Liderança",
+        complexidade: "C1",
+        prazo: DAYS_AHEAD(10),
+        tempoEstimado: "8h",
+      },
+      {
+        id: "cent-002",
+        nome: "Entrevistas com líderes-chave",
+        frente: "Liderança",
+        complexidade: "C1",
+        prazo: DAYS_AHEAD(18),
+        tempoEstimado: "12h",
+      },
+      {
+        id: "cent-003",
+        nome: "Trilha de desenvolvimento — desenho",
+        frente: "Liderança",
+        complexidade: "C2",
+        prazo: DAYS_AHEAD(30),
+        tempoEstimado: "20h",
+      },
+      {
+        id: "cent-004",
+        nome: "Plano de mentoria e PDI",
+        frente: "Liderança",
+        complexidade: "C2",
+        prazo: DAYS_AHEAD(45),
+        tempoEstimado: "16h",
+      },
+    ],
+];
+
