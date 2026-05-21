@@ -1428,6 +1428,14 @@ function MensagemChatCliente({
                  : "bg-secondary text-foreground rounded-bl-sm border border-border")}>
             {!isMe && <div className="text-[10px] font-semibold mb-0.5 text-primary">{mensagem.autor}</div>}
             <p className="break-words">{mensagem.texto}</p>
+            {mensagem.anexo && (
+              <div className={cn(
+                "mt-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs",
+                isMe ? "bg-primary-foreground/15" : "bg-background border border-border",
+              )}>
+                {mensagem.anexo.tipo === "link" ? "🔗" : "📎"} {mensagem.anexo.nome}
+              </div>
+            )}
             {mensagem.editadoEm && <span className="text-[9px] opacity-60 ml-1">· editado {mensagem.editadoEm}</span>}
             <div className={cn("text-[10px] font-data mt-1 text-right",
               isMe ? "text-primary-foreground/70" : "text-muted-foreground")}>
