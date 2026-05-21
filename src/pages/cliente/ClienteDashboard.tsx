@@ -167,31 +167,6 @@ const iconTone = {
   horas:    "bg-emerald-500/15 text-emerald-600",
 };
 
-function MiniCalendario({ eventos }: { eventos: Date[] }) {
-  const hoje = new Date();
-  const [mes, setMes] = useState(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
-
-  const diasSem = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-
-  const primeiroDia = new Date(mes.getFullYear(), mes.getMonth(), 1);
-  const ultimoDia = new Date(mes.getFullYear(), mes.getMonth() + 1, 0);
-  const offsetInicio = primeiroDia.getDay();
-
-  const totalCelulas = Math.ceil((ultimoDia.getDate() + offsetInicio) / 7) * 7;
-  const celulas = Array.from({ length: totalCelulas }, (_, i) => {
-    const dia = i - offsetInicio + 1;
-    return dia >= 1 && dia <= ultimoDia.getDate() ? dia : null;
-  });
-
-  const temEvento = (dia: number | null) => {
-    if (!dia) return false;
-    return eventos.some(
-      (e) =>
-        e.getFullYear() === mes.getFullYear() &&
-        e.getMonth() === mes.getMonth() &&
-        e.getDate() === dia,
-    );
-  };
 
 function MiniCalendario({ eventos }: { eventos: EventoAgendado[] }) {
   const hoje = new Date();
