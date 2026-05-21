@@ -8,7 +8,7 @@ type Profile = "lider" | "colaborador" | "ceo";
 
 export function HubLayout({ profile }: { profile: Profile }) {
   const { usuario } = useAuth();
-  const isTrial = usuario?.role === "trial";
+  const semHub = usuario?.role === "trial" || usuario?.hubContratado === false;
 
   return (
     <div className="product-hub hub-light flex min-h-screen w-full bg-background text-foreground">
