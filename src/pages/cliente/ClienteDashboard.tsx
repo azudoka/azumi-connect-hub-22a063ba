@@ -55,11 +55,37 @@ const empresaLogos: Record<string, string> = {
 };
 
 // TODO: conectar Supabase — agendamentos do cliente
-const eventosAgendados = [
-  new Date(2026, 4, 21),
-  new Date(2026, 4, 23),
-  new Date(2026, 4, 28),
-  new Date(2026, 5, 3),
+type EventoTipo = "prazo" | "reuniao" | "entrevista" | "ferias" | "feriado" | "comunicado";
+
+const eventoTipoCor: Record<EventoTipo, string> = {
+  prazo: "#F97316",
+  reuniao: "#3B82F6",
+  entrevista: "#8B5CF6",
+  ferias: "#10B981",
+  feriado: "#EC4899",
+  comunicado: "#06B6D4",
+};
+const eventoTipoLabel: Record<EventoTipo, string> = {
+  prazo: "Prazo",
+  reuniao: "Reunião",
+  entrevista: "Entrevista",
+  ferias: "Férias",
+  feriado: "Feriado",
+  comunicado: "Comunicado",
+};
+
+interface EventoAgendado {
+  data: Date;
+  titulo: string;
+  tipo: EventoTipo;
+  hora?: string;
+}
+
+const eventosAgendados: EventoAgendado[] = [
+  { data: new Date(2026, 4, 21), titulo: "Feriado — Tiradentes", tipo: "feriado" },
+  { data: new Date(2026, 4, 23), titulo: "Reunião de alinhamento mensal", tipo: "reuniao", hora: "09:00" },
+  { data: new Date(2026, 4, 28), titulo: "Entrevista — Dev Pleno", tipo: "entrevista", hora: "14:30" },
+  { data: new Date(2026, 5, 3), titulo: "Prazo — Aprovação cronograma", tipo: "prazo" },
 ];
 
 // TODO: conectar Supabase — mapear "tipo" do projeto para ícone
