@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { cn } from "@/lib/utils";
 import { useProjetosClienteStore } from "@/data/useProjetosClienteStore";
+import { projetosDemo } from "@/data/mockDemoData";
+import type { ProjetoCliente, EntregavelStatus } from "@/data/projetosCliente";
 import { CronogramasTab } from "./CronogramasTab";
 
 type Aba = "projetos" | "cronogramas";
