@@ -187,6 +187,7 @@ function buildUsuario(cred: MockCred): Usuario {
     trialExpiraEm: cred.trialExpiraEm ?? null,
     avatarUrl: cred.avatarUrl ?? null,
     inativo: cred.inativo ?? false,
+    hubContratado: cred.hubContratado ?? false,
   };
 }
 
