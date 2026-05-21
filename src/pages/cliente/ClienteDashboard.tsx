@@ -518,14 +518,22 @@ export default function ClienteDashboard() {
                 <h3 className="font-display font-semibold text-sm">Agenda</h3>
               </div>
               <MiniCalendario eventos={eventosAgendados} />
-              <div className="space-y-1 mt-1">
+              <div className="space-y-1.5 mt-1">
                 {eventosAgendados
-                  .filter((e) => e >= new Date())
+                  .filter((e) => e.data >= new Date(new Date().setHours(0, 0, 0, 0)))
+                  .sort((a, b) => a.data.getTime() - b.data.getTime())
                   .slice(0, 3)
                   .map((e, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <CalendarDays className="h-3 w-3 text-primary shrink-0" />
-                      <span>{e.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</span>
+                    <div key={i} className="flex items-center gap-2 text-xs">
+                      <span
+                        className="h-2 w-2 rounded-full shrink-0"
+                        style={{ background: eventoTipoCor[e.tipo] }}
+                      />
+                      <span className="text-muted-foreground shrink-0">
+                        {e.data.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                        {e.hora ? ` · ${e.hora}` : ""}
+                      </span>
+                      <span className="truncate text-foreground">{e.titulo}</span>
                     </div>
                   ))}
               </div>
