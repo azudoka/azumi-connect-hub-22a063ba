@@ -285,6 +285,33 @@ const MOCK: Solicitacao[] = [
   },
 ];
 
+// Solicitações pré-carregadas para o perfil trial (Empresa Demo).
+const MOCK_DEMO: Solicitacao[] = [
+  {
+    id: "demo-s1", codigo: "SOL-DEMO-001", tipo: "duvida",
+    titulo: "Revisão de política de home office",
+    descricao: "Atualizar regras e elegibilidade.",
+    urgencia: "media", status: "andamento", empresaId: "empresa-demo",
+    consultor: "Ana Beatriz", criadaEm: "2026-05-05T09:00:00Z",
+  },
+  {
+    id: "demo-s2", codigo: "SOL-DEMO-002", tipo: "duvida",
+    titulo: "Mapeamento de cargos Q1",
+    descricao: "Mapeamento concluído e entregue.",
+    urgencia: "media", status: "finalizada", empresaId: "empresa-demo",
+    consultor: "Ana Beatriz", criadaEm: "2026-01-20T10:00:00Z",
+  },
+  {
+    id: "demo-s3", codigo: "SOL-DEMO-003", tipo: "endomarketing",
+    titulo: "Pesquisa de clima",
+    descricao: "Pausada a pedido do cliente.",
+    urgencia: "baixa", status: "cancelada", empresaId: "empresa-demo",
+    consultor: "Ana Beatriz", criadaEm: "2026-04-02T11:15:00Z",
+  },
+];
+
+
+
 
 // ============================================================================
 // Componente principal
@@ -297,11 +324,13 @@ const FORM_BASE = {
 export default function SolicitacoesClientePage() {
   const { user, usuario } = useAuth();
   const empresaId = user?.empresaId ?? "";
+  const isTrial = usuario?.role === "trial";
   const pacote = planoToPacote(usuario?.plano);
 
-  const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>(() =>
-    MOCK.filter((s) => (empresaId ? s.empresaId === empresaId : true)),
-  );
+  const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>(() => {
+    if (isTrial) return MOCK_DEMO;
+    return MOCK.filter((s) => (empresaId ? s.empresaId === empresaId : true));
+  });
   const [filtro, setFiltro] = useState<"todos" | StatusSolicitacao>("todos");
   const [filtroTipo, setFiltroTipo] = useState<"todos" | TipoSolicitacao>("todos");
   const [expandidos, setExpandidos] = useState<Record<string, boolean>>({});
@@ -419,16 +448,23 @@ export default function SolicitacoesClientePage() {
       setSolicitacoes((p) => [nova, ...p]);
       setTipoForm(null);
       setForm(FORM_BASE);
-      toast.success(`Solicitação criada — protocolo ${nova.codigo}`);
+      toast.success(
+        isTrial
+          ? "Solicitação criada! (dados de demonstração)"
+          : `Solicitação criada — protocolo ${nova.codigo}`,
+      );
     }
   }
 
   function confirmarComCusto() {
     if (!confirmCusto || !confirmCusto.cienteCusto) return;
     setSolicitacoes((p) => [confirmCusto.payload, ...p]);
-    toast.success(`Solicitação enviada — protocolo ${confirmCusto.payload.codigo}`, {
-      description: "Você será contatado para alinhar o custo adicional.",
-    });
+    toast.success(
+      isTrial
+        ? "Solicitação criada! (dados de demonstração)"
+        : `Solicitação enviada — protocolo ${confirmCusto.payload.codigo}`,
+      isTrial ? undefined : { description: "Você será contatado para alinhar o custo adicional." },
+    );
     setConfirmCusto(null);
     setTipoForm(null);
     setForm(FORM_BASE);
