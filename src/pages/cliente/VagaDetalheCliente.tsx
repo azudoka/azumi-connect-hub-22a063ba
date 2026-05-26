@@ -62,6 +62,7 @@ import {
   getParecerGestor,
   salvarParecerGestor,
   reprovadosNaPrimeiraLevaGestor,
+  criarAgendamentoEntrevistaCliente,
   type AgendamentoEntrevistaGestor,
   type SugestaoHorario,
   type ParecerGestor,
