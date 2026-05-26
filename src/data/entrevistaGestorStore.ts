@@ -16,6 +16,15 @@ export type StatusAgendamento =
 
 export type ModoEntrevista = "presencial" | "remoto";
 
+/**
+ * Tipo da entrevista agendada.
+ * - "gestor": entrevista do candidato com o gestor da área (Etapa 5).
+ * - "cliente_final": entrevista final do candidato com o cliente/decisor,
+ *   disparada automaticamente quando o cliente dá parecer "avançar"
+ *   após a entrevista com gestor.
+ */
+export type TipoAgendamento = "gestor" | "cliente_final";
+
 export interface SugestaoHorario {
   data: string; // yyyy-mm-dd
   hora: string; // HH:MM
@@ -34,6 +43,8 @@ export interface AgendamentoEntrevistaGestor {
   empresaNome: string;
   sugestoes: SugestaoHorario[];
   status: StatusAgendamento;
+  /** Tipo do agendamento. Default "gestor" para retrocompatibilidade. */
+  tipo?: TipoAgendamento;
   /** Definido após gestor aprovar/sugerir e/ou candidato confirmar. */
   escolhido?: SugestaoHorario;
   /** Comentário do gestor quando "Sugerir outro horário". */
@@ -399,4 +410,71 @@ export function statusAgendamentoLabel(s: StatusAgendamento): string {
     case "candidato_recusou":
       return "Candidato pediu outro horário";
   }
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Entrevista final com o cliente (auto-disparada após parecer "avançar")
+// ────────────────────────────────────────────────────────────────────
+
+/**
+ * Cria um agendamento de "entrevista final com o cliente/decisor".
+ * Disparado automaticamente quando o cliente avalia a entrevista com o
+ * gestor e decide "avançar". Fica em status `aguardando_resposta_gestor`
+ * (reaproveitando o estado) até a consultora propor horários.
+ *
+ * Idempotente: se já existir um agendamento "cliente_final" para o
+ * candidato, retorna o existente sem duplicar.
+ */
+export function criarAgendamentoEntrevistaCliente(input: {
+  vagaId: string;
+  candidatoId: string;
+  candidatoNome: string;
+  candidatoEmail?: string;
+  empresaNome: string;
+  gestorNome?: string; // decisor/RH do cliente
+}): AgendamentoEntrevistaGestor {
+  // Idempotência
+  const existente = Object.values(listarAgendamentos()).find(
+    (a) => a.candidatoId === input.candidatoId && a.tipo === "cliente_final"
+  );
+  if (existente) return existente;
+
+  const id = `agcli-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const agora = new Date().toISOString();
+  const ag: AgendamentoEntrevistaGestor = {
+    id,
+    vagaId: input.vagaId,
+    candidatoId: input.candidatoId,
+    candidatoNome: input.candidatoNome,
+    candidatoEmail: input.candidatoEmail ?? "",
+    gestorId: "cliente-final",
+    gestorNome: input.gestorNome ?? "Decisor do cliente",
+    empresaNome: input.empresaNome,
+    sugestoes: [],
+    status: "aguardando_resposta_gestor",
+    tipo: "cliente_final",
+    criadoEm: agora,
+    atualizadoEm: agora,
+    historico: [
+      {
+        quando: agora,
+        ator: "sistema",
+        texto:
+          "Entrevista final com o cliente solicitada automaticamente após parecer 'Avançar'. Aguardando consultora propor horários.",
+      },
+    ],
+  };
+  persistirAgendamento(ag);
+  return ag;
+}
+
+/** Retorna o agendamento de entrevista final do candidato, se existir. */
+export function getEntrevistaClienteDoCandidato(
+  candidatoId: string
+): AgendamentoEntrevistaGestor | null {
+  return (
+    Object.values(listarAgendamentos()).find(
+      (a) => a.candidatoId === candidatoId && a.tipo === "cliente_final"
+    ) ?? null
+  );
 }
