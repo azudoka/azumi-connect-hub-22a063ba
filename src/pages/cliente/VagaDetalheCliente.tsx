@@ -983,10 +983,26 @@ function ParecerEntrevistaModal({
     };
     salvarParecerCliente(parecer);
 
+    // Auto-agendamento: parecer "avançar" → cria entrevista final com o cliente.
+    let agendouEntrevistaCliente = false;
+    if (compareceu === "sim" && decisao === "avancar" && cand) {
+      const vagaInfo = vagas.find((v) => v.id === vagaId);
+      criarAgendamentoEntrevistaCliente({
+        vagaId,
+        candidatoId,
+        candidatoNome: cand.nome,
+        candidatoEmail: (cand as { email?: string }).email,
+        empresaNome: vagaInfo?.empresa ?? "Cliente",
+      });
+      agendouEntrevistaCliente = true;
+    }
+
     if (compareceu === "nao" && remarcar === "sim") {
       toast.success("Solicitação de remarcação enviada à consultora.");
     } else if (compareceu === "nao") {
       toast.warning("Candidato marcado como não compareceu.");
+    } else if (agendouEntrevistaCliente) {
+      toast.success("Parecer registrado. Entrevista final solicitada — a consultora irá propor horários para você confirmar.");
     } else {
       toast.success("Parecer registrado com sucesso.");
     }
