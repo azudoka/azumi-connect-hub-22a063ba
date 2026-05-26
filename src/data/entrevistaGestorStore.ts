@@ -411,3 +411,70 @@ export function statusAgendamentoLabel(s: StatusAgendamento): string {
       return "Candidato pediu outro horário";
   }
 }
+
+// ────────────────────────────────────────────────────────────────────
+// Entrevista final com o cliente (auto-disparada após parecer "avançar")
+// ────────────────────────────────────────────────────────────────────
+
+/**
+ * Cria um agendamento de "entrevista final com o cliente/decisor".
+ * Disparado automaticamente quando o cliente avalia a entrevista com o
+ * gestor e decide "avançar". Fica em status `aguardando_resposta_gestor`
+ * (reaproveitando o estado) até a consultora propor horários.
+ *
+ * Idempotente: se já existir um agendamento "cliente_final" para o
+ * candidato, retorna o existente sem duplicar.
+ */
+export function criarAgendamentoEntrevistaCliente(input: {
+  vagaId: string;
+  candidatoId: string;
+  candidatoNome: string;
+  candidatoEmail?: string;
+  empresaNome: string;
+  gestorNome?: string; // decisor/RH do cliente
+}): AgendamentoEntrevistaGestor {
+  // Idempotência
+  const existente = Object.values(listarAgendamentos()).find(
+    (a) => a.candidatoId === input.candidatoId && a.tipo === "cliente_final"
+  );
+  if (existente) return existente;
+
+  const id = `agcli-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const agora = new Date().toISOString();
+  const ag: AgendamentoEntrevistaGestor = {
+    id,
+    vagaId: input.vagaId,
+    candidatoId: input.candidatoId,
+    candidatoNome: input.candidatoNome,
+    candidatoEmail: input.candidatoEmail ?? "",
+    gestorId: "cliente-final",
+    gestorNome: input.gestorNome ?? "Decisor do cliente",
+    empresaNome: input.empresaNome,
+    sugestoes: [],
+    status: "aguardando_resposta_gestor",
+    tipo: "cliente_final",
+    criadoEm: agora,
+    atualizadoEm: agora,
+    historico: [
+      {
+        quando: agora,
+        ator: "sistema",
+        texto:
+          "Entrevista final com o cliente solicitada automaticamente após parecer 'Avançar'. Aguardando consultora propor horários.",
+      },
+    ],
+  };
+  persistirAgendamento(ag);
+  return ag;
+}
+
+/** Retorna o agendamento de entrevista final do candidato, se existir. */
+export function getEntrevistaClienteDoCandidato(
+  candidatoId: string
+): AgendamentoEntrevistaGestor | null {
+  return (
+    Object.values(listarAgendamentos()).find(
+      (a) => a.candidatoId === candidatoId && a.tipo === "cliente_final"
+    ) ?? null
+  );
+}
