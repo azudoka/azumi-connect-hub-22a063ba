@@ -43,6 +43,8 @@ export interface AgendamentoEntrevistaGestor {
   empresaNome: string;
   sugestoes: SugestaoHorario[];
   status: StatusAgendamento;
+  /** Tipo do agendamento. Default "gestor" para retrocompatibilidade. */
+  tipo?: TipoAgendamento;
   /** Definido após gestor aprovar/sugerir e/ou candidato confirmar. */
   escolhido?: SugestaoHorario;
   /** Comentário do gestor quando "Sugerir outro horário". */
