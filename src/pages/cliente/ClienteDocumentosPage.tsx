@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { assinar, isAssinado, listarAssinados, subscribeAssinaturas } from "@/data/assinaturasStore";
+import { assinar, listarAssinados, subscribeAssinaturas } from "@/data/assinaturasStore";
 import {
   FileText, FileCheck, BookOpen, Workflow, ExternalLink, MessageSquare,
   PenLine, FolderOpen, Check, Send,
