@@ -1,5 +1,7 @@
 import { PageHeader } from "@/components/PageHeader";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { assinar as persistirAssinatura, listarAssinados, subscribeAssinaturas } from "@/data/assinaturasStore";
 import { politicasMock, type PoliticaCategoria, type PoliticaHub, type PoliticaStatus } from "@/data/hubMock";
 import { HubModal } from "@/components/hub/HubModal";
 import { FileText, Eye, CheckCircle2, AlertCircle, Filter } from "lucide-react";
@@ -23,8 +25,29 @@ const statusBadge: Record<PoliticaStatus, { label: string; cls: string; icon: an
 };
 
 export default function PoliticasColabPage() {
+  const { user } = useAuth();
+  const userId = user?.id ?? "anon";
   const [filtro, setFiltro] = useState<"Todas" | PoliticaCategoria>("Todas");
-  const [politicas, setPoliticas] = useState<PoliticaHub[]>(politicasMock);
+  const [assinadasIds, setAssinadasIds] = useState<Set<string>>(() =>
+    listarAssinados("hub-politica", userId),
+  );
+
+  useEffect(() => {
+    setAssinadasIds(listarAssinados("hub-politica", userId));
+    return subscribeAssinaturas(() =>
+      setAssinadasIds(listarAssinados("hub-politica", userId)),
+    );
+  }, [userId]);
+
+  const politicas: PoliticaHub[] = useMemo(
+    () =>
+      politicasMock.map((p) =>
+        assinadasIds.has(p.id)
+          ? { ...p, status: "assinada", assinaturas: Math.min(p.total, p.assinaturas + 1) }
+          : p,
+      ),
+    [assinadasIds],
+  );
   const [aberta, setAberta] = useState<PoliticaHub | null>(null);
 
   const lista = useMemo(
@@ -33,16 +56,12 @@ export default function PoliticasColabPage() {
   );
 
   function assinar(id: string) {
-    setPoliticas((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, status: "assinada", assinaturas: Math.min(p.total, p.assinaturas + 1) }
-          : p
-      )
-    );
+    persistirAssinatura("hub-politica", userId, id);
+    setAssinadasIds((prev) => new Set(prev).add(id));
     setAberta((prev) => (prev ? { ...prev, status: "assinada" } : prev));
     toast.success("Ciência registrada com sucesso!");
   }
+
 
   return (
     <div>
