@@ -74,7 +74,7 @@ export default function ClienteDocumentosPage() {
   const [viewerDoc, setViewerDoc] = useState<DocumentoMock | null>(null);
   const [chatDoc, setChatDoc] = useState<DocumentoMock | null>(null);
   const [assinarDoc, setAssinarDoc] = useState<DocumentoMock | null>(null);
-  const userId = user?.id ?? user?.email ?? "anon";
+  const userId = user?.id ?? "anon";
   const [assinados, setAssinados] = useState<Set<string>>(() =>
     listarAssinados("cliente-doc", userId),
   );
