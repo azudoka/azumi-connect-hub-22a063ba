@@ -184,6 +184,7 @@ function AdminDashboard() {
   const navigate = useNavigate();
   const { pode } = usePermissao();
   const { ocultar } = useValorFinanceiro();
+  const { usuario } = useAuth();
   const now = useMemo(() => new Date(), []);
   const saudacao = getSaudacao(now.getHours());
   const dataFormatada = useMemo(
