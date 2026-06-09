@@ -254,7 +254,7 @@ function AdminDashboard() {
   return (
     <div>
       <PageHeader
-        title={`${saudacao}, Ana 👋`}
+        title={`${saudacao}, ${(usuario?.nome ?? "").split(" ")[0] || "Azumi"} 👋`}
         subtitle={dataCapitalizada}
       />
 
