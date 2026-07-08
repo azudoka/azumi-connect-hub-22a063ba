@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 import type { ReactElement } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -14,9 +14,12 @@ import type { ReactNode } from "react";
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { HubLayout } from "@/components/layout/HubLayout";
+import PortalLayout from "@/layouts/PortalLayout";
 
-// Rotas /portal/* foram removidas — arquivos em src/pages/portal/ e src/layouts/PortalLayout.tsx
-// permanecem no disco mas não são mais montados em nenhuma rota.
+import PortalDashboard from "./pages/portal/PortalDashboard";
+// PortalProjetos, PortalProjetoDetalhe e PortalFinanceiro foram descontinuados
+// como rotas — os arquivos permanecem no disco. As rotas /portal/* equivalentes
+// agora redirecionam para /cliente/* (caminho canônico do cliente).
 
 import Login from "./pages/auth/Login";
 import SelecaoPerfil from "./pages/auth/SelecaoPerfil";
@@ -61,8 +64,6 @@ import ClienteGestaoContaPage from "./pages/cliente/ClienteGestaoContaPage";
 import ClienteHubIndisponivelPage from "./pages/cliente/ClienteHubIndisponivelPage";
 import VagaDetalheCliente from "./pages/cliente/VagaDetalheCliente";
 import ConfirmarEntrevistaPage from "./pages/public/ConfirmarEntrevistaPage";
-import VagasPublicasPage from "./pages/VagasPublicasPage";
-import VagaPublicaDetalhePage from "./pages/VagaPublicaDetalhePage";
 
 import LiderPainelPage from "./pages/hub/lider/LiderPainelPage";
 import MeuTimePage from "./pages/hub/lider/MeuTimePage";
@@ -112,7 +113,8 @@ function PrivateRoute({
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (!allowed.includes(user.papel)) {
-    const home = user.papel === "cliente" ? "/cliente/dashboard" : "/app/dashboard";
+    const clienteRoles = ["cliente", "cliente_avulso", "trial"];
+    const home = clienteRoles.includes(user.papel) ? "/cliente/dashboard" : "/app/dashboard";
     return <Navigate to={home} replace />;
   }
   return children;
@@ -128,24 +130,28 @@ function RootRedirect() {
   const { usuario } = useAuth();
   if (!usuario) return <Navigate to="/login" replace />;
   const mapa: Record<string, string> = {
-    admin:         "/app/dashboard",
-    consultor:     "/app/dashboard",
-    rh:            "/app/dashboard",
-    rh_operacional:"/app/dashboard",
-    cliente:       "/cliente/dashboard",
-    cliente_avulso:"/cliente/dashboard",
-    trial:         "/cliente/dashboard",
-    colaborador:   "/hub/colaborador/inicio",
-    lider:         "/hub/lider/painel",
-    ceo:           "/hub/ceo/dashboard",
-    dp:            "/hub/dp/inicio",
-    contador:      "/hub/contabilidade/inicio",
-    juridico:      "/hub/juridico/inicio",
+    admin:          "/app/dashboard",
+    consultor:      "/app/dashboard",
+    rh:             "/app/dashboard",
+    rh_operacional: "/app/dashboard",
+    cliente:        "/cliente/dashboard",
+    cliente_avulso: "/cliente/dashboard",
+    trial:          "/cliente/dashboard",
+    colaborador:    "/hub/colaborador/inicio",
+    lider:          "/hub/lider/painel",
+    ceo:            "/hub/ceo/dashboard",
+    dp:             "/hub/dp/inicio",
+    contador:       "/hub/contabilidade/inicio",
+    juridico:       "/hub/juridico/inicio",
   };
   return <Navigate to={mapa[usuario.role] ?? "/login"} replace />;
 }
 
-
+// Redireciona /portal/projetos/:id → /cliente/projetos/:id preservando o id
+function PortalProjetoRedirect() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`/cliente/projetos/${id ?? ""}`} replace />;
+}
 
 const AppRoutes = () => (
   <Routes>
@@ -153,8 +159,6 @@ const AppRoutes = () => (
     <Route path="/login" element={<Login />} />
     <Route path="/selecao-perfil" element={<SelecaoPerfil />} />
     <Route path="/confirmar-entrevista/:agendamentoId" element={<ConfirmarEntrevistaPage />} />
-    <Route path="/vagas" element={<VagasPublicasPage />} />
-    <Route path="/vagas/:id" element={<VagaPublicaDetalhePage />} />
 
     {/* Admin / Consultor */}
     <Route
@@ -191,7 +195,7 @@ const AppRoutes = () => (
       <Route path="/app/perfil" element={<PerfilPage />} />
     </Route>
 
-    {/* Cliente ADM (mantido) */}
+    {/* Cliente ADM + Avulso + Trial */}
     <Route
       element={
         <PrivateRoute allowed={["cliente", "cliente_avulso", "trial"]}>
@@ -240,7 +244,7 @@ const AppRoutes = () => (
 
     {/* Hub Colaborador (cliente liberado em ambiente demo) */}
     <Route element={
-      <PrivateRoute allowed={["colaborador", "lider", "rh", "admin", "cliente", "trial"]}>
+      <PrivateRoute allowed={["colaborador", "lider", "rh", "admin", "cliente"]}>
         <HubLayout profile="colaborador" />
       </PrivateRoute>
     }>
@@ -332,7 +336,19 @@ const AppRoutes = () => (
       <Route path="/app/relatorios/:id/documento" element={<RelatorioDocumentoPage />} />
     </Route>
 
-    {/* Rotas /portal/* foram descontinuadas — todo cliente usa /cliente/* */}
+    {/* Portal do Cliente */}
+    <Route
+      element={
+        <PrivateRoute allowed={["cliente", "admin"]}>
+          <PortalLayout />
+        </PrivateRoute>
+      }
+    >
+      <Route path="/portal" element={<PortalDashboard />} />
+      <Route path="/portal/projetos" element={<Navigate to="/cliente/projetos" replace />} />
+      <Route path="/portal/projetos/:id" element={<PortalProjetoRedirect />} />
+      <Route path="/portal/financeiro" element={<Navigate to="/cliente/gestao-conta" replace />} />
+    </Route>
 
     <Route path="*" element={<NotFound />} />
   </Routes>

@@ -13,6 +13,7 @@ export default function Login() {
     consultor:      "/app/dashboard",
     cliente:        "/cliente/dashboard",
     cliente_avulso: "/cliente/dashboard",
+    trial:          "/cliente/dashboard",
     rh:             "/hub/colaborador/inicio",
     rh_operacional: "/hub/colaborador/inicio",
     rhoperacional:  "/hub/colaborador/inicio",
@@ -22,9 +23,7 @@ export default function Login() {
     dp:             "/hub/colaborador/inicio",
     contador:       "/hub/colaborador/inicio",
     juridico:       "/hub/colaborador/inicio",
-    trial:          "/cliente/dashboard",
   };
-
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [loading, setLoading] = useState(false);
@@ -104,13 +103,7 @@ export default function Login() {
           <div>
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium text-muted-foreground">Senha</label>
-              <button
-                type="button"
-                onClick={() => alert("Recuperação de senha estará disponível em breve. Por enquanto, fale com seu consultor Azumi.")}
-                className="text-xs text-primary hover:underline"
-              >
-                Esqueci minha senha
-              </button>
+              <button type="button" onClick={() => alert("Recuperação de senha — em breve.")} className="text-xs text-primary hover:underline">Esqueci minha senha</button>
             </div>
             <div className="mt-1.5 relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -147,11 +140,7 @@ export default function Login() {
           </button>
 
           <div className="text-center">
-            <button
-              type="button"
-              onClick={() => alert("SSO corporativo estará disponível em breve.")}
-              className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-            >
+            <button type="button" onClick={() => alert("Acesso SSO — em breve.")} className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
               <Sparkles className="h-3 w-3" />
               Acesso SSO da empresa
             </button>
@@ -159,10 +148,7 @@ export default function Login() {
         </form>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Ao continuar você concorda com os{" "}
-          <a href="#" onClick={(e) => { e.preventDefault(); alert("Termos de uso em finalização."); }} className="text-primary hover:underline cursor-pointer">termos</a>{" "}
-          e a{" "}
-          <a href="#" onClick={(e) => { e.preventDefault(); alert("Política de privacidade em finalização."); }} className="text-primary hover:underline cursor-pointer">política de privacidade</a>.
+          Ao continuar você concorda com os <a className="text-primary hover:underline">termos</a> e a <a className="text-primary hover:underline">política de privacidade</a>.
         </p>
       </div>
 

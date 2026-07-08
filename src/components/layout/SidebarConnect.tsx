@@ -3,20 +3,22 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Building2, Users, Briefcase, Clock, MessagesSquare, Target,
-  BarChart3, CreditCard, Receipt, FileText, ShieldCheck, Calendar, Megaphone, BookOpen,
-  Settings, ExternalLink, Mail, Phone
+  BarChart3, Wallet, FileText, ShieldCheck, Calendar, Megaphone, BookOpen,
+  Settings, LogOut, ChevronLeft, Sparkles, UserCog, Heart,
+  ExternalLink, Mail, Phone
 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { usePermissao, type Permissao } from "@/config/permissoes";
 import { empresasMockById } from "@/data/mockEmpresas";
+import { usePermissao, type Permissao } from "@/config/permissoes";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AzumiLogo } from "@/components/brand/AzumiLogo";
 
 interface SidebarConnectProps {
   variant?: "admin" | "cliente";
 }
 
+// Mapa de permissões exigidas por rota. Itens sem entrada aqui ficam sempre visíveis.
 const PERMISSAO_POR_ROTA: Record<string, Permissao> = {
   "/app/financeiro": "financeiro.ver_valores",
   "/app/gestao-de-conta": "gestao_conta.relatorio",
@@ -53,8 +55,8 @@ const adminGroups = [
     label: "Gestão",
     items: [
       { to: "/app/clientes", icon: Building2, label: "Clientes" },
-      { to: "/app/financeiro", icon: CreditCard, label: "Financeiro" },
-      { to: "/app/gestao-de-conta", icon: Receipt, label: "Gestão de Conta" },
+      { to: "/app/financeiro", icon: Wallet, label: "Financeiro" },
+      { to: "/app/gestao-de-conta", icon: Wallet, label: "Gestão de Conta" },
       { to: "/app/relatorios", icon: BarChart3, label: "Relatórios" },
       { to: "/app/documentos", icon: FileText, label: "Documentos" },
       { to: "/app/auditoria", icon: ShieldCheck, label: "Auditoria" },
@@ -88,7 +90,7 @@ const clienteGroups = [
   {
     label: "Gestão",
     items: [
-      { to: "/cliente/gestao-conta", icon: Receipt, label: "Gestão de Conta" },
+      { to: "/cliente/gestao-conta", icon: Wallet, label: "Gestão de Conta" },
       { to: "/cliente/documentos", icon: FileText, label: "Documentos" },
     ],
   },
@@ -102,77 +104,30 @@ const clienteGroups = [
   },
 ];
 
-/* ─── Tooltip com position:fixed via portal — escapa de overflow:auto ─── */
-function NavTooltip({ label, children }: { label: string; children: React.ReactNode }) {
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
-  const ref = useRef<HTMLSpanElement | null>(null);
-  const show = () => {
-    const r = ref.current?.getBoundingClientRect();
-    if (r) setPos({ x: r.right + 8, y: r.top + r.height / 2 });
-  };
-  const hide = () => setPos(null);
-  return (
-    <>
-      <span
-        ref={ref}
-        onMouseEnter={show}
-        onMouseLeave={hide}
-        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
-      >
-        {children}
-      </span>
-      {pos && createPortal(
-        <div
-          style={{
-            position: "fixed",
-            left: pos.x,
-            top: pos.y,
-            transform: "translateY(-50%)",
-            background: "#EDE9FE",
-            color: "#031D38",
-            fontSize: 12,
-            fontWeight: 500,
-            padding: "4px 10px",
-            borderRadius: 6,
-            whiteSpace: "nowrap",
-            border: "1px solid #DDD6FE",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
-            fontFamily: "'Urbanist',sans-serif",
-            zIndex: 9999,
-            pointerEvents: "none",
-          }}
-        >
-          {label}
-        </div>,
-        document.body
-      )}
-    </>
-  );
-}
-
-
 export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
-  const { user, usuario } = useAuth();
+  const { logout, user, usuario } = useAuth();
+  const empresaInfo = usuario?.empresaId ? empresasMockById[usuario.empresaId] : null;
+  const consultorNome = empresaInfo?.consultor ?? "Ana Beatriz";
+  const consultorIniciais = empresaInfo?.consultorIniciais ?? "AB";
+  const consultorEmail = empresaInfo?.consultorEmail ?? "ana.beatriz@azumirh.com.br";
   const { pode } = usePermissao();
-  const [consultorOpen, setConsultorOpen] = useState(false);
-
-  // Consultor responsável pela empresa do cliente logado (fallback Ana Beatriz)
-  const consultorEmpresa = (user?.empresaId && empresasMockById[user.empresaId]?.consultor) || {
-    nome: "Ana Beatriz",
-    email: "ana.beatriz@azumi.com.br",
+  const papelLabel =
+    user?.papel === "admin"
+      ? "Administrador"
+      : user?.papel === "consultor"
+      ? "Consultor"
+      : user?.papel === "cliente"
+      ? "Cliente"
+      : "";
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
   };
-  const consultorIniciais = consultorEmpresa.nome
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0])
-    .join("")
-    .toUpperCase();
-
-
+  const [consultorOpen, setConsultorOpen] = useState(false);
   const groupsBase = variant === "admin" ? adminGroups : clienteGroups;
+  // Filtra itens cuja rota exige permissão que o usuário não possui.
   const groups = groupsBase
     .map((g) => ({
       ...g,
@@ -183,56 +138,24 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
     }))
     .filter((g) => g.items.length > 0);
 
-  /* Auto-colapso após 10s de inatividade */
-  const inactivityRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const resetInactivity = () => {
-    if (inactivityRef.current) clearTimeout(inactivityRef.current);
-    inactivityRef.current = setTimeout(() => setCollapsed(true), 10000);
-  };
-  useEffect(() => {
-    resetInactivity();
-    window.addEventListener("mousemove", resetInactivity);
-    window.addEventListener("keydown", resetInactivity);
-    return () => {
-      if (inactivityRef.current) clearTimeout(inactivityRef.current);
-      window.removeEventListener("mousemove", resetInactivity);
-      window.removeEventListener("keydown", resetInactivity);
-    };
-  }, []);
-
-  const configHref = variant === "cliente" ? "/cliente/gestao-conta" : "/app/configuracoes";
-
   return (
     <aside
-      onClick={() => { if (collapsed) setCollapsed(false); }}
-      className={cn(collapsed ? "" : "bg-gradient-sidebar")}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        flexShrink: 0,
-        width: collapsed ? 64 : 240,
-        transition: "width 0.3s ease",
-        borderRight: "1px solid hsl(var(--sidebar-border))",
-        background: collapsed ? "#EDE9FE" : undefined,
-        cursor: collapsed ? "pointer" : "default",
-        height: "100svh",
-        position: "sticky",
-        top: 0,
-      }}
+      className={cn(
+        "flex flex-col shrink-0 border-r border-sidebar-border bg-gradient-sidebar transition-all duration-300",
+        collapsed ? "w-16" : "w-60"
+      )}
       aria-label="Navegação principal"
     >
       {/* Logo */}
-      <div style={{ height: 64, display: "flex", alignItems: "center", padding: "0 16px", borderBottom: "1px solid hsl(var(--sidebar-border) / 0.6)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: collapsed ? 0 : 8 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#031D38,#8B5CF6)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{ color: "white", fontSize: 13, fontWeight: 800, fontFamily: "'Urbanist',sans-serif" }}>A</span>
-          </div>
-          {!collapsed && (
-            <span style={{ fontSize: 16, fontWeight: 800, color: "#031D38", fontFamily: "'Urbanist',sans-serif", letterSpacing: "-0.03em" }}>
-              Connect
-            </span>
-          )}
-        </div>
+      <div className="h-16 flex items-center px-4 border-b border-sidebar-border/60">
+        <AzumiLogo product="Connect" collapsed={collapsed} />
+        <button
+          onClick={() => setCollapsed((c) => !c)}
+          className="ml-auto h-7 w-7 rounded-md hover:bg-sidebar-accent flex items-center justify-center text-muted-foreground"
+          aria-label={collapsed ? "Expandir" : "Colapsar"}
+        >
+          <ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
+        </button>
       </div>
 
       {/* Nav */}
@@ -247,103 +170,116 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
             <ul className="space-y-0.5">
               {g.items.map((it) => (
                 <li key={it.to}>
-                  {collapsed ? (
-                    <NavLink
-                      to={it.to}
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center justify-center w-full py-2.5 hover:bg-[#DDD6FE] transition-colors rounded-none"
-                      activeClassName="!bg-[#C4B5FD]"
-                    >
-                      <NavTooltip label={it.label}>
-                        <it.icon className="h-4 w-4 shrink-0 text-[#8B5CF6]" />
-                      </NavTooltip>
-                    </NavLink>
-                  ) : (
-                    <NavLink
-                      to={it.to}
-                      className="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                      activeClassName="!bg-primary/15 !text-foreground border-l-[3px] border-primary rounded-l-none ml-[3px]"
-                    >
-                      <it.icon className="h-4 w-4 shrink-0 text-[#8B5CF6]" />
-                      <span className="truncate" style={{ fontFamily: "'Urbanist',sans-serif" }}>{it.label}</span>
-                    </NavLink>
-                  )}
+                  <NavLink
+                    to={it.to}
+                    className={cn(
+                      "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors",
+                      collapsed && "justify-center px-0"
+                    )}
+                    activeClassName="!bg-primary/15 !text-foreground border-l-[3px] border-primary rounded-l-none ml-[3px]"
+                  >
+                    <it.icon className="h-4 w-4 shrink-0" />
+                    {!collapsed && <span className="truncate">{it.label}</span>}
+                  </NavLink>
                 </li>
               ))}
             </ul>
           </div>
         ))}
 
-        {/* Configurações */}
+        {variant === "admin" && (
+          <div>
+            {!collapsed && (
+              <div className="px-3 mb-1.5 flex items-center gap-2">
+                <Sparkles className="h-3 w-3 text-highlight" />
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-highlight">Hub</span>
+              </div>
+            )}
+            <ul className="space-y-0.5">
+              {[
+                { to: "/hub/lider/painel", icon: UserCog, label: "Meu Time (Líder)" },
+                { to: "/hub/colaborador/inicio", icon: Heart, label: "Colaborador" },
+                { to: "/hub/ceo/dashboard", icon: BarChart3, label: "CEO" },
+              ].map((it) => (
+                <li key={it.to}>
+                  <NavLink
+                    to={it.to}
+                    className={cn(
+                      "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors",
+                      collapsed && "justify-center px-0"
+                    )}
+                    activeClassName="!bg-primary/15 !text-foreground"
+                  >
+                    <it.icon className="h-4 w-4 shrink-0" />
+                    {!collapsed && <span className="truncate">{it.label}</span>}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Configurações — sempre no final */}
         <div className="pt-2 mt-2 border-t border-sidebar-border/60">
-          {collapsed ? (
-            <NavLink
-              to={configHref}
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center justify-center w-full py-2.5 hover:bg-[#DDD6FE] transition-colors rounded-none"
-              activeClassName="!bg-[#C4B5FD]"
-            >
-              <NavTooltip label="Configurações">
-                <Settings className="h-4 w-4 shrink-0 text-[#8B5CF6]" />
-              </NavTooltip>
-            </NavLink>
-          ) : (
-            <NavLink
-              to={configHref}
-              className="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              activeClassName="!bg-primary/15 !text-foreground"
-            >
-              <Settings className="h-4 w-4 shrink-0 text-[#8B5CF6]" />
-              <span className="truncate" style={{ fontFamily: "'Urbanist',sans-serif" }}>Configurações</span>
-            </NavLink>
-          )}
+          {(() => {
+            const configHref = variant === "cliente" ? "/cliente/gestao-conta" : "/app/configuracoes";
+            return (
+              <NavLink
+                to={configHref}
+                className={cn(
+                  "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors",
+                  collapsed && "justify-center px-0"
+                )}
+                activeClassName="!bg-primary/15 !text-foreground"
+              >
+                <Settings className="h-4 w-4 shrink-0" />
+                {!collapsed && <span className="truncate">Configurações</span>}
+              </NavLink>
+            );
+          })()}
 
           {pode("portal_cliente.acessar") && (
             <>
               <div className="my-2 h-px bg-sidebar-border/60" />
-              {collapsed ? (
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); navigate("/cliente/dashboard"); }}
-                  className="flex items-center justify-center w-full py-2.5 hover:bg-[#DDD6FE] transition-colors rounded-none border-0 bg-transparent cursor-pointer"
-                >
-                  <NavTooltip label="Portal do Cliente">
-                    <ExternalLink className="h-4 w-4 shrink-0 text-[#8B5CF6]" />
-                  </NavTooltip>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => navigate("/cliente/dashboard")}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                >
-                  <ExternalLink className="h-4 w-4 shrink-0 text-[#8B5CF6]" />
+              <button
+                type="button"
+                onClick={() => navigate("/portal")}
+                className={cn(
+                  "group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors",
+                  collapsed ? "justify-center px-0" : "text-xs text-muted-foreground"
+                )}
+                aria-label="Acessar Portal do Cliente"
+              >
+                <ExternalLink className="h-4 w-4 shrink-0" />
+                {!collapsed && (
                   <span className="truncate">Acessar Portal do Cliente</span>
-                </button>
-              )}
+                )}
+              </button>
             </>
           )}
         </div>
       </nav>
 
-      {/* Footer */}
-      {!collapsed && (
-        <div className="p-3 border-t border-sidebar-border/60">
+      {/* Footer card */}
+      <div className="p-3 border-t border-sidebar-border/60">
+        {!collapsed ? (
           <div className="bg-card/60 backdrop-blur rounded-xl p-3 border border-border/60">
-            {(user?.papel === "cliente" || user?.papel === "trial" || user?.papel === "cliente_avulso") && (
+            {user?.papel === "cliente" && (
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className="h-9 w-9 rounded-lg bg-gradient-brand flex items-center justify-center text-xs font-semibold text-white">{consultorIniciais}</div>
+                  <div className="h-9 w-9 rounded-lg bg-gradient-brand flex items-center justify-center text-xs font-semibold text-white">
+                    {consultorIniciais}
+                  </div>
                   <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-card animate-soft-pulse" />
                 </div>
                 <div className="min-w-0">
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Seu consultor Azumi</div>
-                  <div className="text-sm font-medium truncate">{consultorEmpresa.nome}</div>
+                  <div className="text-sm font-medium truncate">{consultorNome}</div>
                 </div>
               </div>
             )}
-            <div className={cn("flex items-center gap-2", (user?.papel === "cliente" || user?.papel === "trial" || user?.papel === "cliente_avulso") && "mt-3")}>
-              {(user?.papel === "cliente" || user?.papel === "trial" || user?.papel === "cliente_avulso") && (
+            <div className={cn("flex items-center gap-2", user?.papel === "cliente" && "mt-3")}>
+              {user?.papel === "cliente" ? (
                 <button
                   type="button"
                   onClick={() => setConsultorOpen(true)}
@@ -351,11 +287,39 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
                 >
                   <Mail className="h-3.5 w-3.5" /> Falar com consultor
                 </button>
+              ) : (
+                <NavLink to="/app/configuracoes" className="flex-1 text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 px-2 py-1.5 rounded-md hover:bg-secondary">
+                  <Settings className="h-3.5 w-3.5" /> Config.
+                </NavLink>
               )}
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1.5 px-2 py-1.5 rounded-md hover:bg-secondary"
+              >
+                <LogOut className="h-3.5 w-3.5" /> Sair
+              </button>
             </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            {user?.papel === "cliente" && (
+              <div className="relative">
+                <div className="h-8 w-8 rounded-lg bg-gradient-brand flex items-center justify-center text-[10px] font-semibold text-white">{consultorIniciais}</div>
+                <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-success ring-2 ring-sidebar" />
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleLogout}
+              aria-label="Sair"
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+      </div>
 
       <Dialog open={consultorOpen} onOpenChange={setConsultorOpen}>
         <DialogContent>
@@ -366,12 +330,12 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
           <div className="flex items-center gap-3 mt-2">
             <div className="h-12 w-12 rounded-lg bg-gradient-brand flex items-center justify-center text-sm font-semibold text-white">{consultorIniciais}</div>
             <div>
-              <div className="text-base font-semibold">{consultorEmpresa.nome}</div>
-              <div className="text-xs text-muted-foreground">Consultor(a) — Azumi</div>
+              <div className="text-base font-semibold">{consultorNome}</div>
+              <div className="text-xs text-muted-foreground">Consultor(a) — Azumi RH</div>
             </div>
           </div>
           <div className="space-y-2 text-sm mt-2">
-            <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" /> {consultorEmpresa.email}</div>
+            <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" /> {consultorEmail}</div>
             <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> (11) 98888-1234</div>
             <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-muted-foreground" /> Seg–Sex, 9h às 18h</div>
           </div>

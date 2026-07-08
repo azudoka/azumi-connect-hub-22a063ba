@@ -1,4 +1,4 @@
-import { Bell, Search, ChevronDown, AlertTriangle, ArrowRight, Eye, EyeOff, LogOut, User, Users, Settings, Sparkles, ArrowUp, Wrench } from "lucide-react";
+import { Bell, Search, ChevronDown, AlertTriangle, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useFinanceiro } from "@/context/FinanceiroContext";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
@@ -6,15 +6,6 @@ import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { consumoNotificacoes } from "@/data/mock";
 import { useAuth } from "@/context/AuthContext";
-import { UpgradePlanoModal } from "@/components/UpgradePlanoModal";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 
 interface HeaderProps {
   showSwitcher?: boolean;
@@ -23,19 +14,19 @@ interface HeaderProps {
 
 export function Header({ showSwitcher = true, context = "connect" }: HeaderProps) {
   const navigate = useNavigate();
-  const { user, usuario, logout } = useAuth();
+  const { user, usuario } = useAuth();
   const { visivel, toggle } = useFinanceiro();
   const [openNotif, setOpenNotif] = useState(false);
-  const [openUpgrade, setOpenUpgrade] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
-
 
   function switchContext() {
     if (context === "connect") {
+      // Cliente ADM: por enquanto, não tem Hub liberado (mock).
       if (user?.papel === "cliente") {
         navigate("/cliente/hub-indisponivel");
         return;
       }
+      // Roteamento por papel para perfis com Hub.
       const hubHomeByRole: Record<string, string> = {
         ceo: "/hub/ceo/dashboard",
         lider: "/hub/lider/painel",
@@ -49,11 +40,7 @@ export function Header({ showSwitcher = true, context = "connect" }: HeaderProps
     }
   }
 
-  function handleLogout() {
-    logout();
-    navigate("/login");
-  }
-
+  // fecha ao clicar fora
   useEffect(() => {
     function onDoc(e: MouseEvent) {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
@@ -64,6 +51,7 @@ export function Header({ showSwitcher = true, context = "connect" }: HeaderProps
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
+  // B08: link contextual conforme o tipo de usuário (admin/cliente)
   const isCliente = typeof window !== "undefined" && window.location.pathname.startsWith("/cliente");
   const linkFor = (empresaId: string) =>
     isCliente ? "/cliente/gestao-conta" : `/app/empresas/${empresaId}`;
@@ -73,31 +61,15 @@ export function Header({ showSwitcher = true, context = "connect" }: HeaderProps
   return (
     <header className="h-16 shrink-0 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-30">
       <div className="h-full flex items-center gap-3 px-6">
-        {/* Empresa do cliente logado */}
-        {(usuario?.role === "cliente" || usuario?.role === "cliente_avulso" || usuario?.role === "trial") && usuario?.empresaNome && (
-          <div
-            className="hidden md:flex items-center gap-2 h-9 px-3 rounded-lg border border-border bg-secondary/40"
-            style={{ fontFamily: "'Urbanist',sans-serif" }}
-          >
-            <div className="h-6 w-6 rounded bg-gradient-brand flex items-center justify-center text-[10px] font-bold text-white">
-              {usuario.empresaNome.slice(0, 2).toUpperCase()}
-            </div>
-            <span className="text-xs font-semibold text-foreground truncate max-w-[180px]">
-              {usuario.empresaNome}
-            </span>
-          </div>
-        )}
-        {/* Search (global em breve) */}
+        {/* Search — em breve */}
         <div className="flex-1 max-w-md relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
           <input
             type="search"
             disabled
-            title="Busca global estará disponível em breve"
             placeholder="Busca global — em breve"
-            className="w-full h-9 pl-9 pr-16 rounded-lg bg-secondary/60 border border-transparent outline-none text-sm placeholder:text-muted-foreground cursor-not-allowed opacity-70"
+            className="w-full h-9 pl-9 pr-4 rounded-lg bg-secondary/40 border border-transparent outline-none text-sm placeholder:text-muted-foreground/50 cursor-not-allowed opacity-60"
           />
-          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded border border-border bg-background text-[10px] font-data text-muted-foreground">⌘K</kbd>
         </div>
 
         <div className="ml-auto flex items-center gap-2">
@@ -121,54 +93,7 @@ export function Header({ showSwitcher = true, context = "connect" }: HeaderProps
             </button>
           )}
 
-          {(usuario?.role === "admin" || usuario?.role === "consultor") && (
-            <a
-              href="https://tools.azumirh.com.br/"
-              target="_blank"
-              rel="noreferrer"
-              style={{ display: "flex", alignItems: "center", gap: 5, height: 32, padding: "0 12px", borderRadius: 8, border: "1px solid #E4E6EA", background: "white", fontSize: 13, fontWeight: 600, color: "#374151", textDecoration: "none", fontFamily: "'Urbanist',sans-serif" }}
-            >
-              <Wrench size={13} /> Tools
-            </a>
-          )}
-
-          {/* Sair — portinha de saída da plataforma */}
-          <button
-            type="button"
-            onClick={handleLogout}
-            title="Sair da plataforma"
-            aria-label="Sair da plataforma"
-            className="h-9 w-9 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
-
-          {/* Botão de upgrade/conversão */}
-          {(() => {
-            const role = usuario?.role;
-            const plano = usuario?.plano;
-            if (role === "admin" || role === "consultor") return null;
-            let cfg: { bg: string; icon: typeof Sparkles; label: string } | null = null;
-            if (role === "trial") cfg = { bg: "#8B5CF6", icon: Sparkles, label: "Conheça os planos" };
-            else if (plano === "start") cfg = { bg: "#3B82F6", icon: ArrowUp, label: "Upgrade para Ongoing" };
-            else if (plano === "ongoing") cfg = { bg: "#031D38", icon: ArrowUp, label: "Upgrade para Growth" };
-            if (!cfg) return null;
-            const Icon = cfg.icon;
-            return (
-              <button
-                type="button"
-                onClick={() => setOpenUpgrade(true)}
-                className="h-9 px-3 rounded-lg flex items-center gap-1.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
-                style={{ background: cfg.bg, fontFamily: "'Urbanist',sans-serif" }}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                <span className="hidden md:inline">{cfg.label}</span>
-              </button>
-            );
-          })()}
-
-          {/* Sino de notificações */}
-
+          {/* B08: Sino com dropdown de notificações de consumo */}
           <div className="relative" ref={notifRef}>
             <button
               onClick={() => setOpenNotif((v) => !v)}
@@ -264,46 +189,24 @@ export function Header({ showSwitcher = true, context = "connect" }: HeaderProps
             {visivel ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
           </button>
 
-          {/* User dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 h-11 px-2 pr-3 rounded-lg hover:bg-secondary">
-                <div className="h-9 w-9 rounded-lg bg-gradient-brand flex items-center justify-center text-xs font-semibold text-white">
-                  {(usuario?.nome ?? "U").split(" ").filter(Boolean).slice(0,2).map(p => p[0]).join("").toUpperCase()}
-                </div>
-                <div className="text-left hidden sm:block">
-                  <div className="text-xs font-medium leading-tight truncate max-w-[140px]">{usuario?.nome ?? "Usuário"}</div>
-                  <div className="text-[10px] text-muted-foreground leading-tight capitalize">{usuario?.role ?? ""}</div>
-                </div>
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Configurações</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate("/app/configuracoes?tab=perfil")}>
-                <User className="h-4 w-4 mr-2" /> Meu perfil
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/app/configuracoes?tab=equipe")}>
-                <Users className="h-4 w-4 mr-2" /> Equipe
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/app/configuracoes?tab=sistema")}>
-                <Settings className="h-4 w-4 mr-2" /> Sistema
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
-                <LogOut className="h-4 w-4 mr-2" /> Sair
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <button className="flex items-center gap-2 h-9 px-2 pr-3 rounded-lg hover:bg-secondary">
+            <div className="h-7 w-7 rounded-lg bg-gradient-brand flex items-center justify-center text-[10px] font-semibold text-white">
+              {usuario?.nome
+                ? usuario.nome.split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]).join("").toUpperCase()
+                : "VC"}
+            </div>
+            <div className="text-left hidden sm:block">
+              <div className="text-xs font-medium leading-tight">{usuario?.nome?.split(" ")[0] ?? "Você"}</div>
+              <div className="text-[10px] text-muted-foreground leading-tight">
+                {usuario?.role === "admin" ? "Admin Azumi" :
+                 usuario?.role === "consultor" ? "Consultor Azumi" :
+                 usuario?.empresaNome ?? "Convidado"}
+              </div>
+            </div>
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
         </div>
       </div>
-      <UpgradePlanoModal
-        open={openUpgrade}
-        onClose={() => setOpenUpgrade(false)}
-        planoAtual={usuario?.plano ?? "trial"}
-      />
     </header>
   );
-
 }

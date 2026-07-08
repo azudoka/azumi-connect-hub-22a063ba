@@ -40,7 +40,7 @@ const perfis: PerfilItem[] = [
     label: "Cliente ADM",
     desc: "Visão da empresa contratante",
     icon: Building2,
-    to: "/cliente/dashboard",
+    to: "/portal",
     color: "text-highlight",
     auth: { id: "cliente-01", nome: "Kentaki Foods", papel: "cliente", empresaId: "kentaki" },
   },
@@ -49,14 +49,14 @@ const perfis: PerfilItem[] = [
     label: "Cliente Avulso",
     desc: "Empresa em projeto pontual",
     icon: Building2,
-    to: "/cliente/dashboard",
+    to: "/portal",
     color: "text-highlight",
     auth: { id: "cliente-02", nome: "Cliente Avulso", papel: "cliente", empresaId: "maverick" },
   },
-  { key: "ceo",   label: "CEO",         desc: "Indicadores estratégicos",       icon: Crown,             to: "/hub/ceo/dashboard",       color: "text-warning", auth: { id: "ceo-01",   nome: "Helena Martins", papel: "ceo",         empresaId: "kentaki" } },
-  { key: "lider", label: "Líder",       desc: "Gestão do time e feedback",      icon: BriefcaseBusiness, to: "/hub/lider/painel",        color: "text-info",    auth: { id: "lider-01", nome: "Rafael Costa",   papel: "lider",       empresaId: "kentaki" } },
-  { key: "colab", label: "Colaborador", desc: "Sua jornada na empresa",         icon: UserCircle2,       to: "/hub/colaborador/inicio",  color: "text-success", auth: { id: "colab-01", nome: "Marina Alves",   papel: "colaborador", empresaId: "kentaki" } },
-  { key: "rh",    label: "RH",          desc: "Operação de gente e cultura",    icon: Users,             to: "/hub/lider/painel",        color: "text-primary", auth: { id: "rh-01",    nome: "Patrícia Hub",   papel: "rh",          empresaId: "kentaki" } },
+  { key: "ceo",   label: "CEO",         desc: "Indicadores estratégicos",    icon: Crown,            to: "/hub/ceo/dashboard",      color: "text-warning", auth: { id: "u-ceo-kt",  nome: "Roberto Alves",   papel: "ceo",         empresaId: "kentaki" } },
+  { key: "lider", label: "Líder",       desc: "Gestão do time e feedback",  icon: BriefcaseBusiness,to: "/hub/lider/painel",       color: "text-info",    auth: { id: "u-lid-kt",  nome: "Camila Torres",   papel: "lider",       empresaId: "kentaki" } },
+  { key: "colab", label: "Colaborador", desc: "Sua jornada na empresa",     icon: UserCircle2,      to: "/hub/colaborador/inicio", color: "text-success", auth: { id: "u-col-kt",  nome: "Lucas Mendes",    papel: "colaborador", empresaId: "kentaki" } },
+  { key: "rh",    label: "RH",         desc: "Operação de gente e cultura", icon: Users,            to: "/hub/lider/painel",       color: "text-primary", auth: { id: "u-rh-kt",   nome: "Patrícia Santos", papel: "rh",          empresaId: "kentaki" } },
 ];
 
 export default function SelecaoPerfil() {

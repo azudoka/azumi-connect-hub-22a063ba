@@ -22,6 +22,7 @@ export type Papel =
   | "consultor"
   | "cliente"
   | "cliente_avulso"
+  | "trial"
   | "rh"
   | "rh_operacional"
   | "ceo"
@@ -29,13 +30,9 @@ export type Papel =
   | "lider"
   | "dp"
   | "contador"
-  | "juridico"
-  | "trial";
+  | "juridico";
 
 export type UserRole = Papel;
-
-export type Plano = "trial" | "start" | "ongoing" | "growth";
-
 
 export type ModuloSlug =
   | "atracao"
@@ -62,18 +59,11 @@ export interface Usuario {
   email: string;
   role: UserRole;
   empresaNome: string;
-  empresaId?: string | null;
+  empresaId: string | null;
   modulos: ModuloPermissao[];
   isDemo: boolean;
   auditoria: boolean;
-  plano?: Plano | null;
-  trialExpiraEm?: string | null;
-  avatarUrl?: string | null;
-  inativo?: boolean;
-  /** Cliente contratou o produto Hub? Define se vê o Hub real ou a apresentação. */
-  hubContratado?: boolean;
 }
-
 
 /**
  * Compat com o tipo antigo AuthUser, ainda usado em src/pages/Login.tsx e
@@ -142,7 +132,6 @@ const PERMISSOES_POR_ROLE: Record<UserRole, ModuloPermissao[]> = {
   trial: [],
 };
 
-
 const ROLES_COM_AUDITORIA: UserRole[] = ["rh", "ceo", "admin"];
 
 interface MockCred {
@@ -153,23 +142,22 @@ interface MockCred {
   role: UserRole;
   empresaNome: string;
   empresaId?: string | null;
-  plano?: Plano | null;
-  trialExpiraEm?: string | null;
-  avatarUrl?: string | null;
-  inativo?: boolean;
-  hubContratado?: boolean;
 }
 
 const MOCK_USUARIOS: MockCred[] = [
-  { email: "patricia@azumirh.com.br", senha: "123", id: "u-patricia", nome: "Patricia Lima", role: "admin", empresaNome: "", empresaId: "", avatarUrl: null, hubContratado: true },
-  { email: "ana@azumirh.com.br",      senha: "123", id: "u-ana",      nome: "Ana Beatriz",   role: "consultor", empresaNome: "", empresaId: "", avatarUrl: null, hubContratado: true },
-  { email: "rafael@azumirh.com.br",   senha: "123", id: "u-rafael",   nome: "Rafael Moura",  role: "consultor", empresaNome: "", empresaId: "", avatarUrl: null, hubContratado: true },
-  { email: "mariana@kentaki.com",     senha: "123", id: "u-mariana",  nome: "Mariana Souza", role: "cliente",   empresaNome: "Kentaki Foods", empresaId: "kentaki", avatarUrl: null, plano: "ongoing", hubContratado: true },
-  { email: "felipe@horizonte.com.br", senha: "123", id: "u-felipe",   nome: "Felipe Andrade", role: "cliente",  empresaNome: "Construtora Horizonte", empresaId: "horizonte", avatarUrl: null, plano: "start", hubContratado: false },
-  { email: "beatriz@vitasaude.com.br", senha: "123", id: "u-beatriz", nome: "Beatriz Lopes",  role: "cliente",  empresaNome: "Clínica Vita Saúde", empresaId: "vita", avatarUrl: null, plano: "growth", hubContratado: true },
-  { email: "joao@startupy.com.br",    senha: "123", id: "u-joao",     nome: "João Pedro",    role: "cliente_avulso", empresaNome: "Startup Y", empresaId: "startupy", avatarUrl: null, inativo: true, hubContratado: false },
-  { email: "demo@azumirh.com.br",     senha: "Demo2026", id: "u-trial-demo", nome: "Carlos Demo", role: "trial", empresaNome: "Empresa Demo", empresaId: "empresa-demo", avatarUrl: null, plano: "trial", trialExpiraEm: "2026-06-30", hubContratado: false },
-  { email: "fernanda@valoreconsultoria.com.br", senha: "azumi2026", id: "u-fernanda", nome: "Fernanda Albuquerque", role: "cliente", empresaNome: "Valore Consultoria", empresaId: "valore", avatarUrl: null, plano: "ongoing", hubContratado: true },
+  // Admin / Consultores Azumi
+  { email: "patricia@azumirh.com.br",           senha: "123",       id: "u-patricia", nome: "Patricia Lima",    role: "admin",         empresaNome: "Azumi RH",            empresaId: null },
+  { email: "ana@azumirh.com.br",                senha: "123",       id: "u-ana",      nome: "Ana Beatriz",      role: "consultor",     empresaNome: "Azumi RH",            empresaId: null },
+  { email: "rafael@azumirh.com.br",             senha: "123",       id: "u-rafael",   nome: "Rafael Moura",     role: "consultor",     empresaNome: "Azumi RH",            empresaId: null },
+  // Clientes
+  { email: "mariana@kentaki.com",               senha: "123",       id: "u-mariana",  nome: "Mariana Costa",    role: "cliente",       empresaNome: "Kentaki Foods",       empresaId: "kentaki" },
+  { email: "felipe@horizonte.com.br",           senha: "123",       id: "u-felipe",   nome: "Felipe Andrade",   role: "cliente",       empresaNome: "Horizonte",           empresaId: "horizonte" },
+  { email: "beatriz@vitasaude.com.br",          senha: "123",       id: "u-beatriz",  nome: "Beatriz Oliveira", role: "cliente",       empresaNome: "Vita Saúde",          empresaId: "vitasaude" },
+  { email: "fernanda@valoreconsultoria.com.br", senha: "azumi2026", id: "u-fernanda", nome: "Fernanda Lima",    role: "cliente",       empresaNome: "Valore Consultoria",  empresaId: "valore" },
+  // Cliente Avulso
+  { email: "joao@startupy.com.br",              senha: "123",       id: "u-joao",     nome: "João Mendes",      role: "cliente_avulso",empresaNome: "Startupy",            empresaId: "startupy" },
+  // Trial
+  { email: "demo@azumirh.com.br",              senha: "Demo2026",  id: "u-demo",     nome: "Demo Azumi",       role: "trial",         empresaNome: "Demo",                empresaId: null },
 ];
 
 function buildUsuario(cred: MockCred): Usuario {
@@ -181,16 +169,10 @@ function buildUsuario(cred: MockCred): Usuario {
     empresaNome: cred.empresaNome,
     empresaId: cred.empresaId ?? null,
     modulos: PERMISSOES_POR_ROLE[cred.role] ?? [],
-    isDemo: cred.role === "trial",
+    isDemo: false,
     auditoria: ROLES_COM_AUDITORIA.includes(cred.role),
-    plano: cred.plano ?? null,
-    trialExpiraEm: cred.trialExpiraEm ?? null,
-    avatarUrl: cred.avatarUrl ?? null,
-    inativo: cred.inativo ?? false,
-    hubContratado: cred.hubContratado ?? false,
   };
 }
-
 
 // ---------------------------------------------------------------------------
 // Context
@@ -277,6 +259,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: "",
       role: u.papel,
       empresaNome: u.empresaId ?? "",
+      empresaId: u.empresaId ?? null,
       modulos: PERMISSOES_POR_ROLE[u.papel] ?? [],
       isDemo: false,
       auditoria: ROLES_COM_AUDITORIA.includes(u.papel),
@@ -302,8 +285,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: usuario.id,
           nome: usuario.nome,
           papel: usuario.role,
-          // BUGFIX: empresaId precisa ser o slug ("kentaki", "valore", "horizonte"…),
-          // não o empresaNome. As páginas do cliente filtram por esse slug.
           empresaId: usuario.empresaId ?? null,
         }
       : null;
