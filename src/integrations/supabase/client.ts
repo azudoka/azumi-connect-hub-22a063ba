@@ -1,17 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL =
-  (import.meta.env.VITE_SUPABASE_URL as string | undefined) ??
-  "https://nxmwhtkygiljkbovwixk.supabase.co";
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-const SUPABASE_ANON_KEY =
-  (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ??
-  "sb_publishable_Dfc-7pR3A_v6kWOelbTYYA_ToPSnd6S";
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error("VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY são obrigatórias.");
+}
 
-// Placeholder até o schema ser gerado via `supabase gen types typescript`
 export type Database = any;
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,

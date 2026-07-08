@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ShieldCheck, UserCog, Building2, Crown, Users, UserCircle2, BriefcaseBusiness, ArrowRight
@@ -5,6 +6,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth, type AuthUser } from "@/context/AuthContext";
 import { AzumiMark } from "@/components/brand/AzumiLogo";
+
+const IS_DEV = import.meta.env.VITE_DEV_MODE === "true";
 
 type PerfilItem = {
   key: string;
@@ -14,6 +17,7 @@ type PerfilItem = {
   to: string;
   color: string;
   auth?: AuthUser;
+  emBreve?: boolean;
 };
 
 const perfis: PerfilItem[] = [
@@ -53,20 +57,25 @@ const perfis: PerfilItem[] = [
     color: "text-highlight",
     auth: { id: "cliente-02", nome: "Cliente Avulso", papel: "cliente", empresaId: "maverick" },
   },
-  { key: "ceo",   label: "CEO",         desc: "Indicadores estratégicos",    icon: Crown,            to: "/hub/ceo/dashboard",      color: "text-warning", auth: { id: "u-ceo-kt",  nome: "Roberto Alves",   papel: "ceo",         empresaId: "kentaki" } },
-  { key: "lider", label: "Líder",       desc: "Gestão do time e feedback",  icon: BriefcaseBusiness,to: "/hub/lider/painel",       color: "text-info",    auth: { id: "u-lid-kt",  nome: "Camila Torres",   papel: "lider",       empresaId: "kentaki" } },
-  { key: "colab", label: "Colaborador", desc: "Sua jornada na empresa",     icon: UserCircle2,      to: "/hub/colaborador/inicio", color: "text-success", auth: { id: "u-col-kt",  nome: "Lucas Mendes",    papel: "colaborador", empresaId: "kentaki" } },
-  { key: "rh",    label: "RH",         desc: "Operação de gente e cultura", icon: Users,            to: "/hub/lider/painel",       color: "text-primary", auth: { id: "u-rh-kt",   nome: "Patrícia Santos", papel: "rh",          empresaId: "kentaki" } },
+  { key: "ceo",   label: "CEO",         desc: "Indicadores estratégicos",    icon: Crown,             to: "/hub/ceo/dashboard",      color: "text-warning", emBreve: true },
+  { key: "lider", label: "Líder",       desc: "Gestão do time e feedback",   icon: BriefcaseBusiness, to: "/hub/lider/painel",       color: "text-info",    emBreve: true },
+  { key: "colab", label: "Colaborador", desc: "Sua jornada na empresa",      icon: UserCircle2,       to: "/hub/colaborador/inicio", color: "text-success", emBreve: true },
+  { key: "rh",    label: "RH",         desc: "Operação de gente e cultura",  icon: Users,             to: "/hub/lider/painel",       color: "text-primary", emBreve: true },
 ];
 
 export default function SelecaoPerfil() {
   const navigate = useNavigate();
   const { loginLegacy: login } = useAuth();
 
+  useEffect(() => {
+    if (!IS_DEV) navigate("/login", { replace: true });
+  }, [navigate]);
+
+  if (!IS_DEV) return null;
+
   const handleSelecionar = (p: PerfilItem) => {
-    if (p.auth) {
-      login(p.auth);
-    }
+    if (p.emBreve) return;
+    if (p.auth) login(p.auth);
     navigate(p.to);
   };
 
@@ -83,6 +92,7 @@ export default function SelecaoPerfil() {
             Bem-vindo(a) à <span className="text-gradient-brand">Azumi</span>
           </h1>
           <p className="mt-2 text-muted-foreground">Selecione com qual perfil deseja acessar a plataforma.</p>
+          <p className="mt-1 text-xs text-warning font-medium">Modo desenvolvimento — não disponível em produção</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -90,8 +100,12 @@ export default function SelecaoPerfil() {
             <button
               key={p.key}
               onClick={() => handleSelecionar(p)}
+              disabled={p.emBreve}
               className={cn(
-                "group text-left bg-card border border-border rounded-2xl p-5 card-hover animate-fade-in",
+                "group text-left bg-card border border-border rounded-2xl p-5 animate-fade-in",
+                p.emBreve
+                  ? "opacity-40 cursor-not-allowed"
+                  : "card-hover"
               )}
               style={{ animationDelay: `${i * 60}ms` }}
             >
@@ -99,7 +113,11 @@ export default function SelecaoPerfil() {
                 <div className={cn("h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center", p.color)}>
                   <p.icon className="h-5 w-5" />
                 </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                {p.emBreve ? (
+                  <span className="text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5">Em breve</span>
+                ) : (
+                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                )}
               </div>
               <h3 className="mt-4 font-display text-base font-semibold">{p.label}</h3>
               <p className="text-sm text-muted-foreground mt-1">{p.desc}</p>

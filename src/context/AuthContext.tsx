@@ -7,16 +7,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 // ---------------------------------------------------------------------------
 // Tipos
 // ---------------------------------------------------------------------------
 
-/**
- * Papéis legados do Connect — mantidos por compatibilidade com código existente.
- * Os novos papéis (rh, ceo, colaborador, lider, dp, contador, juridico) estendem
- * o conjunto sem remover os anteriores.
- */
 export type Papel =
   | "admin"
   | "consultor"
@@ -65,10 +61,6 @@ export interface Usuario {
   auditoria: boolean;
 }
 
-/**
- * Compat com o tipo antigo AuthUser, ainda usado em src/pages/Login.tsx e
- * em alguns componentes via useAuth().user.
- */
 export interface AuthUser {
   id: string;
   nome: string;
@@ -77,20 +69,31 @@ export interface AuthUser {
 }
 
 // ---------------------------------------------------------------------------
-// Mock de credenciais e permissões
+// Mapeamento DB role → Papel interno
+// ---------------------------------------------------------------------------
+
+const DB_ROLE_TO_PAPEL: Record<string, Papel> = {
+  azumi_admin:            "admin",
+  azumi_consultor:        "consultor",
+  cliente_user:           "cliente",
+  cliente_avulso:         "cliente_avulso",
+  cliente_go_to_market:   "cliente",
+  lider:                  "lider",
+  colaborador:            "colaborador",
+  ceo:                    "ceo",
+  dp:                     "dp",
+  contador:               "contador",
+  juridico:               "juridico",
+};
+
+// ---------------------------------------------------------------------------
+// Permissões por role
 // ---------------------------------------------------------------------------
 
 const TODOS_MODULOS: ModuloSlug[] = [
-  "atracao",
-  "performance",
-  "governanca",
-  "regulamentacao",
-  "politicas",
-  "engenharia_pessoas",
-  "endomarketing",
-  "dp",
-  "contabilidade",
-  "juridico",
+  "atracao", "performance", "governanca", "regulamentacao",
+  "politicas", "engenharia_pessoas", "endomarketing", "dp",
+  "contabilidade", "juridico",
 ];
 
 function todosCom(nivel: PermissaoNivel): ModuloPermissao[] {
@@ -98,79 +101,70 @@ function todosCom(nivel: PermissaoNivel): ModuloPermissao[] {
 }
 
 const PERMISSOES_POR_ROLE: Record<UserRole, ModuloPermissao[]> = {
-  colaborador: [
-    { slug: "atracao", nivel: "consultar" },
-    { slug: "performance", nivel: "consultar" },
-    { slug: "politicas", nivel: "consultar" },
-    { slug: "endomarketing", nivel: "consultar" },
-    { slug: "regulamentacao", nivel: "consultar" },
+  colaborador:    [
+    { slug: "atracao",           nivel: "consultar" },
+    { slug: "performance",       nivel: "consultar" },
+    { slug: "politicas",         nivel: "consultar" },
+    { slug: "endomarketing",     nivel: "consultar" },
+    { slug: "regulamentacao",    nivel: "consultar" },
   ],
-  lider: [
-    { slug: "atracao", nivel: "consultar" },
-    { slug: "performance", nivel: "operar" },
-    { slug: "politicas", nivel: "consultar" },
-    { slug: "endomarketing", nivel: "consultar" },
-    { slug: "engenharia_pessoas", nivel: "consultar" },
+  lider:          [
+    { slug: "atracao",           nivel: "consultar" },
+    { slug: "performance",       nivel: "operar"    },
+    { slug: "politicas",         nivel: "consultar" },
+    { slug: "endomarketing",     nivel: "consultar" },
+    { slug: "engenharia_pessoas",nivel: "consultar" },
   ],
-  rh: todosCom("consultar"),
+  rh:             todosCom("consultar"),
   rh_operacional: [
-    { slug: "dp", nivel: "operar" },
-    { slug: "atracao", nivel: "consultar" },
-    { slug: "performance", nivel: "consultar" },
-    { slug: "politicas", nivel: "operar" },
-    { slug: "regulamentacao", nivel: "operar" },
+    { slug: "dp",                nivel: "operar"    },
+    { slug: "atracao",           nivel: "consultar" },
+    { slug: "performance",       nivel: "consultar" },
+    { slug: "politicas",         nivel: "operar"    },
+    { slug: "regulamentacao",    nivel: "operar"    },
   ],
-  ceo: todosCom("consultar"),
-  dp: [{ slug: "dp", nivel: "operar" }],
-  contador: [{ slug: "contabilidade", nivel: "operar" }],
-  juridico: [{ slug: "juridico", nivel: "operar" }],
-  admin: todosCom("operar"),
-  // legados — sem módulos do Hub
-  consultor: [],
-  cliente: [],
+  ceo:            todosCom("consultar"),
+  dp:             [{ slug: "dp",           nivel: "operar"    }],
+  contador:       [{ slug: "contabilidade",nivel: "operar"    }],
+  juridico:       [{ slug: "juridico",     nivel: "operar"    }],
+  admin:          todosCom("operar"),
+  consultor:      [],
+  cliente:        [],
   cliente_avulso: [],
-  trial: [],
+  trial:          [],
 };
 
 const ROLES_COM_AUDITORIA: UserRole[] = ["rh", "ceo", "admin"];
 
-interface MockCred {
-  email: string;
-  senha: string;
-  id: string;
-  nome: string;
-  role: UserRole;
-  empresaNome: string;
-  empresaId?: string | null;
-}
+// ---------------------------------------------------------------------------
+// Fetch do perfil após login
+// ---------------------------------------------------------------------------
 
-const MOCK_USUARIOS: MockCred[] = [
-  // Admin / Consultores Azumi
-  { email: "patricia@azumirh.com.br",           senha: "123",       id: "u-patricia", nome: "Patricia Lima",    role: "admin",         empresaNome: "Azumi RH",            empresaId: null },
-  { email: "ana@azumirh.com.br",                senha: "123",       id: "u-ana",      nome: "Ana Beatriz",      role: "consultor",     empresaNome: "Azumi RH",            empresaId: null },
-  { email: "rafael@azumirh.com.br",             senha: "123",       id: "u-rafael",   nome: "Rafael Moura",     role: "consultor",     empresaNome: "Azumi RH",            empresaId: null },
-  // Clientes
-  { email: "mariana@kentaki.com",               senha: "123",       id: "u-mariana",  nome: "Mariana Costa",    role: "cliente",       empresaNome: "Kentaki Foods",       empresaId: "kentaki" },
-  { email: "felipe@horizonte.com.br",           senha: "123",       id: "u-felipe",   nome: "Felipe Andrade",   role: "cliente",       empresaNome: "Horizonte",           empresaId: "horizonte" },
-  { email: "beatriz@vitasaude.com.br",          senha: "123",       id: "u-beatriz",  nome: "Beatriz Oliveira", role: "cliente",       empresaNome: "Vita Saúde",          empresaId: "vitasaude" },
-  { email: "fernanda@valoreconsultoria.com.br", senha: "azumi2026", id: "u-fernanda", nome: "Fernanda Lima",    role: "cliente",       empresaNome: "Valore Consultoria",  empresaId: "valore" },
-  // Cliente Avulso
-  { email: "joao@startupy.com.br",              senha: "123",       id: "u-joao",     nome: "João Mendes",      role: "cliente_avulso",empresaNome: "Startupy",            empresaId: "startupy" },
-  // Trial
-  { email: "demo@azumirh.com.br",              senha: "Demo2026",  id: "u-demo",     nome: "Demo Azumi",       role: "trial",         empresaNome: "Demo",                empresaId: null },
-];
+async function fetchPerfil(userId: string): Promise<Usuario | null> {
+  const { data, error } = await supabase
+    .from("users_profile")
+    .select("id, role, company_id, full_name, is_active, email, empresa_externa_nome")
+    .eq("id", userId)
+    .single();
 
-function buildUsuario(cred: MockCred): Usuario {
+  if (error || !data) return null;
+
+  const papel = DB_ROLE_TO_PAPEL[data.role as string];
+  if (!papel) {
+    console.warn("[auth] role desconhecido:", data.role);
+    return null;
+  }
+
   return {
-    id: cred.id,
-    nome: cred.nome,
-    email: cred.email,
-    role: cred.role,
-    empresaNome: cred.empresaNome,
-    empresaId: cred.empresaId ?? null,
-    modulos: PERMISSOES_POR_ROLE[cred.role] ?? [],
+    id: data.id,
+    nome: data.full_name ?? "Usuário",
+    email: data.email ?? "",
+    role: papel,
+    empresaNome: (data as any).empresa_externa_nome ?? "",
+    empresaId: data.company_id ?? null,
+    modulos: PERMISSOES_POR_ROLE[papel] ?? [],
     isDemo: false,
-    auditoria: ROLES_COM_AUDITORIA.includes(cred.role),
+    auditoria: ROLES_COM_AUDITORIA.includes(papel),
   };
 }
 
@@ -180,78 +174,68 @@ function buildUsuario(cred: MockCred): Usuario {
 
 interface AuthContextValue {
   usuario: Usuario | null;
-  /** @deprecated mantenha compat: AuthUser legado derivado de usuario */
+  carregando: boolean;
   user: AuthUser | null;
-  login: (email: string, senha: string) => Promise<"ok" | "erro">;
-  /** Compat com Login antigo (admin/consultor/cliente). */
+  login: (email: string, senha: string) => Promise<"ok" | "erro" | "inativo">;
   loginLegacy: (user: AuthUser) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   hasModulo: (slug: ModuloSlug) => boolean;
   podeOperar: (slug: ModuloSlug) => boolean;
   temAuditoria: boolean;
 }
 
-const STORAGE_KEY = "azumi_user_v2";
-const LEGACY_STORAGE_KEY = "azumi_user";
-
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-function readStored(): Usuario | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Usuario;
-      if (parsed && typeof parsed.id === "string" && typeof parsed.role === "string") {
-        return parsed;
-      }
-    }
-    // tenta ler formato legado
-    const legacy = window.localStorage.getItem(LEGACY_STORAGE_KEY);
-    if (legacy) {
-      const p = JSON.parse(legacy) as AuthUser;
-      if (p && p.id && p.papel) {
-        return {
-          id: p.id,
-          nome: p.nome,
-          email: "",
-          role: p.papel,
-          empresaNome: p.empresaId ?? "",
-          modulos: PERMISSOES_POR_ROLE[p.papel] ?? [],
-          isDemo: false,
-          auditoria: ROLES_COM_AUDITORIA.includes(p.papel),
-        };
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [usuario, setUsuario] = useState<Usuario | null>(() => readStored());
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (usuario) {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(usuario));
-    } else {
-      window.localStorage.removeItem(STORAGE_KEY);
-      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-    }
-  }, [usuario]);
+    // 1. Verifica sessão existente ao montar
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        fetchPerfil(session.user.id)
+          .then(setUsuario)
+          .finally(() => setCarregando(false));
+      } else {
+        setCarregando(false);
+      }
+    });
 
-  const login = useCallback(async (email: string, senha: string): Promise<"ok" | "erro"> => {
-    await new Promise((r) => setTimeout(r, 350));
-    const cred = MOCK_USUARIOS.find(
-      (u) => u.email.toLowerCase() === email.trim().toLowerCase() && u.senha === senha
+    // 2. Reage a mudanças de estado (login, logout, refresh de token)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session?.user) {
+          fetchPerfil(session.user.id).then(setUsuario);
+        } else {
+          setUsuario(null);
+        }
+      }
     );
-    if (!cred) return "erro";
-    setUsuario(buildUsuario(cred));
-    return "ok";
+
+    return () => subscription.unsubscribe();
   }, []);
 
+  const login = useCallback(
+    async (email: string, senha: string): Promise<"ok" | "erro" | "inativo"> => {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: senha,
+      });
+      if (error || !data.session) return "erro";
+
+      const perfil = await fetchPerfil(data.user.id);
+      if (!perfil) return "erro";
+      if (!perfil.isDemo && !(await isActive(data.user.id))) return "inativo";
+
+      setUsuario(perfil);
+      return "ok";
+    },
+    []
+  );
+
+  // loginLegacy: mantido apenas para SelecaoPerfil em modo dev.
+  // Em produção (VITE_DEV_MODE !== 'true') a tela é redirecionada para /login.
   const loginLegacy = useCallback((u: AuthUser) => {
     setUsuario({
       id: u.id,
@@ -266,7 +250,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const logout = useCallback(() => setUsuario(null), []);
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
+    setUsuario(null);
+  }, []);
 
   const hasModulo = useCallback(
     (slug: ModuloSlug) => !!usuario?.modulos.some((m) => m.slug === slug),
@@ -281,15 +268,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AuthContextValue>(() => {
     const legacyUser: AuthUser | null = usuario
-      ? {
-          id: usuario.id,
-          nome: usuario.nome,
-          papel: usuario.role,
-          empresaId: usuario.empresaId ?? null,
-        }
+      ? { id: usuario.id, nome: usuario.nome, papel: usuario.role, empresaId: usuario.empresaId ?? null }
       : null;
     return {
       usuario,
+      carregando,
       user: legacyUser,
       login,
       loginLegacy,
@@ -298,7 +281,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       podeOperar,
       temAuditoria: usuario?.auditoria ?? false,
     };
-  }, [usuario, login, loginLegacy, logout, hasModulo, podeOperar]);
+  }, [usuario, carregando, login, loginLegacy, logout, hasModulo, podeOperar]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
@@ -307,4 +290,17 @@ export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth deve ser usado dentro de <AuthProvider>");
   return ctx;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers privados
+// ---------------------------------------------------------------------------
+
+async function isActive(userId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from("users_profile")
+    .select("is_active")
+    .eq("id", userId)
+    .single();
+  return data?.is_active !== false;
 }

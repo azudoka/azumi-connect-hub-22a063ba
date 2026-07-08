@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Building2, MapPin, Clock, DollarSign, Briefcase, GraduationCap, Sun, FileText, ArrowLeft } from "lucide-react";
 import {
@@ -8,7 +8,9 @@ import {
   CONTRATO_LABEL,
   TURNO_LABEL,
   formatSalario,
+  type VagaPublica,
 } from "@/data/vagasPublicasMock";
+import { getVaga } from "@/services/vagasService";
 import CandidaturaModal from "@/components/candidatura/CandidaturaModal";
 
 const NAVY = "#031D38";
@@ -62,9 +64,46 @@ type Detalhe = { icon: React.ComponentType<{ className?: string }>; label: strin
 
 export default function VagaPublicaDetalhePage() {
   const { id } = useParams<{ id: string }>();
-  const vaga = VAGAS_MOCK.find((v) => v.id === id);
+  const [vaga, setVaga] = useState<VagaPublica | null | undefined>(undefined);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalBanco, setModalBanco] = useState(false);
+
+  useEffect(() => {
+    if (!id) { setVaga(null); return; }
+    getVaga(id).then((r) => {
+      if (!r) { setVaga(null); return; }
+      setVaga({
+        id: r.id,
+        titulo: r.titulo,
+        empresa: r.empresa,
+        logo: null,
+        segmento: r.tipo ?? "—",
+        nivel: r.nivel ?? "",
+        modalidade: r.modalidade ?? "",
+        tipo_contrato: r.tipo_contrato ?? "",
+        salario_de: r.salario_de,
+        salario_ate: r.salario_ate,
+        salario_fixo: false,
+        tem_comissao: r.tem_comissao ?? false,
+        local_trabalho: r.local_trabalho ?? "",
+        carga_horaria: r.carga_horaria ?? "",
+        turno: r.turno ?? "",
+        nivel_urgencia: r.nivel_urgencia,
+        descricao: r.descricao ?? "",
+        created_at: r.criado_em,
+      });
+    }).catch(() => setVaga(null));
+  }, [id]);
+
+  if (vaga === undefined) {
+    return (
+      <div style={{ background: "#F5F7FA", minHeight: "100vh" }}>
+        <Header />
+        <div className="mx-auto max-w-md px-6 py-24 text-center text-slate-500">Carregando…</div>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!vaga) return <NotFound />;
 

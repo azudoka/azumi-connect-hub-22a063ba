@@ -2,7 +2,32 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SlaBar } from "@/components/SlaBar";
 import { vagas as vagasMock, type StatusKey } from "@/data/mock";
+import { criarVaga, listarVagas, type VagaSupabase } from "@/services/vagasService";
 import { Plus, LayoutGrid, List, Filter, Info, AlertTriangle, Users } from "lucide-react";
+
+function supabaseToLocal(r: VagaSupabase): VagaLocal {
+  return {
+    id: r.id,
+    titulo: r.titulo,
+    empresa: r.empresa,
+    empresaId: r.empresa_id ?? r.empresa.toLowerCase().replace(/\s+/g, "-"),
+    filial: r.filial ?? "—",
+    status: (r.status as StatusKey) ?? "ativa",
+    etapa: r.etapa ?? "briefing",
+    etapaFunil: (LEGACY_ETAPA_TO_FUNIL[r.etapa] ?? r.etapa ?? "briefing") as FunilEtapa,
+    sla: 0,
+    diasAbertos: Math.floor((Date.now() - new Date(r.criado_em).getTime()) / 86400000),
+    diasPrevistos: r.sla_dias ?? 30,
+    candidatosTotal: 0,
+    candidatosTriagem: 0,
+    candidatosEntrevista: 0,
+    candidatosEnviados: 0,
+    candidatosContratados: 0,
+    consultor: r.consultor ?? "Não atribuído",
+    modalidade: r.modalidade ?? "—",
+    beneficios: r.beneficios ?? [],
+  } as unknown as VagaLocal;
+}
 import BancoTalentosDrawer from "@/components/atracao/BancoTalentosDrawer";
 import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
@@ -65,20 +90,19 @@ export default function AtracaoLista() {
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Estado local (mock): vagas com etapa do funil derivada do legacy.
-  const [vagas, setVagas] = useState<VagaLocal[]>(() =>
-    vagasMock
-      .map((v) => ({
-        ...v,
-        etapaFunil: LEGACY_ETAPA_TO_FUNIL[v.etapa] ?? "briefing",
-      }))
-      .sort((a, b) => {
-        const pa = STATUS_ORDEM[a.status] ?? 99;
-        const pb = STATUS_ORDEM[b.status] ?? 99;
-        if (pa !== pb) return pa - pb;
-        return b.id.localeCompare(a.id);
-      })
-  );
+  const [vagas, setVagas] = useState<VagaLocal[]>([]);
+  const [loadingVagas, setLoadingVagas] = useState(true);
+
+  async function recarregarVagas() {
+    setLoadingVagas(true);
+    try {
+      const rows = await listarVagas();
+      setVagas(rows.map(supabaseToLocal));
+    } catch {/* silencia */}
+    setLoadingVagas(false);
+  }
+
+  useEffect(() => { recarregarVagas(); }, []);
 
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<FunilEtapa | null>(null);
@@ -269,7 +293,26 @@ export default function AtracaoLista() {
         </div>
       )}
 
-      {view === "kanban" ? (
+      {loadingVagas && (
+        <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          Carregando vagas…
+        </div>
+      )}
+
+      {!loadingVagas && vagas.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
+          <p className="text-muted-foreground">Nenhuma vaga cadastrada ainda.</p>
+          <button
+            className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground"
+            onClick={() => setNovaVagaOpen(true)}
+          >
+            Criar primeira vaga
+          </button>
+        </div>
+      )}
+
+      {!loadingVagas && vagas.length > 0 && (view === "kanban" ? (
         <>
           {/* Header de fases — uma "fatia" por coluna, alinhada com o grid abaixo */}
           <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-5 gap-4 mb-2 px-1">
@@ -410,7 +453,7 @@ export default function AtracaoLista() {
             </tbody>
           </table>
         </div>
-      )}
+      ))}
 
       <BancoTalentosDrawer open={bancoOpen} onClose={() => setBancoOpen(false)} />
 
@@ -719,37 +762,28 @@ export default function AtracaoLista() {
             <Button
               className="rounded-full"
               disabled={!nTitulo.trim() || !nEmpresa.trim() || huntBloqueado}
-              onClick={() => {
-                const ano = new Date().getFullYear();
-                const cod = `VAG-${ano}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
-                // Cria vaga como rascunho no estado local
-                const nova = {
-                  id: `v-${Date.now()}`,
-                  titulo: nTitulo.trim(),
-                  empresa: nEmpresa.trim(),
-                  empresaId: nEmpresa.trim().toLowerCase().replace(/\s+/g, "-"),
-                  filial: nFilial.trim() || "—",
-                  etapa: "briefing",
-                  etapaFunil: "briefing" as FunilEtapa,
-                  status: "ativa" as StatusKey,
-                  sla: 0,
-                  diasAbertos: 0,
-                  diasPrevistos: 30,
-                  candidatosTotal: 0,
-                  candidatosTriagem: 0,
-                  candidatosEntrevista: 0,
-                  candidatosEnviados: 0,
-                  candidatosContratados: 0,
-                  consultor: "Não atribuído",
-                  modalidade: nModalidade.charAt(0).toUpperCase() + nModalidade.slice(1),
-                  beneficios: nBeneficios,
-                } as unknown as VagaLocal;
-                setVagas((prev) => [nova, ...prev]);
+              onClick={async () => {
+                const titulo = nTitulo.trim();
                 setNovaVagaOpen(false);
                 resetNovaVaga();
-                toast.success(`Vaga "${nova.titulo}" criada — código ${cod}.`, {
-                  description: "Status: Briefing. Complete o preenchimento antes de publicar.",
-                });
+                const tid = toast.loading(`Salvando "${titulo}"…`);
+                try {
+                  await criarVaga({
+                    titulo,
+                    empresa: nEmpresa.trim(),
+                    empresa_id: nEmpresa.trim().toLowerCase().replace(/\s+/g, "-"),
+                    filial: nFilial.trim() || undefined,
+                    tipo: nTipo || undefined,
+                    modalidade: nModalidade || undefined,
+                    beneficios: nBeneficios,
+                  });
+                  toast.success(`Vaga "${titulo}" criada.`, { id: tid,
+                    description: "Status: Briefing. Complete o preenchimento antes de publicar." });
+                  recarregarVagas();
+                } catch (err) {
+                  console.error("[criarVaga]", err);
+                  toast.error("Falha ao criar vaga. Tente novamente.", { id: tid });
+                }
               }}
             >
               Criar vaga

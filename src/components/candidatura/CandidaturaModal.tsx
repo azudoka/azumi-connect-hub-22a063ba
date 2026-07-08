@@ -2,6 +2,9 @@ import { useState } from "react";
 import { X, Upload, Check, ChevronRight, FileText } from "lucide-react";
 import DiscTeste from "@/components/disc/DiscTeste";
 import type { DiscDim, DiscScores } from "@/components/disc/discQuestions";
+import { supabase } from "@/integrations/supabase/client";
+
+const EMAIL_API = "https://azumi-email-api.vercel.app/api/send-email";
 
 const NAVY = "#031D38";
 const BLUE = "#034C8B";
@@ -117,10 +120,94 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
     setStep(2);
   }
 
-  function concluir(scores: DiscScores, perfilDim: DiscDim) {
-    // eslint-disable-next-line no-console
-    console.info("[candidatura]", { modo, vagaId, vagaTitulo, cadastro: { ...c, curriculo: c.curriculo?.name, foto: c.foto?.name }, disc: { scores, perfilDim } });
+  async function concluir(scores: DiscScores, perfilDim: DiscDim) {
     setStep("ok");
+
+    // Upload currículo para o Storage (fire-and-forget, não bloqueia o fluxo)
+    let curriculoUrl: string | null = null;
+    if (c.curriculo) {
+      const ext = c.curriculo.name.split(".").pop() ?? "pdf";
+      const path = `${vagaId ?? "banco"}/${Date.now()}_${c.nome.replace(/\s+/g, "_")}.${ext}`;
+      supabase.storage
+        .from("curriculos")
+        .upload(path, c.curriculo, { upsert: false })
+        .then(({ data, error }) => {
+          if (error) console.error("[curriculo] storage:", error.message);
+          else curriculoUrl = data?.path ?? null;
+        });
+    }
+
+    const row = {
+      modo,
+      vaga_id: vagaId ?? null,
+      vaga_titulo: vagaTitulo ?? null,
+      nome: c.nome,
+      email: c.email,
+      telefone: c.telefone,
+      cpf: c.cpf || null,
+      nascimento: c.nascimento || null,
+      cidade_estado: c.cidadeEstado || null,
+      bairro: c.bairro || null,
+      escolaridade: c.escolaridade || null,
+      filhos: c.filhos || null,
+      linkedin: c.linkedin || null,
+      portfolio: c.portfolio || null,
+      origem: c.origem || null,
+      mensagem: c.mensagem || null,
+      curriculo_nome: c.curriculo?.name ?? null,
+      curriculo_url: curriculoUrl,
+      contrato_desejado: c.contratoDesejado || null,
+      disponibilidade: c.disponibilidade || null,
+      disc_d: scores.D,
+      disc_i: scores.I,
+      disc_s: scores.S,
+      disc_c: scores.C,
+      disc_perfil: perfilDim,
+    };
+
+    supabase.from("candidaturas").insert(row).then(({ error }) => {
+      if (error) console.error("[candidatura] Supabase:", error.message);
+    });
+
+    const linhas = [
+      `<tr><td><strong>Vaga</strong></td><td>${vagaTitulo ?? "Banco de talentos"}</td></tr>`,
+      `<tr><td><strong>Modo</strong></td><td>${modo === "banco" ? "Banco de talentos" : "Candidatura"}</td></tr>`,
+      `<tr><td><strong>Nome</strong></td><td>${c.nome}</td></tr>`,
+      `<tr><td><strong>Email</strong></td><td>${c.email}</td></tr>`,
+      `<tr><td><strong>Telefone</strong></td><td>${c.telefone}</td></tr>`,
+      c.cpf ? `<tr><td><strong>CPF</strong></td><td>${c.cpf}</td></tr>` : "",
+      c.nascimento ? `<tr><td><strong>Nascimento</strong></td><td>${c.nascimento}</td></tr>` : "",
+      c.cidadeEstado ? `<tr><td><strong>Cidade/UF</strong></td><td>${c.cidadeEstado}</td></tr>` : "",
+      c.bairro ? `<tr><td><strong>Bairro</strong></td><td>${c.bairro}</td></tr>` : "",
+      c.escolaridade ? `<tr><td><strong>Escolaridade</strong></td><td>${c.escolaridade}</td></tr>` : "",
+      c.linkedin ? `<tr><td><strong>LinkedIn</strong></td><td>${c.linkedin}</td></tr>` : "",
+      c.portfolio ? `<tr><td><strong>Portfólio</strong></td><td>${c.portfolio}</td></tr>` : "",
+      c.origem ? `<tr><td><strong>Origem</strong></td><td>${c.origem}</td></tr>` : "",
+      c.mensagem ? `<tr><td><strong>Mensagem</strong></td><td>${c.mensagem}</td></tr>` : "",
+      c.curriculo ? `<tr><td><strong>Currículo</strong></td><td>${c.curriculo.name}</td></tr>` : "",
+      c.contratoDesejado ? `<tr><td><strong>Contrato desejado</strong></td><td>${c.contratoDesejado}</td></tr>` : "",
+      c.disponibilidade ? `<tr><td><strong>Disponibilidade</strong></td><td>${c.disponibilidade}</td></tr>` : "",
+      `<tr><td><strong>DISC</strong></td><td>D:${scores.D} I:${scores.I} S:${scores.S} C:${scores.C} — Perfil: ${perfilDim}</td></tr>`,
+    ].filter(Boolean).join("");
+
+    const html = `
+      <h2 style="color:#031D38">Nova ${modo === "banco" ? "inscrição no banco de talentos" : "candidatura"}</h2>
+      <table cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:14px">
+        ${linhas}
+      </table>
+      <p style="margin-top:16px;font-size:12px;color:#666">
+        Enviado automaticamente por Azumi Connect · ${new Date().toLocaleString("pt-BR")}
+      </p>
+    `;
+
+    fetch(EMAIL_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subject: `Nova candidatura: ${c.nome} → ${vagaTitulo ?? "Banco de talentos"}`,
+        html,
+      }),
+    }).catch((err) => console.error("[candidatura] email:", err));
   }
 
   return (

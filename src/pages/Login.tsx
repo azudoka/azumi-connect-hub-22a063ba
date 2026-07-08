@@ -1,36 +1,47 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+function destinoParaPapel(papel: string): string {
+  if (papel === "admin" || papel === "consultor") return "/app/dashboard";
+  if (papel === "cliente" || papel === "cliente_avulso") return "/portal";
+  return "/hub/colaborador/inicio";
+}
 
 export default function Login() {
   const navigate = useNavigate();
-  const { user, loginLegacy: login } = useAuth();
+  const { usuario, carregando, login } = useAuth();
+
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [erro, setErro] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      navigate(user.papel === "admin" ? "/app/dashboard" : "/cliente/dashboard", {
-        replace: true,
-      });
+    if (!carregando && usuario) {
+      navigate(destinoParaPapel(usuario.role), { replace: true });
     }
-  }, [user, navigate]);
+  }, [usuario, carregando, navigate]);
 
-  const entrarComoAdmin = () => {
-    login({ id: "admin-01", nome: "Patricia Lima", papel: "admin", empresaId: null });
-    navigate("/app/dashboard", { replace: true });
-  };
+  if (carregando) return null;
 
-  const entrarComoConsultor = () => {
-    login({ id: "consultor-01", nome: "Ana Beatriz", papel: "consultor", empresaId: null });
-    navigate("/app/dashboard", { replace: true });
-  };
-
-  const entrarComoCliente = () => {
-    login({ id: "cliente-01", nome: "Kentaki Foods", papel: "cliente", empresaId: "kentaki" });
-    navigate("/cliente/dashboard", { replace: true });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErro(null);
+    setEnviando(true);
+    const resultado = await login(email.trim(), senha);
+    setEnviando(false);
+    if (resultado === "inativo") {
+      setErro("Sua conta está inativa. Entre em contato com o administrador.");
+    } else if (resultado === "erro") {
+      setErro("E-mail ou senha incorretos.");
+    }
+    // "ok" → useEffect acima redireciona
   };
 
   return (
@@ -39,40 +50,46 @@ export default function Login() {
         <CardContent className="p-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-primary">Azumi RH</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Plataforma de gestão
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">Plataforma de gestão</p>
           </div>
 
-          <Separator className="my-6" />
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail</Label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
+                required
+                disabled={enviando}
+              />
+            </div>
 
-          <div className="space-y-3">
-            <Button onClick={entrarComoAdmin} className="w-full" size="lg">
-              Entrar como Administrador
+            <div className="space-y-2">
+              <Label htmlFor="senha">Senha</Label>
+              <Input
+                id="senha"
+                type="password"
+                autoComplete="current-password"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                placeholder="••••••••"
+                required
+                disabled={enviando}
+              />
+            </div>
+
+            {erro && (
+              <p className="text-sm text-destructive text-center">{erro}</p>
+            )}
+
+            <Button type="submit" className="w-full" size="lg" disabled={enviando}>
+              {enviando ? "Entrando…" : "Entrar"}
             </Button>
-
-            <Button
-              onClick={entrarComoConsultor}
-              variant="secondary"
-              className="w-full"
-              size="lg"
-            >
-              Entrar como Consultor — Ana Beatriz
-            </Button>
-
-            <Button
-              onClick={entrarComoCliente}
-              variant="outline"
-              className="w-full"
-              size="lg"
-            >
-              Entrar como Cliente — Kentaki Foods
-            </Button>
-          </div>
-
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            Ambiente de demonstração — sem autenticação real
-          </p>
+          </form>
         </CardContent>
       </Card>
     </div>

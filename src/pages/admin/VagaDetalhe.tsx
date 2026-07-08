@@ -1,3 +1,5 @@
+import { publicarVaga, despublicarVaga, getVaga, type VagaSupabase } from "@/services/vagasService";
+import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SectionDivider } from "@/components/SectionDivider";
@@ -80,6 +82,7 @@ import { ScrollLock } from "@/components/ScrollLock";
 
 const tabs = [
   { key: "candidatos", label: "Candidatos", icon: Users },
+  { key: "site", label: "Candidaturas do site", icon: Globe },
   { key: "perfis", label: "Perfis enviados", icon: Send },
   { key: "questionarios", label: "Questionários", icon: FileQuestion },
   { key: "agenda", label: "Agenda", icon: CalendarDays },
@@ -229,10 +232,73 @@ function renderTextoComLinks(texto: string) {
   });
 }
 
+function supabaseToVagaMock(r: VagaSupabase) {
+  return {
+    id: r.id,
+    titulo: r.titulo,
+    empresa: r.empresa,
+    empresaId: r.empresa_id ?? r.empresa.toLowerCase().replace(/\s+/g, "-"),
+    filial: r.filial ?? "—",
+    status: (r.status ?? "ativa") as import("@/data/mock").StatusKey,
+    etapa: r.etapa ?? "briefing",
+    sla: 0,
+    diasAbertos: Math.floor((Date.now() - new Date(r.criado_em).getTime()) / 86400000),
+    diasPrevistos: r.sla_dias ?? 30,
+    candidatosTotal: 0,
+    candidatosTriagem: 0,
+    candidatosEntrevista: 0,
+    candidatosEnviados: 0,
+    candidatosContratados: 0,
+    consultor: r.consultor ?? "—",
+    modalidade: r.modalidade ?? "—",
+    beneficios: r.beneficios ?? [],
+    descricao: r.descricao ?? "",
+    local_trabalho: r.local_trabalho ?? "",
+    nivel: r.nivel ?? "",
+    tipo_contrato: r.tipo_contrato ?? "",
+    salario_de: r.salario_de,
+    salario_ate: r.salario_ate,
+    posicoes: r.posicoes ?? 1,
+  } as unknown as (typeof vagas)[number];
+}
+
 export default function VagaDetalheAdmin() {
   const { id } = useParams();
-  const vaga = vagas.find((v) => v.id === id) ?? vagas[0];
+
+  const vagaMock = vagas.find((v) => v.id === id);
+  const [vagaSupabaseData, setVagaSupabaseData] = useState<VagaSupabase | null>(null);
+  const [loadingVaga, setLoadingVaga] = useState(!vagaMock);
+
+  useEffect(() => {
+    if (vagaMock || !id) return;
+    setLoadingVaga(true);
+    getVaga(id)
+      .then((r) => setVagaSupabaseData(r))
+      .catch(() => {})
+      .finally(() => setLoadingVaga(false));
+  }, [id]);
+
+  const vaga = vagaMock ?? (vagaSupabaseData ? supabaseToVagaMock(vagaSupabaseData) : null);
+
   const [tab, setTab] = useState<typeof tabs[number]["key"]>("candidatos");
+
+  if (loadingVaga) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-muted-foreground gap-2">
+        <span className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        Carregando vaga…
+      </div>
+    );
+  }
+
+  if (!vaga) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <p className="text-muted-foreground">Vaga não encontrada.</p>
+        <a href="/app/atracao" className="text-primary underline text-sm">Voltar para lista</a>
+      </div>
+    );
+  }
 
   // B09: estado do Dialog "Enviar para o cliente"
   const [enviarOpen, setEnviarOpen] = useState(false);
@@ -320,9 +386,43 @@ export default function VagaDetalheAdmin() {
   const [alertaPlayCandId, setAlertaPlayCandId] = useState<string | null>(null);
   const [alertaPlayDestino, setAlertaPlayDestino] = useState<Coluna | null>(null);
 
-  // ── Estado adicional (mock) — publicação, candidatos extras, eventos, chat
-  const [publicacao, setPublicacao] = useState<PublicacaoStatus>("nao_publicada");
+  // ── Estado adicional — publicação, candidatos extras, eventos, chat
+  const [publicacao, setPublicacao] = useState<PublicacaoStatus>(
+    (vagaSupabaseData?.publicacao as PublicacaoStatus | undefined) ?? "nao_publicada"
+  );
+
+  useEffect(() => {
+    if (vagaSupabaseData?.publicacao) {
+      setPublicacao(vagaSupabaseData.publicacao as PublicacaoStatus);
+    }
+  }, [vagaSupabaseData]);
+
   const [candidatosExtras, setCandidatosExtras] = useState<CandidatoExtra[]>([]);
+
+  // Candidaturas vindas do site (Supabase)
+  type CandidaturaSite = {
+    id: string; nome: string; email: string | null; telefone: string | null;
+    cidade_estado: string | null; escolaridade: string | null; linkedin: string | null;
+    disc_perfil: string | null; disc_d: number | null; disc_i: number | null;
+    disc_s: number | null; disc_c: number | null; criado_em: string;
+    curriculo_nome: string | null; mensagem: string | null; modo: string;
+  };
+  const [candidaturasSite, setCandidaturasSite] = useState<CandidaturaSite[]>([]);
+  const [loadingSite, setLoadingSite] = useState(false);
+
+  useEffect(() => {
+    if (!vaga.id || vaga.id.startsWith("v-")) return;
+    setLoadingSite(true);
+    supabase
+      .from("candidaturas")
+      .select("*")
+      .eq("vaga_id", vaga.id)
+      .order("criado_em", { ascending: false })
+      .then(({ data, error }) => {
+        setLoadingSite(false);
+        if (!error && data) setCandidaturasSite(data as CandidaturaSite[]);
+      });
+  }, [vaga.id]);
   const [questionariosVaga, setQuestionariosVaga] = useState<QuestionarioVaga[]>([
     {
       id: "q-disc",
@@ -757,13 +857,16 @@ export default function VagaDetalheAdmin() {
           {publicacao !== "publicada" && (
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 setPublicacao("em_revisao");
-                setTimeout(() => {
+                try {
+                  await publicarVaga(vaga.id);
                   setPublicacao("publicada");
-                  toast.success("Vaga marcada como publicada no site da Azumi (mock).");
-                }, 600);
-                toast.info("Enviando para revisão antes de publicar…");
+                  toast.success("Vaga publicada no site da Azumi.");
+                } catch {
+                  setPublicacao("nao_publicada");
+                  toast.error("Falha ao publicar. Tente novamente.");
+                }
               }}
               className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium inline-flex items-center gap-1.5"
             >
@@ -773,9 +876,14 @@ export default function VagaDetalheAdmin() {
           {publicacao === "publicada" && (
             <button
               type="button"
-              onClick={() => {
-                setPublicacao("nao_publicada");
-                toast.info("Vaga despublicada do site (mock).");
+              onClick={async () => {
+                try {
+                  await despublicarVaga(vaga.id);
+                  setPublicacao("nao_publicada");
+                  toast.info("Vaga despublicada do site.");
+                } catch {
+                  toast.error("Falha ao despublicar. Tente novamente.");
+                }
               }}
               className="h-8 px-3 rounded-md border border-border hover:bg-secondary text-xs font-medium"
             >
@@ -1450,6 +1558,49 @@ export default function VagaDetalheAdmin() {
           mensagens={mensagens}
           onSend={(m) => setMensagens((prev) => [...prev, m])}
         />
+      )}
+
+      {tab === "site" && (
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-display font-semibold">Candidaturas recebidas pelo site</h3>
+            <span className="text-sm text-muted-foreground">{candidaturasSite.length} candidatura(s)</span>
+          </div>
+          {loadingSite ? (
+            <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
+              <Loader2 className="h-4 w-4 animate-spin" /> Carregando…
+            </div>
+          ) : candidaturasSite.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              {vaga.id.startsWith("v-") ? "Salve a vaga no Supabase primeiro para receber candidaturas." : "Nenhuma candidatura recebida ainda."}
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {candidaturasSite.map((c) => (
+                <div key={c.id} className="rounded-lg border border-border bg-background p-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm">
+                    {c.nome.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">{c.nome}</p>
+                    <p className="text-xs text-muted-foreground">{c.email} {c.telefone ? `· ${c.telefone}` : ""}</p>
+                    {c.cidade_estado && <p className="text-xs text-muted-foreground">{c.cidade_estado}</p>}
+                    {c.disc_perfil && (
+                      <p className="text-xs mt-1">DISC: <strong>{c.disc_perfil}</strong> — D{c.disc_d} I{c.disc_i} S{c.disc_s} C{c.disc_c}</p>
+                    )}
+                    {c.mensagem && <p className="text-xs mt-1 text-muted-foreground italic">"{c.mensagem}"</p>}
+                  </div>
+                  <div className="text-xs text-muted-foreground whitespace-nowrap">
+                    {new Date(c.criado_em).toLocaleDateString("pt-BR")}
+                    {c.curriculo_nome && (
+                      <p className="mt-1 flex items-center gap-1"><FileText className="h-3 w-3" /> {c.curriculo_nome}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {tab === "perfis" && (

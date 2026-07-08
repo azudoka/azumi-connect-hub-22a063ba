@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Building2, Heart, MapPin, Clock, DollarSign, Search } from "lucide-react";
 import {
@@ -8,8 +8,33 @@ import {
   CONTRATO_LABEL,
   formatSalario,
   diasAtras,
+  type VagaPublica,
 } from "@/data/vagasPublicasMock";
+import { listarVagasPublicadas, type VagaSupabase } from "@/services/vagasService";
 import CandidaturaModal from "@/components/candidatura/CandidaturaModal";
+
+function supabaseToPublica(r: VagaSupabase): VagaPublica {
+  return {
+    id: r.id,
+    titulo: r.titulo,
+    empresa: r.empresa,
+    logo: null,
+    segmento: r.tipo ?? "—",
+    nivel: r.nivel ?? "",
+    modalidade: r.modalidade ?? "",
+    tipo_contrato: r.tipo_contrato ?? "",
+    salario_de: r.salario_de,
+    salario_ate: r.salario_ate,
+    salario_fixo: false,
+    tem_comissao: r.tem_comissao ?? false,
+    local_trabalho: r.local_trabalho ?? "",
+    carga_horaria: r.carga_horaria ?? "",
+    turno: r.turno ?? "",
+    nivel_urgencia: r.nivel_urgencia,
+    descricao: r.descricao ?? "",
+    created_at: r.criado_em,
+  };
+}
 
 const NAVY = "#031D38";
 const BLUE = "#034C8B";
@@ -59,16 +84,27 @@ export default function VagasPublicasPage() {
   const [contrato, setContrato] = useState("");
   const [favoritas, setFavoritas] = useState<Set<string>>(new Set());
   const [modalBanco, setModalBanco] = useState(false);
+  const [vagasSupabase, setVagasSupabase] = useState<VagaPublica[]>([]);
+  const [loadingPublicas, setLoadingPublicas] = useState(true);
+
+  useEffect(() => {
+    listarVagasPublicadas()
+      .then((rows) => setVagasSupabase(rows.map(supabaseToPublica)))
+      .catch(() => {})
+      .finally(() => setLoadingPublicas(false));
+  }, []);
+
+  const todasVagas = vagasSupabase;
 
   const filtradas = useMemo(() => {
-    return VAGAS_MOCK.filter((v) => {
+    return todasVagas.filter((v) => {
       if (q && !`${v.titulo} ${v.segmento}`.toLowerCase().includes(q.toLowerCase())) return false;
       if (modalidade && v.modalidade !== modalidade) return false;
       if (nivel && v.nivel !== nivel) return false;
       if (contrato && v.tipo_contrato !== contrato) return false;
       return true;
     });
-  }, [q, modalidade, nivel, contrato]);
+  }, [q, modalidade, nivel, contrato, todasVagas]);
 
   function toggleFav(id: string) {
     setFavoritas((s) => {
@@ -130,6 +166,20 @@ export default function VagasPublicasPage() {
 
       {/* Lista */}
       <section id="vagas-lista" className="mx-auto -mt-10 max-w-6xl px-6">
+        {loadingPublicas && (
+          <div className="flex justify-center py-20 text-slate-400 gap-2">
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            Carregando vagas…
+          </div>
+        )}
+        {!loadingPublicas && vagasSupabase.length === 0 && (
+          <div className="py-20 text-center text-slate-500">
+            <p className="text-lg font-medium">Nenhuma vaga disponível no momento.</p>
+            <p className="mt-1 text-sm">Volte em breve — novas oportunidades chegam regularmente.</p>
+          </div>
+        )}
+        {!loadingPublicas && vagasSupabase.length > 0 && (
+        <>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-slate-800">{filtradas.length} vagas encontradas</h2>
           <select value={contrato} onChange={(e) => setContrato(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
@@ -196,6 +246,8 @@ export default function VagasPublicasPage() {
           <div className="rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center text-slate-500">
             Nenhuma vaga encontrada com esses filtros.
           </div>
+        )}
+        </>
         )}
       </section>
 
