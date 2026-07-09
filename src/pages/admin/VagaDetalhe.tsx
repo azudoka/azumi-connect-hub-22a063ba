@@ -1,4 +1,5 @@
 import { publicarVaga, despublicarVaga, getVaga, atualizarVaga, definirStatusVaga, type VagaSupabase, type CriarVagaInput } from "@/services/vagasService";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -336,17 +337,6 @@ export default function VagaDetalheAdmin() {
 
   // Menu "···" por card
   const [menuAbertoId, setMenuAbertoId] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!menuAbertoId) return;
-    function onDocClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuAbertoId(null);
-      }
-    }
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [menuAbertoId]);
 
   // Observação rápida inline por card
   const [obsAbertaId, setObsAbertaId] = useState<string | null>(null);
@@ -1336,18 +1326,75 @@ export default function VagaDetalheAdmin() {
                                 </div>
                               </div>
                               {!isContratado && (
-                              <button
-                                type="button"
-                                aria-label="Mais ações"
-                                onMouseDown={(e) => e.stopPropagation()}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setMenuAbertoId(menuAberto ? null : c.id);
-                                }}
-                                className="h-7 w-7 -mr-1 rounded-md flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground shrink-0"
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </button>
+                              <DropdownMenu open={menuAberto} onOpenChange={(v) => setMenuAbertoId(v ? c.id : null)}>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    type="button"
+                                    aria-label="Mais ações"
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="h-7 w-7 -mr-1 rounded-md flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground shrink-0"
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-52">
+                                  <DropdownMenuItem onClick={() => { setMenuAbertoId(null); setFichaCandidatoId(c.id); }}>
+                                    <Eye className="h-3.5 w-3.5 mr-2 text-muted-foreground" /> Ver ficha
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => {
+                                    setMenuAbertoId(null);
+                                    const url = candidatosExtras.find((e) => e.id === c.id)?.curriculo_url;
+                                    if (url) {
+                                      window.open(url, "_blank", "noopener,noreferrer");
+                                    } else {
+                                      toast.info("Este candidato não enviou currículo.");
+                                    }
+                                  }}>
+                                    <FileText className="h-3.5 w-3.5 mr-2 text-muted-foreground" /> Ver currículo
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => { setMenuAbertoId(null); setObsAbertaId(c.id); }}>
+                                    <StickyNote className="h-3.5 w-3.5 mr-2 text-muted-foreground" /> Observação rápida
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => { setMenuAbertoId(null); avancarEtapa(c.id); }}>
+                                    <ChevronRight className="h-3.5 w-3.5 mr-2 text-muted-foreground" /> Mover para próxima etapa
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => {
+                                    setMenuAbertoId(null);
+                                    const atual = colunasEstado[c.id];
+                                    const idx = colunas.indexOf(atual);
+                                    if (idx <= 0) { toast.info(`${c.nome} já está na primeira etapa.`); return; }
+                                    const anterior = colunas[idx - 1];
+                                    setColunasEstado((prev) => ({ ...prev, [c.id]: anterior }));
+                                    toast.info(`${c.nome} retornado para ${anterior}.`);
+                                  }}>
+                                    <ChevronLeft className="h-3.5 w-3.5 mr-2 text-muted-foreground" /> Retornar etapa anterior
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => { setMenuAbertoId(null); setDiscWhatsOpen(c.id); }}>
+                                    <MessageCircle className="h-3.5 w-3.5 mr-2 text-muted-foreground" /> Enviar mensagem
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="text-warning focus:text-warning"
+                                    onClick={() => { setMenuAbertoId(null); setConfirmarSuspenderId(c.id); }}
+                                  >
+                                    <PauseCircle className="h-3.5 w-3.5 mr-2" />
+                                    {suspensos.has(c.id) ? "Reativar candidato" : "Suspender candidato"}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() => { setMenuAbertoId(null); setConfirmarBloquearId(c.id); }}
+                                  >
+                                    <ShieldOff className="h-3.5 w-3.5 mr-2" /> Bloquear candidato
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() => { setMenuAbertoId(null); setConfirmarDesclId(c.id); }}
+                                  >
+                                    <UserX className="h-3.5 w-3.5 mr-2" /> Desclassificar
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                               )}
                             </div>
 
@@ -1588,117 +1635,6 @@ export default function VagaDetalheAdmin() {
                             </div>
                           )}
 
-                          {menuAberto && (
-                            <div
-                              ref={menuRef}
-                              className="absolute right-2 top-10 z-30 w-48 max-w-[calc(100vw-1rem)] rounded-lg border border-border bg-popover shadow-elevated py-1 text-sm"
-                              onMouseDown={(e) => e.stopPropagation()}
-                            >
-                              <button
-                                type="button"
-                                onClick={() => { setMenuAbertoId(null); setFichaCandidatoId(c.id); }}
-                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary text-left"
-                              >
-                                <Eye className="h-3.5 w-3.5 text-muted-foreground" /> Ver ficha
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setMenuAbertoId(null);
-                                  toast.success("Abrindo currículo de " + c.nome + " (mock).");
-                                }}
-                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary text-left"
-                              >
-                                <FileText className="h-3.5 w-3.5 text-muted-foreground" /> Ver currículo
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setMenuAbertoId(null);
-                                  setObsAbertaId(c.id);
-                                }}
-                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary text-left"
-                              >
-                                <StickyNote className="h-3.5 w-3.5 text-muted-foreground" /> Observação rápida
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setMenuAbertoId(null);
-                                  avancarEtapa(c.id);
-                                }}
-                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary text-left"
-                              >
-                                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" /> Mover para próxima etapa
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setMenuAbertoId(null);
-                                  const atual = colunasEstado[c.id];
-                                  const idx = colunas.indexOf(atual);
-                                  if (idx <= 0) {
-                                    toast.info(`${c.nome} já está na primeira etapa.`);
-                                    return;
-                                  }
-                                  const anterior = colunas[idx - 1];
-                                  setColunasEstado((prev) => ({ ...prev, [c.id]: anterior }));
-                                  toast.info(`${c.nome} retornado para ${anterior}.`);
-                                }}
-                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary text-left"
-                              >
-                                <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />
-                                Retornar etapa anterior
-                              </button>
-
-                              <div className="my-1 border-t border-border" />
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setMenuAbertoId(null);
-                                  setDiscWhatsOpen(c.id);
-                                }}
-                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary text-left"
-                              >
-                                <MessageCircle className="h-3.5 w-3.5 text-muted-foreground" /> Enviar mensagem
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setMenuAbertoId(null);
-                                  setConfirmarSuspenderId(c.id);
-                                }}
-                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary text-left text-warning"
-                              >
-                                <PauseCircle className="h-3.5 w-3.5" />
-                                {suspensos.has(c.id) ? "Reativar candidato" : "Suspender candidato"}
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setMenuAbertoId(null);
-                                  setConfirmarBloquearId(c.id);
-                                }}
-                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary text-left text-destructive"
-                              >
-                                <ShieldOff className="h-3.5 w-3.5" /> Bloquear candidato
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setMenuAbertoId(null);
-                                  setConfirmarDesclId(c.id);
-                                }}
-                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary text-left text-destructive"
-                              >
-                                <UserX className="h-3.5 w-3.5" /> Desclassificar
-                              </button>
-                            </div>
-                          )}
                         </li>
                         );
                       })}
@@ -4364,14 +4300,18 @@ function CandidatoDetailSheet({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [fichaTab, setFichaTab] = useState<"dados" | "disc" | "processos">("dados");
   useEffect(() => {
-    if (open && scrollAreaRef.current) {
-      const t = setTimeout(() => {
-        if (scrollAreaRef.current) {
-          scrollAreaRef.current.scrollTop = 0;
-        }
-      }, 50);
-      return () => clearTimeout(t);
-    }
+    if (!open) return;
+    const el = scrollAreaRef.current;
+    if (!el) return;
+    el.scrollTop = 0;
+    const raf1 = requestAnimationFrame(() => {
+      el.scrollTop = 0;
+      const raf2 = requestAnimationFrame(() => {
+        el.scrollTop = 0;
+      });
+      return () => cancelAnimationFrame(raf2);
+    });
+    return () => cancelAnimationFrame(raf1);
   }, [open, candidato?.id, candidatoExtra?.id]);
   useEffect(() => {
     setFichaTab("dados");
