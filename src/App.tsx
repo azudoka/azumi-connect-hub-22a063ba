@@ -105,6 +105,15 @@ import LiderMuralPage from "./pages/hub/lider/MuralPage";
 
 const queryClient = new QueryClient();
 
+function TelaCarregando() {
+  return (
+    <div className="flex items-center justify-center min-h-screen text-muted-foreground gap-2">
+      <span className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      Carregando…
+    </div>
+  );
+}
+
 function PrivateRoute({
   allowed,
   children,
@@ -112,7 +121,8 @@ function PrivateRoute({
   allowed: Papel[];
   children: ReactElement;
 }) {
-  const { user } = useAuth();
+  const { user, carregando } = useAuth();
+  if (carregando) return <TelaCarregando />;
   if (!user) return <Navigate to="/login" replace />;
   if (!allowed.includes(user.papel)) {
     const clienteRoles = ["cliente", "cliente_avulso", "trial"];
@@ -129,7 +139,8 @@ function ModulesLoader({ children }: { children: ReactNode }) {
 }
 
 function RootRedirect() {
-  const { usuario } = useAuth();
+  const { usuario, carregando } = useAuth();
+  if (carregando) return <TelaCarregando />;
   if (!usuario) return <Navigate to="/login" replace />;
   const mapa: Record<string, string> = {
     admin:          "/app/dashboard",
