@@ -437,6 +437,14 @@ export default function VagaDetalheAdmin() {
             ...prev.filter((c) => c.origem !== "site"),
             ...extrasDoSite,
           ]);
+          setColunasEstado((prev) => ({
+            ...prev,
+            ...Object.fromEntries(
+              extrasDoSite
+                .filter((e) => !(e.id in prev))
+                .map((e) => [e.id, "Recebido" as Coluna])
+            ),
+          }));
         }
       });
   }, [vaga?.id]);
@@ -1129,9 +1137,27 @@ export default function VagaDetalheAdmin() {
           <div className="-mx-2 overflow-x-auto pb-3 kanban-scroll">
             <div className="flex gap-3 px-2 min-w-max">
               {colunas.map((col) => {
-                const candidatosNaColuna = candidatosVaga.filter(
-                  (c) => colunasEstado[c.id] === col && !desclassificados.has(c.id)
-                );
+                const candidatosNaColuna: CandidatoBase[] = [
+                  ...candidatosVaga.filter(
+                    (c) => colunasEstado[c.id] === col && !desclassificados.has(c.id)
+                  ),
+                  ...candidatosExtras
+                    .filter(
+                      (c) =>
+                        c.origem === "site" &&
+                        colunasEstado[c.id] === col &&
+                        !desclassificados.has(c.id)
+                    )
+                    .map((c) => ({
+                      id: c.id,
+                      nome: c.nome,
+                      cargo: c.cargo,
+                      disc:
+                        c.disc_d != null
+                          ? { D: c.disc_d, I: c.disc_i ?? 0, S: c.disc_s ?? 0, C: c.disc_c ?? 0 }
+                          : undefined,
+                    } as CandidatoBase)),
+                ];
                 const isOver = dragOverCol === col;
                 return (
                   <div
