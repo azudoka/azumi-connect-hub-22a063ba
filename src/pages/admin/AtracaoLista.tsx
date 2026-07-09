@@ -33,13 +33,12 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
@@ -145,6 +144,7 @@ export default function AtracaoLista() {
   const [nModalidade, setNModalidade] = useState("presencial");
   const [nPosicoes, setNPosicoes] = useState("1");
   const [nBeneficios, setNBeneficios] = useState<string[]>([]);
+  const [nOutrosBeneficios, setNOutrosBeneficios] = useState("");
   const [nDescricao, setNDescricao] = useState("");
 
   // ---- Publicação no site (mock — não publica automaticamente) ----
@@ -165,7 +165,7 @@ export default function AtracaoLista() {
   function resetNovaVaga() {
     setNTitulo(""); setNEmpresa(""); setNFilial("");
     setNTipo("operacional"); setNModalidade("presencial");
-    setNPosicoes("1"); setNBeneficios([]); setNDescricao("");
+    setNPosicoes("1"); setNBeneficios([]); setNOutrosBeneficios(""); setNDescricao("");
     setPubAberto(false); setPubPublicar(false); setPubConfidencial(false);
     setPubLocal(""); setPubModalidade("presencial"); setPubNivel("pleno");
     setPubTurno("integral"); setPubContrato("clt"); setPubCarga("");
@@ -513,17 +513,17 @@ export default function AtracaoLista() {
 
 
       {/* Sheet de nova vaga */}
-      <Sheet open={novaVagaOpen} onOpenChange={(o) => {
+      <Dialog open={novaVagaOpen} onOpenChange={(o) => {
         setNovaVagaOpen(o);
         if (!o) resetNovaVaga();
       }}>
-        <SheetContent className="sm:max-w-lg w-[90vw] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Nova vaga</SheetTitle>
-            <SheetDescription>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nova vaga</DialogTitle>
+            <DialogDescription>
               Preencha os dados para iniciar o funil de atração.
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
           <div className="mt-6 space-y-5">
             {/* Título */}
             <div className="space-y-2">
@@ -638,6 +638,12 @@ export default function AtracaoLista() {
                   );
                 })}
               </div>
+              <Input
+                placeholder="Outros benefícios (separados por vírgula)"
+                value={nOutrosBeneficios}
+                onChange={(e) => setNOutrosBeneficios(e.target.value)}
+                className="mt-2"
+              />
             </div>
 
             {/* Descrição */}
@@ -715,6 +721,7 @@ export default function AtracaoLista() {
                           <Select value={pubNivel} onValueChange={setPubNivel}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
+                              <SelectItem value="padrao">Padrão (sem senioridade definida)</SelectItem>
                               <SelectItem value="estagio">Estágio</SelectItem>
                               <SelectItem value="junior">Júnior</SelectItem>
                               <SelectItem value="pleno">Pleno</SelectItem>
@@ -808,7 +815,7 @@ export default function AtracaoLista() {
               )}
             </div>
           </div>
-          <SheetFooter className="border-t pt-4 flex-row gap-2 sm:justify-end">
+          <div className="border-t pt-4 flex flex-row gap-2 justify-end mt-6">
             <Button variant="outline" className="rounded-full"
               onClick={() => { setNovaVagaOpen(false); resetNovaVaga(); }}>
               Cancelar
@@ -818,6 +825,11 @@ export default function AtracaoLista() {
               disabled={!nTitulo.trim() || !nEmpresa.trim() || huntBloqueado}
               onClick={async () => {
                 const titulo = nTitulo.trim();
+                const outrosExtras = nOutrosBeneficios
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+                const beneficiosFinal = [...nBeneficios, ...outrosExtras];
                 setNovaVagaOpen(false);
                 resetNovaVaga();
                 const tid = toast.loading(`Salvando "${titulo}"…`);
@@ -825,11 +837,10 @@ export default function AtracaoLista() {
                   await criarVaga({
                     titulo,
                     empresa: nEmpresa.trim(),
-                    empresa_id: nEmpresa.trim().toLowerCase().replace(/\s+/g, "-"),
                     filial: nFilial.trim() || undefined,
                     tipo: nTipo || undefined,
                     modalidade: nModalidade || undefined,
-                    beneficios: nBeneficios,
+                    beneficios: beneficiosFinal,
                   });
                   toast.success(`Vaga "${titulo}" criada.`, { id: tid,
                     description: "Status: Briefing. Complete o preenchimento antes de publicar." });
@@ -842,9 +853,9 @@ export default function AtracaoLista() {
             >
               Criar vaga
             </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

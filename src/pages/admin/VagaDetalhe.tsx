@@ -4555,17 +4555,16 @@ function CandidatoDetailSheet({
     <>
       {/* Backdrop — z-30 para ficar abaixo dos modais (z-50) */}
       <div
+        className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
         onClick={onClose}
         onWheel={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
-        className="fixed inset-0 z-30 bg-background/60 backdrop-blur-sm animate-fade-in"
-      />
-
-      {/* Sheet — z-40 (modais flutuantes z-50 ficam acima) */}
+      >
       <aside
-        className="fixed top-2 right-2 bottom-2 z-40 w-[min(640px,calc(100vw-1rem))] bg-card border border-border rounded-2xl shadow-elevated flex flex-col animate-scale-in overflow-hidden"
+        className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-2xl max-h-[92vh] flex flex-col animate-scale-in overflow-hidden"
         role="dialog"
         aria-label={`Ficha de ${cand.nome}`}
+        onClick={(e) => e.stopPropagation()}
         onWheel={(e) => e.stopPropagation()}
         onAnimationEnd={() => { if (scrollAreaRef.current) scrollAreaRef.current.scrollTop = 0; }}
         style={{ touchAction: "none" }}
@@ -4733,7 +4732,11 @@ function CandidatoDetailSheet({
                       <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                       <div>
                         <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Currículo</div>
-                        <div className="text-sm truncate">{dados.curriculo ?? "Não enviado"}</div>
+                        {dados.curriculo ? (
+                          <a href={dados.curriculo} target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline truncate block">Ver currículo anexado</a>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">Não enviado</div>
+                        )}
                       </div>
                     </div>
                     {dados.curriculo && (
@@ -5197,6 +5200,7 @@ function CandidatoDetailSheet({
           </div>
         </ModalShell>
       )}
+      </div>
     </>
   );
 }
