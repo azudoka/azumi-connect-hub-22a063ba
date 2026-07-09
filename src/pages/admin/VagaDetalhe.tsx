@@ -282,24 +282,6 @@ export default function VagaDetalheAdmin() {
 
   const [tab, setTab] = useState<typeof tabs[number]["key"]>("candidatos");
 
-  if (loadingVaga) {
-    return (
-      <div className="flex items-center justify-center min-h-screen text-muted-foreground gap-2">
-        <span className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        Carregando vaga…
-      </div>
-    );
-  }
-
-  if (!vaga) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <p className="text-muted-foreground">Vaga não encontrada.</p>
-        <a href="/app/atracao" className="text-primary underline text-sm">Voltar para lista</a>
-      </div>
-    );
-  }
-
   // B09: estado do Dialog "Enviar para o cliente"
   const [enviarOpen, setEnviarOpen] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -307,15 +289,15 @@ export default function VagaDetalheAdmin() {
   const [excedeuOpen, setExcedeuOpen] = useState(false);
 
   const funil = [
-    { etapa: "Currículos", n: vaga.candidatosTotal },
-    { etapa: "Triagem", n: vaga.candidatosTriagem },
-    { etapa: "Entrevista", n: vaga.candidatosEntrevista },
-    { etapa: "Enviados", n: vaga.candidatosEnviados },
-    { etapa: "Contratados", n: vaga.candidatosContratados },
+    { etapa: "Currículos", n: vaga?.candidatosTotal ?? 0 },
+    { etapa: "Triagem", n: vaga?.candidatosTriagem ?? 0 },
+    { etapa: "Entrevista", n: vaga?.candidatosEntrevista ?? 0 },
+    { etapa: "Enviados", n: vaga?.candidatosEnviados ?? 0 },
+    { etapa: "Contratados", n: vaga?.candidatosContratados ?? 0 },
   ];
   const max = Math.max(...funil.map((f) => f.n), 1);
 
-  const candidatosVaga = candidatos.filter((c) => c.vagaId === vaga.id);
+  const candidatosVaga = candidatos.filter((c) => c.vagaId === (vaga?.id ?? ""));
   const colunas = [
     "Recebido",
     "Triagem",
@@ -331,7 +313,7 @@ export default function VagaDetalheAdmin() {
   type Coluna = typeof colunas[number];
 
   // Posições da vaga (Doc Mestre — Etapa 6: bloquear contratações além do total).
-  const posicoesVaga: number = (vaga as unknown as { posicoes?: number }).posicoes ?? 1;
+  const posicoesVaga: number = (vaga as unknown as { posicoes?: number } | null)?.posicoes ?? 1;
 
   // Estado do Kanban: candidato -> coluna (todos começam em "Recebido")
   const [colunasEstado, setColunasEstado] = useState<Record<string, Coluna>>(
@@ -411,7 +393,7 @@ export default function VagaDetalheAdmin() {
   const [loadingSite, setLoadingSite] = useState(false);
 
   useEffect(() => {
-    if (!vaga.id || vaga.id.startsWith("v-")) return;
+    if (!vaga?.id || vaga.id.startsWith("v-")) return;
     setLoadingSite(true);
     supabase
       .from("candidaturas")
@@ -422,7 +404,7 @@ export default function VagaDetalheAdmin() {
         setLoadingSite(false);
         if (!error && data) setCandidaturasSite(data as CandidaturaSite[]);
       });
-  }, [vaga.id]);
+  }, [vaga?.id]);
   const [questionariosVaga, setQuestionariosVaga] = useState<QuestionarioVaga[]>([
     {
       id: "q-disc",
@@ -494,16 +476,16 @@ export default function VagaDetalheAdmin() {
     }, 30000);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vaga.id]);
+  }, [vaga?.id]);
 
   // ── Etapa 7 — Feedback de reprovados ──────────────────────────
   const [enviarFeedbackPara, setEnviarFeedbackPara] = useState<string | null>(null);
 
   // Lista de contratados (proposta aceita) — para regra de bloqueio
   const idsContratados = useMemo(
-    () => contratadosNaVaga(vaga.id),
+    () => contratadosNaVaga(vaga?.id ?? ""),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [vaga.id, propostaTick]
+    [vaga?.id, propostaTick]
   );
   const posicoesPreenchidas = idsContratados.length;
   const vagaEncerrada = posicoesPreenchidas >= posicoesVaga;
@@ -512,23 +494,23 @@ export default function VagaDetalheAdmin() {
   // posições forem preenchidas (apenas 1x por vaga — verifica store).
   const [relatorioFinalPromptOpen, setRelatorioFinalPromptOpen] = useState(false);
   useEffect(() => {
-    if (vagaEncerrada && !jaGerouRelatorioFinal(vaga.id)) {
+    if (vagaEncerrada && vaga?.id && !jaGerouRelatorioFinal(vaga.id)) {
       setRelatorioFinalPromptOpen(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vagaEncerrada, vaga.id]);
+  }, [vagaEncerrada, vaga?.id]);
 
   // Re-render quando o store de Entrevista com Gestor muda (cliente / rota pública).
   const [storeVersao, setStoreVersao] = useState(0);
   useEffect(() => subscribeEntrevistaGestor(() => setStoreVersao((v) => v + 1)), []);
   const agendamentosDaVaga = useMemo(
-    () => listarAgendamentosDaVaga(vaga.id),
+    () => listarAgendamentosDaVaga(vaga?.id ?? ""),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [vaga.id, storeVersao]
+    [vaga?.id, storeVersao]
   );
 
   // Link público da vaga (mock)
-  const linkPublico = `https://azumi.jobs/vaga/${vaga.id}`;
+  const linkPublico = `https://azumi.jobs/vaga/${vaga?.id ?? ""}`;
 
   function moverCandidato(candId: string, coluna: Coluna) {
     const cand = candidatosVaga.find((c) => c.id === candId);
@@ -636,7 +618,7 @@ export default function VagaDetalheAdmin() {
 
   /** Gera link público (mock) para o candidato responder o questionário. */
   function gerarLinkQuestionario(questionarioId: string, candidatoId: string) {
-    return `https://azumi.jobs/questionario/${questionarioId}?cand=${candidatoId}&vaga=${vaga.id}`;
+    return `https://azumi.jobs/questionario/${questionarioId}?cand=${candidatoId}&vaga=${vaga?.id ?? ""}`;
   }
 
   function enviarQuestionarioParaCandidato(questionarioId: string, candidatoId: string) {
@@ -803,7 +785,19 @@ export default function VagaDetalheAdmin() {
   }
 
   return (
-    <div>
+    <>
+      {loadingVaga ? (
+        <div className="flex items-center justify-center min-h-screen text-muted-foreground gap-2">
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          Carregando vaga…
+        </div>
+      ) : !vaga ? (
+        <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+          <p className="text-muted-foreground">Vaga não encontrada.</p>
+          <a href="/app/atracao" className="text-primary underline text-sm">Voltar para lista</a>
+        </div>
+      ) : (
+      <div>
       <Link to="/app/atracao" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-3">
         <ArrowLeft className="h-3.5 w-3.5" /> Voltar para vagas
       </Link>
@@ -2723,6 +2717,8 @@ export default function VagaDetalheAdmin() {
         </ModalShell>
       )}
     </div>
+      )}
+    </>
   );
 }
 
