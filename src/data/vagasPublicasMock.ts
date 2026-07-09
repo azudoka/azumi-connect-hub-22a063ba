@@ -16,6 +16,7 @@ export type VagaPublica = {
   turno: string;
   nivel_urgencia: string | null;
   descricao: string;
+  beneficios: string;
   created_at: string;
 };
 
@@ -39,6 +40,7 @@ export const VAGAS_MOCK: VagaPublica[] = [
     nivel_urgencia: null,
     descricao:
       "Buscamos um Analista de RH para atuar nas frentes de recrutamento, treinamento e desenvolvimento.",
+    beneficios: "",
     created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
   },
   {
@@ -60,6 +62,7 @@ export const VAGAS_MOCK: VagaPublica[] = [
     nivel_urgencia: "urgente",
     descricao:
       "Oportunidade para liderar equipe comercial em rede de restaurantes em expansão.",
+    beneficios: "",
     created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
   },
   {
@@ -81,6 +84,7 @@ export const VAGAS_MOCK: VagaPublica[] = [
     nivel_urgencia: null,
     descricao:
       "Apoio em rotinas administrativas, controle de documentos e atendimento interno.",
+    beneficios: "",
     created_at: new Date().toISOString(),
   },
   {
@@ -102,6 +106,7 @@ export const VAGAS_MOCK: VagaPublica[] = [
     nivel_urgencia: null,
     descricao:
       "Estágio em marketing digital com foco em redes sociais, conteúdo e performance.",
+    beneficios: "",
     created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
   },
   {
@@ -123,6 +128,7 @@ export const VAGAS_MOCK: VagaPublica[] = [
     nivel_urgencia: "urgente",
     descricao:
       "Chef responsável pela criação de cardápio e gestão da equipe de cozinha.",
+    beneficios: "",
     created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
   },
   {
@@ -144,16 +150,20 @@ export const VAGAS_MOCK: VagaPublica[] = [
     nivel_urgencia: null,
     descricao:
       "Atendimento presencial e telefônico, agendamento de consultas e organização da recepção.",
+    beneficios: "",
     created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
   },
 ];
 
 export const NIVEL_LABEL: Record<string, string> = {
+  padrao: "Padrão",
   estagio: "Estágio",
   junior: "Júnior",
   pleno: "Pleno",
   senior: "Sênior",
   especialista: "Especialista",
+  gerencia: "Gerência",
+  diretoria: "Diretoria",
 };
 
 export const MODALIDADE_LABEL: Record<string, string> = {

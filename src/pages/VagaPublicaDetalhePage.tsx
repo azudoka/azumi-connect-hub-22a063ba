@@ -90,6 +90,7 @@ export default function VagaPublicaDetalhePage() {
         turno: r.turno ?? "",
         nivel_urgencia: r.nivel_urgencia,
         descricao: r.descricao ?? "",
+        beneficios: (r.beneficios ?? []).join(","),
         created_at: r.criado_em,
       });
     }).catch(() => setVaga(null));
@@ -175,6 +176,17 @@ export default function VagaPublicaDetalhePage() {
               ))}
             </div>
           </section>
+
+          {vaga.beneficios && vaga.beneficios.split(",").map((b) => b.trim()).filter(Boolean).length > 0 && (
+            <section className="rounded-xl border border-slate-200 bg-white p-6">
+              <h2 className="mb-3 text-lg font-semibold text-slate-900">Benefícios</h2>
+              <div className="flex flex-wrap gap-2">
+                {vaga.beneficios.split(",").map((b) => b.trim()).filter(Boolean).map((b) => (
+                  <span key={b} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700">{b}</span>
+                ))}
+              </div>
+            </section>
+          )}
 
           {vaga.descricao && (
             <section className="rounded-xl border border-slate-200 bg-white p-6">

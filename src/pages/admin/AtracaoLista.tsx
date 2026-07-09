@@ -2,7 +2,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SlaBar } from "@/components/SlaBar";
 import { vagas as vagasMock, type StatusKey } from "@/data/mock";
-import { criarVaga, listarVagas, type VagaSupabase } from "@/services/vagasService";
+import { criarVaga, publicarVaga, listarVagas, type VagaSupabase } from "@/services/vagasService";
 import { Plus, LayoutGrid, List, Filter, Info, AlertTriangle, Users, ChevronDown, ChevronRight } from "lucide-react";
 
 function supabaseToLocal(r: VagaSupabase): VagaLocal {
@@ -409,7 +409,7 @@ export default function AtracaoLista() {
                               <Link
                                 to={`/app/atracao/${v.id}`}
                                 onClick={(e) => e.stopPropagation()}
-                                className="text-sm font-medium leading-tight hover:text-primary flex-1 min-w-0 line-clamp-2"
+                                className="text-sm font-medium leading-tight hover:text-primary flex-1 min-w-0 line-clamp-2 break-words"
                               >
                                 {v.titulo}
                               </Link>
@@ -834,16 +834,27 @@ export default function AtracaoLista() {
                 resetNovaVaga();
                 const tid = toast.loading(`Salvando "${titulo}"…`);
                 try {
-                  await criarVaga({
+                  const vagaCriada = await criarVaga({
                     titulo,
                     empresa: nEmpresa.trim(),
                     filial: nFilial.trim() || undefined,
                     tipo: nTipo || undefined,
-                    modalidade: nModalidade || undefined,
+                    modalidade: pubModalidade || nModalidade || undefined,
                     beneficios: beneficiosFinal,
+                    descricao: pubDescricao.trim() || undefined,
+                    local_trabalho: pubLocal.trim() || undefined,
+                    nivel: pubNivel || undefined,
+                    turno: pubTurno || undefined,
+                    tipo_contrato: pubContrato || undefined,
+                    carga_horaria: pubCarga.trim() || undefined,
+                    salario_de: pubACombinar ? undefined : (pubSalDe ? Number(pubSalDe) : undefined),
+                    salario_ate: pubACombinar ? undefined : (pubSalAte ? Number(pubSalAte) : undefined),
                   });
+                  if (pubPublicar) {
+                    await publicarVaga(vagaCriada.id);
+                  }
                   toast.success(`Vaga "${titulo}" criada.`, { id: tid,
-                    description: "Status: Briefing. Complete o preenchimento antes de publicar." });
+                    description: pubPublicar ? "Vaga publicada no site." : "Status: Briefing. Complete o preenchimento antes de publicar." });
                   recarregarVagas();
                 } catch (err) {
                   console.error("[criarVaga]", err);
