@@ -3,7 +3,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { SlaBar } from "@/components/SlaBar";
 import { vagas as vagasMock, type StatusKey } from "@/data/mock";
 import { criarVaga, listarVagas, type VagaSupabase } from "@/services/vagasService";
-import { Plus, LayoutGrid, List, Filter, Info, AlertTriangle, Users } from "lucide-react";
+import { Plus, LayoutGrid, List, Filter, Info, AlertTriangle, Users, ChevronDown, ChevronRight } from "lucide-react";
 
 function supabaseToLocal(r: VagaSupabase): VagaLocal {
   return {
@@ -92,6 +92,7 @@ export default function AtracaoLista() {
 
   const [vagas, setVagas] = useState<VagaLocal[]>([]);
   const [loadingVagas, setLoadingVagas] = useState(true);
+  const [inativasOpen, setInativasOpen] = useState(false);
 
   async function recarregarVagas() {
     setLoadingVagas(true);
@@ -225,6 +226,15 @@ export default function AtracaoLista() {
     [vagas],
   );
 
+  const vagasAtivas = useMemo(
+    () => vagas.filter((v) => v.status !== "standby" && v.status !== "cancelada"),
+    [vagas],
+  );
+  const vagasInativas = useMemo(
+    () => vagas.filter((v) => v.status === "standby" || v.status === "cancelada"),
+    [vagas],
+  );
+
   return (
     <div>
       <PageHeader
@@ -338,7 +348,7 @@ export default function AtracaoLista() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {FUNIL_ETAPAS.map((etapa) => {
-              const items = vagas.filter((v) => v.etapaFunil === etapa);
+              const items = vagasAtivas.filter((v) => v.etapaFunil === etapa);
               const isOver = dragOverCol === etapa;
               return (
                 <div
@@ -436,7 +446,7 @@ export default function AtracaoLista() {
               </tr>
             </thead>
             <tbody>
-              {vagas.map((v) => (
+              {vagasAtivas.map((v) => (
                 <tr key={v.id} className="border-t border-border hover:bg-secondary/30 transition-colors">
                   <td className="px-4 py-3">
                     <Link to={`/app/atracao/${v.id}`} className="font-medium hover:text-primary">
@@ -454,6 +464,50 @@ export default function AtracaoLista() {
           </table>
         </div>
       ))}
+
+      {/* ── Seção: Standby e Canceladas ─────────────────────────── */}
+      {vagasInativas.length > 0 && (
+        <div className="mt-6">
+          <button
+            type="button"
+            onClick={() => setInativasOpen((x) => !x)}
+            className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors mb-3"
+          >
+            {inativasOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+            Standby e Canceladas ({vagasInativas.length})
+          </button>
+          {inativasOpen && (
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="text-left font-medium px-4 py-3">Vaga</th>
+                    <th className="text-left font-medium px-4 py-3">Empresa</th>
+                    <th className="text-left font-medium px-4 py-3">Etapa</th>
+                    <th className="text-left font-medium px-4 py-3">Status</th>
+                    <th className="text-left font-medium px-4 py-3 w-48">SLA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vagasInativas.map((v) => (
+                    <tr key={v.id} className="border-t border-border hover:bg-secondary/30 transition-colors opacity-70">
+                      <td className="px-4 py-3">
+                        <Link to={`/app/atracao/${v.id}`} className="font-medium hover:text-primary">
+                          {v.titulo}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{v.empresa}</td>
+                      <td className="px-4 py-3">{FUNIL_ETAPA_LABEL[v.etapaFunil]}</td>
+                      <td className="px-4 py-3"><StatusBadge status={v.status} /></td>
+                      <td className="px-4 py-3"><SlaBar percent={v.sla} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       <BancoTalentosDrawer open={bancoOpen} onClose={() => setBancoOpen(false)} />
 

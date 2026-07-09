@@ -26,12 +26,14 @@ export type VagaSupabase = {
   nivel_urgencia: string | null;
   tem_comissao: boolean | null;
   sla_dias: number | null;
+  excluida_em: string | null;
 };
 
 export async function listarVagas(): Promise<VagaSupabase[]> {
   const { data, error } = await supabase
     .from("vagas")
     .select("*")
+    .is("excluida_em", null)
     .order("criado_em", { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -158,5 +160,18 @@ export async function definirStatusVaga(
   status: "ativa" | "standby" | "cancelada" | "concluida"
 ): Promise<void> {
   const { error } = await supabase.from("vagas").update({ status }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function excluirVaga(id: string, _justificativa: string): Promise<void> {
+  // Move candidatos do site para Banco de Talentos antes de excluir
+  await supabase
+    .from("candidaturas")
+    .update({ etapa: "Banco de Talentos" })
+    .eq("vaga_id", id);
+  const { error } = await supabase
+    .from("vagas")
+    .update({ excluida_em: new Date().toISOString() })
+    .eq("id", id);
   if (error) throw error;
 }

@@ -1,4 +1,5 @@
-import { publicarVaga, despublicarVaga, getVaga, atualizarVaga, definirStatusVaga, type VagaSupabase, type CriarVagaInput } from "@/services/vagasService";
+import { createPortal } from "react-dom";
+import { publicarVaga, despublicarVaga, getVaga, atualizarVaga, definirStatusVaga, excluirVaga, type VagaSupabase, type CriarVagaInput } from "@/services/vagasService";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
@@ -599,6 +600,9 @@ export default function VagaDetalheAdmin() {
 
   // ── Edição de vaga e mudança de status ─────────────────────────
   const [editVagaOpen, setEditVagaOpen] = useState(false);
+  const [excluirVagaOpen, setExcluirVagaOpen] = useState(false);
+  const [excluirJustificativa, setExcluirJustificativa] = useState("");
+  const [excluirLoading, setExcluirLoading] = useState(false);
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const statusMenuRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -965,35 +969,45 @@ export default function VagaDetalheAdmin() {
                 Status <ChevronDown className="h-3 w-3" />
               </button>
               {statusMenuOpen && (
-                <div className="absolute right-0 top-full mt-1 z-50 w-40 bg-card border border-border rounded-xl shadow-elevated py-1">
-                  {(["ativa", "standby", "cancelada"] as const).map((s) => {
-                    const isCurrent = vagaSupabaseData.status === s;
-                    const label = s === "ativa" ? "Ativa" : s === "standby" ? "Standby" : "Cancelada";
-                    return (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={async () => {
-                          setStatusMenuOpen(false);
-                          if (isCurrent) return;
-                          try {
-                            await definirStatusVaga(vagaSupabaseData.id, s);
-                            await recarregarVaga();
-                            toast.success(`Status atualizado: ${label}.`);
-                          } catch {
-                            toast.error("Falha ao atualizar status.");
-                          }
-                        }}
-                        className={cn(
-                          "flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-secondary transition-colors",
-                          isCurrent && "font-semibold text-primary"
-                        )}
-                      >
-                        {isCurrent ? <CheckCircle2 className="h-3 w-3 shrink-0" /> : <span className="w-3 shrink-0" />}
-                        {label}
-                      </button>
-                    );
-                  })}
+                <div className="absolute right-0 top-full mt-1 z-50 w-44 bg-card border border-border rounded-xl shadow-elevated py-1">
+                  {(["ativa", "standby", "cancelada"] as const)
+                    .filter((s) => !(vagaSupabaseData.status === "cancelada" && s === "ativa"))
+                    .map((s) => {
+                      const isCurrent = vagaSupabaseData.status === s;
+                      const label = s === "ativa" ? "Ativa" : s === "standby" ? "Standby" : "Cancelada";
+                      return (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={async () => {
+                            setStatusMenuOpen(false);
+                            if (isCurrent) return;
+                            try {
+                              await definirStatusVaga(vagaSupabaseData.id, s);
+                              await recarregarVaga();
+                              toast.success(`Status atualizado: ${label}.`);
+                            } catch {
+                              toast.error("Falha ao atualizar status.");
+                            }
+                          }}
+                          className={cn(
+                            "flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-secondary transition-colors",
+                            isCurrent && "font-semibold text-primary"
+                          )}
+                        >
+                          {isCurrent ? <CheckCircle2 className="h-3 w-3 shrink-0" /> : <span className="w-3 shrink-0" />}
+                          {label}
+                        </button>
+                      );
+                    })}
+                  <div className="my-1 border-t border-border" />
+                  <button
+                    type="button"
+                    onClick={() => { setStatusMenuOpen(false); setExcluirVagaOpen(true); }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-xs text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    <Trash2 className="h-3 w-3 shrink-0" /> Excluir vaga
+                  </button>
                 </div>
               )}
             </div>
@@ -2836,6 +2850,55 @@ export default function VagaDetalheAdmin() {
           }}
         />
       )}
+
+      {/* ── Modal: Excluir vaga ──────────────────────────────────── */}
+      {excluirVagaOpen && vagaSupabaseData && (
+        <ModalShell title="Excluir vaga" onClose={() => { setExcluirVagaOpen(false); setExcluirJustificativa(""); }}>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Esta ação é irreversível. A vaga <strong>{vagaSupabaseData.titulo}</strong> será removida da listagem.
+              Candidatos associados serão movidos para o Banco de Talentos automaticamente.
+            </p>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">Justificativa <span className="text-destructive">*</span></label>
+              <textarea
+                value={excluirJustificativa}
+                onChange={(e) => setExcluirJustificativa(e.target.value)}
+                placeholder="Descreva o motivo da exclusão…"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm resize-none h-24 focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => { setExcluirVagaOpen(false); setExcluirJustificativa(""); }}
+                className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={excluirJustificativa.trim().length === 0 || excluirLoading}
+                onClick={async () => {
+                  if (!excluirJustificativa.trim()) return;
+                  setExcluirLoading(true);
+                  try {
+                    await excluirVaga(vagaSupabaseData.id, excluirJustificativa);
+                    toast.success("Vaga excluída.");
+                    navigate("/app/atracao");
+                  } catch {
+                    toast.error("Falha ao excluir vaga.");
+                    setExcluirLoading(false);
+                  }
+                }}
+                className="h-9 px-4 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium disabled:opacity-50"
+              >
+                {excluirLoading ? "Excluindo…" : "Excluir definitivamente"}
+              </button>
+            </div>
+          </div>
+        </ModalShell>
+      )}
     </div>
       )}
     </>
@@ -2858,7 +2921,7 @@ function ModalShell({
 }) {
   useScrollLock(true);
   const maxW = size === "xl" ? "max-w-3xl" : size === "lg" ? "max-w-xl" : "max-w-md";
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
       <div className={cn("bg-card border border-border rounded-2xl shadow-elevated w-full max-h-[92vh] flex flex-col animate-scale-in overflow-hidden", maxW)}>
         <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-border">
@@ -2869,7 +2932,8 @@ function ModalShell({
         </div>
         <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -4385,6 +4449,7 @@ function CandidatoDetailSheet({
         role="dialog"
         aria-label={`Ficha de ${cand.nome}`}
         onWheel={(e) => e.stopPropagation()}
+        onAnimationEnd={() => { if (scrollAreaRef.current) scrollAreaRef.current.scrollTop = 0; }}
         style={{ touchAction: "none" }}
       >
         {/* Header fixo */}

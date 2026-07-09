@@ -7,7 +7,7 @@ import {
   Settings, LogOut, ChevronLeft, Sparkles, UserCog, Heart,
   ExternalLink, Mail, Phone
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { empresasMockById } from "@/data/mockEmpresas";
 import { usePermissao, type Permissao } from "@/config/permissoes";
@@ -106,6 +106,21 @@ const clienteGroups = [
 
 export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const inactivityRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resetInactivity = () => {
+    if (inactivityRef.current) clearTimeout(inactivityRef.current);
+    inactivityRef.current = setTimeout(() => setCollapsed(true), 10000);
+  };
+  useEffect(() => {
+    resetInactivity();
+    window.addEventListener("mousemove", resetInactivity);
+    window.addEventListener("keydown", resetInactivity);
+    return () => {
+      if (inactivityRef.current) clearTimeout(inactivityRef.current);
+      window.removeEventListener("mousemove", resetInactivity);
+      window.removeEventListener("keydown", resetInactivity);
+    };
+  }, []);
   const navigate = useNavigate();
   const { logout, user, usuario } = useAuth();
   const empresaInfo = usuario?.empresaId ? empresasMockById[usuario.empresaId] : null;
