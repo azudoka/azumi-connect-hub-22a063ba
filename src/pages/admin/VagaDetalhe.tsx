@@ -1,4 +1,4 @@
-import { publicarVaga, despublicarVaga, getVaga, type VagaSupabase } from "@/services/vagasService";
+import { publicarVaga, despublicarVaga, getVaga, atualizarVaga, definirStatusVaga, type VagaSupabase, type CriarVagaInput } from "@/services/vagasService";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -62,7 +62,7 @@ const BENEFICIO_LABEL: Record<string, string> = {
 import {
   ArrowLeft, Building2, MapPin, Send, MessageSquare, CheckCircle2, Clock,
   Users, FileQuestion, History, Filter, Loader2, AlertTriangle, Bot, User,
-  MoreVertical, Eye, StickyNote, ChevronRight, ChevronLeft, UserX, Play, UserPlus, Link2,
+  MoreVertical, Eye, StickyNote, ChevronRight, ChevronLeft, ChevronDown, UserX, Play, UserPlus, Link2,
   Copy, FileText, MessageCircle, Download, ListChecks, ThumbsDown, CalendarPlus,
   CalendarDays, Globe, Paperclip, X as XIcon, Plus, Mail, Phone, Briefcase, Circle,
   Pencil, Trash2, GripVertical, Star, BookOpen, PauseCircle, ShieldOff, Ban,
@@ -603,6 +603,27 @@ export default function VagaDetalheAdmin() {
 
   const linkPublico = `${window.location.origin}/vagas/${vaga?.id ?? ""}`;
 
+  // ── Edição de vaga e mudança de status ─────────────────────────
+  const [editVagaOpen, setEditVagaOpen] = useState(false);
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const statusMenuRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!statusMenuOpen) return;
+    function onDocClick(e: MouseEvent) {
+      if (statusMenuRef.current && !statusMenuRef.current.contains(e.target as Node)) {
+        setStatusMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [statusMenuOpen]);
+
+  async function recarregarVaga() {
+    if (!id || vagaMock) return;
+    const r = await getVaga(id);
+    if (r) setVagaSupabaseData(r);
+  }
+
   function moverCandidato(candId: string, coluna: Coluna) {
     const cand = candidatosVaga.find((c) => c.id === candId);
     const anterior = colunasEstado[candId];
@@ -939,6 +960,61 @@ export default function VagaDetalheAdmin() {
           )}
         </div>
         <div className="ml-auto flex items-center gap-2">
+          {/* Status dropdown — só para vagas reais do Supabase */}
+          {vagaSupabaseData && (
+            <div className="relative" ref={statusMenuRef}>
+              <button
+                type="button"
+                onClick={() => setStatusMenuOpen((x) => !x)}
+                className="h-8 px-3 rounded-md border border-border hover:bg-secondary text-xs font-medium inline-flex items-center gap-1.5"
+              >
+                Status <ChevronDown className="h-3 w-3" />
+              </button>
+              {statusMenuOpen && (
+                <div className="absolute right-0 top-full mt-1 z-50 w-40 bg-card border border-border rounded-xl shadow-elevated py-1">
+                  {(["ativa", "standby", "cancelada"] as const).map((s) => {
+                    const isCurrent = vagaSupabaseData.status === s;
+                    const label = s === "ativa" ? "Ativa" : s === "standby" ? "Standby" : "Cancelada";
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={async () => {
+                          setStatusMenuOpen(false);
+                          if (isCurrent) return;
+                          try {
+                            await definirStatusVaga(vagaSupabaseData.id, s);
+                            await recarregarVaga();
+                            toast.success(`Status atualizado: ${label}.`);
+                          } catch {
+                            toast.error("Falha ao atualizar status.");
+                          }
+                        }}
+                        className={cn(
+                          "flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-secondary transition-colors",
+                          isCurrent && "font-semibold text-primary"
+                        )}
+                      >
+                        {isCurrent ? <CheckCircle2 className="h-3 w-3 shrink-0" /> : <span className="w-3 shrink-0" />}
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+          {/* Lápis de edição — só para vagas reais do Supabase */}
+          {vagaSupabaseData && (
+            <button
+              type="button"
+              title="Editar vaga"
+              onClick={() => setEditVagaOpen(true)}
+              className="h-8 w-8 rounded-md border border-border hover:bg-secondary inline-flex items-center justify-center"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          )}
           {publicacao !== "publicada" && (
             <button
               type="button"
@@ -2807,6 +2883,19 @@ export default function VagaDetalheAdmin() {
           </div>
         </ModalShell>
       )}
+
+      {/* ── Modal: Editar vaga ──────────────────────────────────── */}
+      {editVagaOpen && vagaSupabaseData && (
+        <EditVagaModal
+          vaga={vagaSupabaseData}
+          onClose={() => setEditVagaOpen(false)}
+          onSaved={async () => {
+            await recarregarVaga();
+            setEditVagaOpen(false);
+            toast.success("Vaga atualizada.");
+          }}
+        />
+      )}
     </div>
       )}
     </>
@@ -2841,6 +2930,247 @@ function ModalShell({
         <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
       </div>
     </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────
+// EditVagaModal — edição completa da vaga
+// ────────────────────────────────────────────────────────────────────
+const BENEFICIOS_EDIT = [
+  { value: "vale_transporte", label: "Vale-transporte" },
+  { value: "vale_alimentacao", label: "Vale-alimentação" },
+  { value: "plano_saude", label: "Plano de saúde" },
+  { value: "plano_odontologico", label: "Plano odontológico" },
+  { value: "gympass", label: "Gympass" },
+  { value: "home_office", label: "Home office" },
+  { value: "bonus", label: "Bônus" },
+  { value: "seguro_vida", label: "Seguro de vida" },
+];
+
+function EditVagaModal({
+  vaga,
+  onClose,
+  onSaved,
+}: {
+  vaga: VagaSupabase;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const [titulo, setTitulo] = useState(vaga.titulo);
+  const [empresa, setEmpresa] = useState(vaga.empresa);
+  const [filial, setFilial] = useState(vaga.filial ?? "");
+  const [tipo, setTipo] = useState(vaga.tipo ?? "");
+  const [modalidade, setModalidade] = useState(vaga.modalidade ?? "");
+  const [posicoes, setPosicoes] = useState(String(vaga.posicoes ?? 1));
+  const [beneficios, setBeneficios] = useState<string[]>(vaga.beneficios ?? []);
+  const [descricao, setDescricao] = useState(vaga.descricao ?? "");
+  const [consultor, setConsultor] = useState(vaga.consultor ?? "");
+  const [localTrabalho, setLocalTrabalho] = useState(vaga.local_trabalho ?? "");
+  const [nivel, setNivel] = useState(vaga.nivel ?? "");
+  const [turno, setTurno] = useState(vaga.turno ?? "");
+  const [tipoContrato, setTipoContrato] = useState(vaga.tipo_contrato ?? "");
+  const [cargaHoraria, setCargaHoraria] = useState(vaga.carga_horaria ?? "");
+  const [salarioDe, setSalarioDe] = useState(vaga.salario_de != null ? String(vaga.salario_de) : "");
+  const [salarioAte, setSalarioAte] = useState(vaga.salario_ate != null ? String(vaga.salario_ate) : "");
+  const [nivelUrgencia, setNivelUrgencia] = useState(vaga.nivel_urgencia ?? "");
+  const [temComissao, setTemComissao] = useState(vaga.tem_comissao ?? false);
+  const [slaDias, setSlaDias] = useState(String(vaga.sla_dias ?? 30));
+  const [saving, setSaving] = useState(false);
+
+  const inputCls = "w-full h-9 px-3 rounded-md border border-border bg-background text-sm";
+  const selectCls = "w-full h-9 px-3 rounded-md border border-border bg-background text-sm appearance-none";
+
+  async function handleSalvar() {
+    if (!titulo.trim()) return;
+    setSaving(true);
+    try {
+      const input: Partial<CriarVagaInput> = {
+        titulo: titulo.trim(),
+        empresa: empresa.trim(),
+        filial: filial.trim() || undefined,
+        tipo: tipo || undefined,
+        modalidade: modalidade || undefined,
+        posicoes: parseInt(posicoes) || 1,
+        beneficios,
+        descricao: descricao.trim() || undefined,
+        consultor: consultor.trim() || undefined,
+        local_trabalho: localTrabalho.trim() || undefined,
+        nivel: nivel || undefined,
+        turno: turno || undefined,
+        tipo_contrato: tipoContrato || undefined,
+        carga_horaria: cargaHoraria.trim() || undefined,
+        salario_de: salarioDe ? parseFloat(salarioDe) : undefined,
+        salario_ate: salarioAte ? parseFloat(salarioAte) : undefined,
+        nivel_urgencia: nivelUrgencia || undefined,
+        tem_comissao: temComissao,
+        sla_dias: parseInt(slaDias) || 30,
+      };
+      await atualizarVaga(vaga.id, input);
+      await onSaved();
+    } catch {
+      toast.error("Falha ao salvar. Tente novamente.");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <ModalShell title="Editar vaga" onClose={onClose} size="lg">
+      <div className="space-y-4 text-sm">
+        <Field label="Título da vaga *">
+          <input value={titulo} onChange={(e) => setTitulo(e.target.value)} className={inputCls} />
+        </Field>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Empresa *">
+            <input value={empresa} onChange={(e) => setEmpresa(e.target.value)} className={inputCls} />
+          </Field>
+          <Field label="Filial">
+            <input value={filial} onChange={(e) => setFilial(e.target.value)} placeholder="SP, RJ…" className={inputCls} />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Tipo">
+            <select value={tipo} onChange={(e) => setTipo(e.target.value)} className={selectCls}>
+              <option value="">Selecione</option>
+              <option value="operacional">Operacional</option>
+              <option value="tatico">Tático</option>
+              <option value="gestao">Gestão</option>
+              <option value="hunting">Hunt Executivo</option>
+            </select>
+          </Field>
+          <Field label="Modalidade">
+            <select value={modalidade} onChange={(e) => setModalidade(e.target.value)} className={selectCls}>
+              <option value="">Selecione</option>
+              <option value="presencial">Presencial</option>
+              <option value="hibrido">Híbrido</option>
+              <option value="remoto">Remoto</option>
+            </select>
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Posições abertas">
+            <input type="number" min={1} value={posicoes} onChange={(e) => setPosicoes(e.target.value)} className={inputCls + " w-24"} />
+          </Field>
+          <Field label="SLA (dias)">
+            <input type="number" min={1} value={slaDias} onChange={(e) => setSlaDias(e.target.value)} className={inputCls + " w-24"} />
+          </Field>
+        </div>
+
+        <Field label="Benefícios">
+          <div className="flex flex-wrap gap-2 mt-1">
+            {BENEFICIOS_EDIT.map((b) => {
+              const sel = beneficios.includes(b.value);
+              return (
+                <button
+                  key={b.value}
+                  type="button"
+                  onClick={() => setBeneficios((prev) => sel ? prev.filter((x) => x !== b.value) : [...prev, b.value])}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs transition-colors",
+                    sel ? "border-primary bg-primary/10 text-primary font-medium" : "border-border hover:bg-muted/40"
+                  )}
+                >
+                  {b.label}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+
+        <Field label="Descrição / requisitos">
+          <textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={3}
+            className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm resize-none" />
+        </Field>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Consultor responsável">
+            <input value={consultor} onChange={(e) => setConsultor(e.target.value)} className={inputCls} />
+          </Field>
+          <Field label="Local de trabalho">
+            <input value={localTrabalho} onChange={(e) => setLocalTrabalho(e.target.value)} placeholder="Cidade, UF" className={inputCls} />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Nível">
+            <select value={nivel} onChange={(e) => setNivel(e.target.value)} className={selectCls}>
+              <option value="">Selecione</option>
+              <option value="estagio">Estágio</option>
+              <option value="junior">Júnior</option>
+              <option value="pleno">Pleno</option>
+              <option value="senior">Sênior</option>
+              <option value="especialista">Especialista</option>
+              <option value="gerencia">Gerência</option>
+              <option value="diretoria">Diretoria</option>
+            </select>
+          </Field>
+          <Field label="Turno">
+            <select value={turno} onChange={(e) => setTurno(e.target.value)} className={selectCls}>
+              <option value="">Selecione</option>
+              <option value="integral">Integral</option>
+              <option value="manha">Manhã</option>
+              <option value="tarde">Tarde</option>
+              <option value="flexivel">Flexível</option>
+            </select>
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Tipo de contrato">
+            <select value={tipoContrato} onChange={(e) => setTipoContrato(e.target.value)} className={selectCls}>
+              <option value="">Selecione</option>
+              <option value="clt">CLT</option>
+              <option value="pj">PJ</option>
+              <option value="estagio">Estágio</option>
+              <option value="temporario">Temporário</option>
+              <option value="freelance">Freelance</option>
+            </select>
+          </Field>
+          <Field label="Carga horária">
+            <input value={cargaHoraria} onChange={(e) => setCargaHoraria(e.target.value)} placeholder="44h semanais" className={inputCls} />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Salário de (R$)">
+            <input type="number" value={salarioDe} onChange={(e) => setSalarioDe(e.target.value)} placeholder="0" className={inputCls} />
+          </Field>
+          <Field label="Salário até (R$)">
+            <input type="number" value={salarioAte} onChange={(e) => setSalarioAte(e.target.value)} placeholder="0" className={inputCls} />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Urgência">
+            <select value={nivelUrgencia} onChange={(e) => setNivelUrgencia(e.target.value)} className={selectCls}>
+              <option value="">Normal</option>
+              <option value="alta">Alta</option>
+              <option value="critica">Crítica</option>
+            </select>
+          </Field>
+          <label className="flex items-center gap-2 pt-5 cursor-pointer text-xs">
+            <input type="checkbox" checked={temComissao} onChange={(e) => setTemComissao(e.target.checked)} className="h-4 w-4 rounded" />
+            Tem comissão
+          </label>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-2 border-t border-border mt-2">
+          <button onClick={onClose} disabled={saving} className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm disabled:opacity-50">
+            Cancelar
+          </button>
+          <button
+            onClick={handleSalvar}
+            disabled={saving || !titulo.trim() || !empresa.trim()}
+            className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5 disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Pencil className="h-3.5 w-3.5" />}
+            {saving ? "Salvando…" : "Salvar alterações"}
+          </button>
+        </div>
+      </div>
+    </ModalShell>
   );
 }
 

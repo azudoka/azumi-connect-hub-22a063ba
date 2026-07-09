@@ -147,3 +147,16 @@ export async function atualizarEtapa(id: string, etapa: string): Promise<void> {
     .eq("id", id);
   if (error) throw error;
 }
+
+export async function atualizarVaga(id: string, input: Partial<CriarVagaInput>): Promise<void> {
+  const { error } = await supabase.from("vagas").update(input).eq("id", id);
+  if (error) throw error;
+}
+
+export async function definirStatusVaga(
+  id: string,
+  status: "ativa" | "standby" | "cancelada" | "concluida"
+): Promise<void> {
+  const { error } = await supabase.from("vagas").update({ status }).eq("id", id);
+  if (error) throw error;
+}

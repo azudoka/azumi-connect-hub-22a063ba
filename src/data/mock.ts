@@ -8,6 +8,7 @@ export type StatusKey =
   | "atrasada"
   | "concluida"
   | "cancelada"
+  | "standby"
   | "analise";
 
 export const empresas = [
