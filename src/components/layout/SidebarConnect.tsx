@@ -156,7 +156,7 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
   return (
     <aside
       className={cn(
-        "flex flex-col shrink-0 border-r border-sidebar-border bg-gradient-sidebar transition-all duration-300",
+        "sidebar-connect-brand flex flex-col shrink-0 border-r border-sidebar-border bg-gradient-sidebar transition-all duration-300",
         collapsed ? "w-16" : "w-60"
       )}
       aria-label="Navegação principal"
@@ -191,7 +191,7 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
                       "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors",
                       collapsed && "justify-center px-0"
                     )}
-                    activeClassName="!bg-primary/15 !text-foreground border-l-[3px] border-primary rounded-l-none ml-[3px]"
+                    activeClassName="!bg-primary/25 !text-foreground border-l-[3px] border-primary rounded-l-none ml-[3px]"
                   >
                     <it.icon className="h-4 w-4 shrink-0" />
                     {!collapsed && <span className="truncate">{it.label}</span>}
@@ -223,7 +223,7 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
                       "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors",
                       collapsed && "justify-center px-0"
                     )}
-                    activeClassName="!bg-primary/15 !text-foreground"
+                    activeClassName="!bg-primary/25 !text-foreground"
                   >
                     <it.icon className="h-4 w-4 shrink-0" />
                     {!collapsed && <span className="truncate">{it.label}</span>}
@@ -245,7 +245,7 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
                   "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors",
                   collapsed && "justify-center px-0"
                 )}
-                activeClassName="!bg-primary/15 !text-foreground"
+                activeClassName="!bg-primary/25 !text-foreground"
               >
                 <Settings className="h-4 w-4 shrink-0" />
                 {!collapsed && <span className="truncate">Configurações</span>}

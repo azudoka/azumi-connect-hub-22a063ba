@@ -161,6 +161,32 @@
     --gradient-sidebar: linear-gradient(180deg, hsl(191 45% 96%) 0%, hsl(191 40% 94%) 100%);
   }
 
+  /* ── Sidebar brand — Connect (azul escuro) ── */
+  .sidebar-connect-brand {
+    --sidebar-background: 217 85% 22%;
+    --sidebar-foreground: 214 60% 92%;
+    --sidebar-primary: 217 92% 65%;
+    --sidebar-accent: 217 75% 28%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 217 60% 30%;
+    --muted-foreground: 214 40% 78%;
+    --foreground: 0 0% 100%;
+    --gradient-sidebar: linear-gradient(180deg, hsl(217 90% 18%) 0%, hsl(217 85% 28%) 100%);
+  }
+
+  /* ── Sidebar brand — Hub (roxo escuro) ── */
+  .sidebar-hub-brand {
+    --sidebar-background: 262 65% 28%;
+    --sidebar-foreground: 262 50% 92%;
+    --sidebar-primary: 262 75% 68%;
+    --sidebar-accent: 262 60% 34%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 262 50% 36%;
+    --muted-foreground: 262 35% 80%;
+    --foreground: 0 0% 100%;
+    --gradient-sidebar: linear-gradient(180deg, hsl(262 70% 24%) 0%, hsl(262 65% 34%) 100%);
+  }
+
   /* MIDNIGHT — alternativa dark on-brand (Azul Oceano) */
   .theme-midnight {
     --background: 213 92% 7%;

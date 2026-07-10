@@ -225,7 +225,7 @@ function NavTooltip({ label, children }: { label: string; children: React.ReactN
   );
 }
 
-const ICON_COLOR = "#3B82F6";
+const ICON_COLOR = "hsl(var(--sidebar-primary))";
 
 export function SidebarHub({ profile }: { profile: HubProfile }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -262,8 +262,8 @@ export function SidebarHub({ profile }: { profile: HubProfile }) {
         <NavLink
           to={it.to}
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center justify-center w-full py-2.5 hover:bg-[#BFDBFE] transition-colors rounded-none"
-          activeClassName="!bg-[#93C5FD]"
+          className="flex items-center justify-center w-full py-2.5 hover:bg-sidebar-accent transition-colors rounded-none"
+          activeClassName="!bg-sidebar-primary/30"
         >
           <NavTooltip label={it.label}>
             <it.icon className="h-4 w-4 shrink-0" style={{ color: ICON_COLOR }} />
@@ -273,7 +273,7 @@ export function SidebarHub({ profile }: { profile: HubProfile }) {
         <NavLink
           to={it.to}
           className="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-          activeClassName="!bg-primary/15 !text-foreground border-l-[3px] border-primary rounded-l-none ml-[3px]"
+          activeClassName="!bg-primary/25 !text-foreground border-l-[3px] border-primary rounded-l-none ml-[3px]"
         >
           <it.icon className="h-4 w-4 shrink-0" style={{ color: ICON_COLOR }} />
           <span className="truncate flex-1" style={{ fontFamily: "'Urbanist',sans-serif" }}>{it.label}</span>
@@ -286,7 +286,7 @@ export function SidebarHub({ profile }: { profile: HubProfile }) {
   return (
     <aside
       onClick={() => { if (collapsed) setCollapsed(false); }}
-      className={cn(collapsed ? "" : "bg-gradient-sidebar")}
+      className={cn("sidebar-hub-brand", collapsed ? "" : "bg-gradient-sidebar")}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -294,7 +294,7 @@ export function SidebarHub({ profile }: { profile: HubProfile }) {
         width: collapsed ? 64 : 240,
         transition: "width 0.3s ease",
         borderRight: "1px solid hsl(var(--sidebar-border))",
-        background: collapsed ? "#DBEAFE" : undefined,
+        background: collapsed ? "hsl(var(--sidebar-background))" : undefined,
         cursor: collapsed ? "pointer" : "default",
         height: "100svh",
         position: "sticky",
@@ -309,7 +309,7 @@ export function SidebarHub({ profile }: { profile: HubProfile }) {
             <span style={{ color: "white", fontSize: 13, fontWeight: 800, fontFamily: "'Urbanist',sans-serif" }}>A</span>
           </div>
           {!collapsed && (
-            <span style={{ fontSize: 16, fontWeight: 800, color: "#031D38", fontFamily: "'Urbanist',sans-serif", letterSpacing: "-0.03em" }}>
+            <span style={{ fontSize: 16, fontWeight: 800, color: "hsl(var(--sidebar-foreground))", fontFamily: "'Urbanist',sans-serif", letterSpacing: "-0.03em" }}>
               Hub
             </span>
           )}
