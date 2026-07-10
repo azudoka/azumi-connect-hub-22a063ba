@@ -4856,7 +4856,26 @@ function CandidatoDetailSheet({
                     </button>
                     <button
                       disabled={dados.discStatus !== "concluido"}
-                      onClick={() => toast.info("PDF DISC gerado (mock).")}
+                      onClick={() => {
+                        if (!discValues) return;
+                        const perfil = dados.discDetalhes?.perfil ?? (cand.perfilDom ? `Perfil ${cand.perfilDom}` : "—");
+                        const cores: Record<string, string> = { D: "#EF4444", I: "#F59E0B", S: "#10B981", C: "#3B82F6" };
+                        const barras = (["D","I","S","C"] as const).map((k) => {
+                          const v = discValues[k] ?? 0;
+                          return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="font-weight:600">${k}</span><span>${v}%</span></div><div style="height:10px;background:#e2e8f0;border-radius:5px"><div style="height:100%;width:${v}%;background:${cores[k]};border-radius:5px"></div></div></div>`;
+                        }).join("");
+                        const h2s = (t: string) => `<h2 style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin:20px 0 6px;border-top:1px solid #e2e8f0;padding-top:14px">${t}</h2>`;
+                        const extras = [
+                          dados.discDetalhes?.descricao ? `${h2s("Descrição do perfil")}<p>${dados.discDetalhes.descricao}</p>` : "",
+                          (dados.discDetalhes as any)?.pontosFortes?.length ? `${h2s("Pontos fortes")}<ul>${(dados.discDetalhes as any).pontosFortes.map((p: string) => `<li>${p}</li>`).join("")}</ul>` : "",
+                          (dados.discDetalhes as any)?.pontosAtencao?.length ? `${h2s("Pontos de atenção")}<ul>${(dados.discDetalhes as any).pontosAtencao.map((p: string) => `<li>${p}</li>`).join("")}</ul>` : "",
+                          (dados.discDetalhes as any)?.estiloMotivacao ? `${h2s("Estilo de motivação")}<p>${(dados.discDetalhes as any).estiloMotivacao}</p>` : "",
+                          (dados.discDetalhes as any)?.perguntasEntrevista?.length ? `${h2s("Perguntas sugeridas para entrevista")}<ul>${(dados.discDetalhes as any).perguntasEntrevista.map((q: string) => `<li>${q}</li>`).join("")}</ul>` : "",
+                        ].join("");
+                        const html = `<!doctype html><html><head><title>Perfil DISC — ${cand.nome}</title><style>body{font-family:sans-serif;padding:40px;color:#1e293b;line-height:1.5;max-width:700px;margin:0 auto}h1{font-size:22px;color:#031D38;margin-bottom:4px}ul{padding-left:20px}li{margin-bottom:4px}.footer{margin-top:40px;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:12px}</style></head><body><h1>Perfil DISC — ${cand.nome}</h1><p style="color:#64748b;font-size:14px;margin-bottom:24px">Perfil predominante: <strong style="color:#1e293b">${perfil}</strong></p>${barras}${extras}<div class="footer">Azumi Connect · Gerado em ${new Date().toLocaleDateString("pt-BR")}</div><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`;
+                        const win = window.open("", "_blank");
+                        if (win) { win.document.write(html); win.document.close(); }
+                      }}
                       className="h-7 px-2 rounded-md border border-border text-[11px] font-medium hover:bg-secondary inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <Download className="h-3 w-3" /> PDF
@@ -5631,7 +5650,24 @@ function RelatorioCandidatoModal({
             <FileText className="h-3.5 w-3.5" /> Salvar rascunho
           </button>
           <button
-            onClick={() => toast.success("PDF gerado (mock).")}
+            onClick={() => {
+              const esc = (s: string) => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+              const nl = (s: string) => esc(s).replace(/\n/g,"<br>");
+              const h2r = (t: string) => `<h2 style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin:24px 0 8px;border-top:1px solid #e2e8f0;padding-top:16px">${t}</h2>`;
+              const questoesHtml = algumRespondido && algumaAvaliacao
+                ? questoesReais.map((q) => {
+                    const nota = form.questoes[q.id]?.nota ?? q.notaSalva ?? "—";
+                    const just = form.questoes[q.id]?.justificativa ?? q.justificativaSalva ?? "";
+                    return `<div style="margin-bottom:12px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:6px"><p style="font-weight:600;margin:0 0 5px">${esc(q.pergunta)}</p><p style="margin:0 0 4px;color:#475569"><span style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8">Resposta: </span>${esc(q.resposta)}</p><p style="font-size:12px;margin:0"><strong>Nota: ${nota}/5</strong>${just ? ` · <em>${esc(just)}</em>` : ""}</p></div>`;
+                  }).join("")
+                : `<p style="color:#94a3b8;font-style:italic">${!algumRespondido ? "Questionário ainda não respondido." : "Questionário não corrigido."}</p>`;
+              const movimentoHtml = form.movimento
+                ? `${h2r("Movimento Proposto")}<span style="display:inline-block;padding:4px 12px;border-radius:6px;font-size:13px;font-weight:600;background:${form.movimento==="Avançar"?"#d1fae5":form.movimento==="Desclassificar"?"#fee2e2":"#fef3c7"};color:${form.movimento==="Avançar"?"#065f46":form.movimento==="Desclassificar"?"#991b1b":"#92400e"}">${form.movimento}</span>`
+                : "";
+              const html = `<!doctype html><html><head><title>Relatório — ${esc(candidato.nome)}</title><style>body{font-family:sans-serif;padding:40px;color:#1e293b;line-height:1.6;max-width:750px;margin:0 auto}h1{font-size:22px;color:#031D38;margin-bottom:2px}p{margin:0 0 8px}.footer{margin-top:40px;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:12px}</style></head><body><h1>Relatório do Candidato</h1><p style="color:#64748b;font-size:12px">${esc(candidato.nome)} · ${esc(vagaTitulo)} · ${esc(empresa)} · ${form.protocolo} · ${form.data}</p>${h2r("Dados Essenciais")}<p><strong>Cargo:</strong> ${esc(form.cargoAtual)}</p><p><strong>Cidade / UF:</strong> ${esc(form.cidadeUf)}</p>${form.experienciaResumida ? `<p style="margin-top:8px">${nl(form.experienciaResumida)}</p>` : ""}${h2r("Síntese do Currículo")}<p>${nl(form.sintese || "—")}</p>${h2r("Pontos Positivos")}<p style="white-space:pre-line">${esc(form.pontosPositivos || "—")}</p>${h2r("Pontos de Atenção")}<p style="white-space:pre-line">${esc(form.pontosAtencao || "—")}</p>${h2r("Perfil Comportamental (DISC)")}<p>${nl(form.discResumo || "—")}</p>${h2r("Questionário — Respostas e Notas")}${questoesHtml}${h2r("Recomendação do Consultor")}<p>${nl(form.recomendacao || "—")}</p>${movimentoHtml}<div class="footer"><p style="font-weight:600;margin:0">${esc(form.consultorNome)}</p><p style="color:#64748b;margin:2px 0">${esc(form.consultorCargo)}</p><p style="margin-top:6px">Azumi Connect · ${form.protocolo} · Emitido em ${form.data}</p></div><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`;
+              const win = window.open("", "_blank");
+              if (win) { win.document.write(html); win.document.close(); }
+            }}
             className="inline-flex items-center gap-1 h-9 px-3 rounded-md border border-border hover:bg-secondary text-xs font-medium"
           >
             <Download className="h-3.5 w-3.5" /> Gerar PDF
