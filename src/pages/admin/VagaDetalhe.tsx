@@ -433,6 +433,7 @@ export default function VagaDetalheAdmin() {
     cpf: string | null; cidade: string | null; escolaridade: string | null; linkedin: string | null;
     created_at: string; curriculo_nome: string | null; curriculo_url: string | null;
     observacoes: string | null; banco_talentos: boolean; etapa_azumi: string | null;
+    avaliacao_estrelas: number | null;
     disc_resultado_candidato?: Array<{
       score_d: number | null; score_i: number | null;
       score_s: number | null; score_c: number | null;
@@ -494,6 +495,12 @@ export default function VagaDetalheAdmin() {
                   etapaPersistidaRef.current[e.id] = etapa;
                   return [e.id, etapa];
                 })
+            ),
+          }));
+          setAvaliacaoEstrelas((prev) => ({
+            ...prev,
+            ...Object.fromEntries(
+              rows.filter((r) => r.avaliacao_estrelas != null).map((r) => [r.id, r.avaliacao_estrelas as number])
             ),
           }));
         }
@@ -1525,10 +1532,13 @@ export default function VagaDetalheAdmin() {
                                       type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        setAvaliacaoEstrelas((prev) => ({
-                                          ...prev,
-                                          [c.id]: nota === n ? 0 : n,
-                                        }));
+                                        const novaNota = nota === n ? 0 : n;
+                                        setAvaliacaoEstrelas((prev) => ({ ...prev, [c.id]: novaNota }));
+                                        const ehSite = candidatosExtras.some((ex) => ex.id === c.id && ex.origem === "site");
+                                        if (ehSite) {
+                                          supabase.from("candidates").update({ avaliacao_estrelas: novaNota }).eq("id", c.id)
+                                            .then(({ error }) => { if (error) console.error("[estrelas]", error.message); });
+                                        }
                                       }}
                                       className="text-muted-foreground hover:text-warning transition-colors"
                                     >
