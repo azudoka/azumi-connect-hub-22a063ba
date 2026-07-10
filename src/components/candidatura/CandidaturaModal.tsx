@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Upload, Check, ChevronRight, FileText } from "lucide-react";
+import { X, Upload, Check, ChevronRight, FileText, Loader2 } from "lucide-react";
 import DiscTeste from "@/components/disc/DiscTeste";
 import type { DiscDim, DiscScores } from "@/components/disc/discQuestions";
 import { supabase } from "@/integrations/supabase/client";
@@ -80,6 +80,7 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
   const [step, setStep] = useState<1 | 2 | "ok">(1);
   const [c, setC] = useState<Cadastro>(CADASTRO_INIT);
   const [erro, setErro] = useState("");
+  const [enviando, setEnviando] = useState(false);
 
   if (!open) return null;
 
@@ -121,21 +122,21 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
   }
 
   async function concluir(scores: DiscScores, perfilDim: DiscDim) {
-    setStep("ok");
+    setEnviando(true);
 
-    // Upload currículo para o Storage (fire-and-forget, não bloqueia o fluxo)
     let curriculoUrl: string | null = null;
     if (c.curriculo) {
       const ext = c.curriculo.name.split(".").pop() ?? "pdf";
       const path = `${vagaId ?? "banco"}/${Date.now()}_${c.nome.replace(/\s+/g, "_")}.${ext}`;
-      supabase.storage
+      const { data: upData, error: upError } = await supabase.storage
         .from("curriculos")
-        .upload(path, c.curriculo, { upsert: false })
-        .then(({ data: upData, error }) => {
-          if (error) { console.error("[curriculo] storage:", error.message); return; }
-          const { data: urlData } = supabase.storage.from("curriculos").getPublicUrl(upData.path);
-          curriculoUrl = urlData.publicUrl;
-        });
+        .upload(path, c.curriculo, { upsert: false });
+      if (upError) {
+        console.error("[curriculo] storage:", upError.message);
+      } else if (upData) {
+        const { data: urlData } = supabase.storage.from("curriculos").getPublicUrl(upData.path);
+        curriculoUrl = urlData.publicUrl;
+      }
     }
 
     // Inserção em candidates (tabela principal — migração Fase A)
@@ -233,11 +234,22 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
         html,
       }),
     }).catch((err) => console.error("[candidatura] email:", err));
+
+    setEnviando(false);
+    setStep("ok");
   }
 
   return (
     <div className="fixed inset-0 z-[100] flex items-stretch justify-center bg-black/70 sm:items-center sm:p-6 overflow-y-auto">
       <div className="relative flex w-full max-w-4xl flex-col bg-white sm:rounded-2xl sm:my-6 sm:max-h-[calc(100vh-3rem)]">
+        {/* Overlay de envio */}
+        {enviando && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white/90">
+            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+            <p className="text-sm text-slate-600">Enviando candidatura…</p>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4" style={{ background: NAVY, color: "#fff" }}>
           <div className="min-w-0">
