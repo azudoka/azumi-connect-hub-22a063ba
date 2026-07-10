@@ -2,6 +2,15 @@
  * Azumi Brand — v2.3
  * Marca oficial: 2 círculos sobrepostos + wordmark "azumi RH"
  * Subtítulo opcional: "Connect" ou "Hub" em JetBrains Mono uppercase.
+ *
+ * Para ativar arquivos de imagem (PNG/SVG), coloque os arquivos em
+ * src/assets/brand/ conforme README.md e descomente as linhas abaixo:
+ *
+ * import logoFull from "@/assets/brand/logo-full.svg";
+ * import logoMark from "@/assets/brand/logo-mark.svg";
+ *
+ * Depois substitua <AzumiMark /> por <img src={logoMark} … />
+ * e o wordmark por <img src={logoFull} … />.
  */
 
 interface AzumiMarkProps {

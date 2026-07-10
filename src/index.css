@@ -91,6 +91,11 @@
     --shadow-violet: 0 8px 24px -8px hsl(258 70% 60% / 0.35);
     --shadow-card: 0 4px 16px -4px hsl(213 60% 30% / 0.12);
     --shadow-elevated: 0 12px 32px -8px hsl(213 60% 25% / 0.18);
+    --shadow-soft: 0 2px 12px -2px hsl(213 60% 30% / 0.08), 0 1px 3px hsl(213 60% 30% / 0.06);
+    --shadow-glass: 0 8px 32px -8px hsl(213 60% 20% / 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+
+    /* Header / navy gradient */
+    --gradient-header: linear-gradient(135deg, #031D38 0%, #0A2F52 100%);
   }
 
   /* Connect explícito (mesmos tokens do :root) */

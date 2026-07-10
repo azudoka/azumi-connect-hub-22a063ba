@@ -99,11 +99,23 @@ export default {
         "gradient-sidebar": "var(--gradient-sidebar)",
         "gradient-card-hover": "var(--gradient-card-hover)",
         "gradient-divider": "var(--gradient-divider)",
+        "gradient-header": "var(--gradient-header)",
       },
       boxShadow: {
         violet: "var(--shadow-violet)",
         card: "var(--shadow-card)",
         elevated: "var(--shadow-elevated)",
+        soft: "var(--shadow-soft)",
+        glass: "var(--shadow-glass)",
+      },
+      transitionDuration: {
+        DEFAULT: "250ms",
+        fast: "150ms",
+        slow: "400ms",
+      },
+      transitionTimingFunction: {
+        DEFAULT: "cubic-bezier(0.4, 0, 0.2, 1)",
+        spring: "cubic-bezier(0.34, 1.56, 0.64, 1)",
       },
       borderRadius: {
         lg: "var(--radius)",
