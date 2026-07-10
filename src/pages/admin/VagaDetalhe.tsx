@@ -2056,7 +2056,7 @@ export default function VagaDetalheAdmin() {
       )}
 
       {/* B09: Dialog de confirmação para envio ao cliente */}
-      {enviarOpen && (
+      {enviarOpen && createPortal(
         <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
           <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
             <div className="flex items-start gap-3">
@@ -2119,10 +2119,11 @@ export default function VagaDetalheAdmin() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {excedeuOpen && (
+      {excedeuOpen && createPortal(
         <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
           <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
             <div className="flex items-start gap-3">
@@ -2163,12 +2164,13 @@ export default function VagaDetalheAdmin() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {confirmarDesclId && (() => {
         const cand = candidatosVaga.find((c) => c.id === confirmarDesclId);
-        return (
+        return createPortal(
           <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
             <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
               <div className="flex items-start gap-3">
@@ -2197,14 +2199,15 @@ export default function VagaDetalheAdmin() {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         );
       })()}
 
       {/* Confirmação: Bloquear candidato */}
       {confirmarBloquearId && (() => {
         const cand = candidatosVaga.find((c) => c.id === confirmarBloquearId);
-        return (
+        return createPortal(
           <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()} onClick={() => setConfirmarBloquearId(null)}>
             <ScrollLock />
             <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in" onClick={(e) => e.stopPropagation()}>
@@ -2257,7 +2260,8 @@ export default function VagaDetalheAdmin() {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         );
       })()}
 
@@ -2265,7 +2269,7 @@ export default function VagaDetalheAdmin() {
       {confirmarSuspenderId && (() => {
         const cand = candidatosVaga.find((c) => c.id === confirmarSuspenderId);
         const jaSuspenso = suspensos.has(confirmarSuspenderId);
-        return (
+        return createPortal(
           <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()} onClick={() => setConfirmarSuspenderId(null)}>
             <ScrollLock />
             <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in" onClick={(e) => e.stopPropagation()}>
@@ -2325,14 +2329,15 @@ export default function VagaDetalheAdmin() {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         );
       })()}
 
 
       {confirmarEnviadosId && (() => {
         const cand = candidatosVaga.find((c) => c.id === confirmarEnviadosId);
-        return (
+        return createPortal(
           <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
             <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
               <div className="flex items-start gap-3">
@@ -2366,14 +2371,15 @@ export default function VagaDetalheAdmin() {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         );
       })()}
 
       {/* Confirmação: Mover para "Contratado" */}
       {confirmarContratadoId && (() => {
         const cand = candidatosVaga.find((c) => c.id === confirmarContratadoId);
-        return (
+        return createPortal(
           <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
             <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
               <div className="flex items-start gap-3">
@@ -2406,12 +2412,13 @@ export default function VagaDetalheAdmin() {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         );
       })()}
 
       {/* Alerta: candidato movido sem timer ativo */}
-      {alertaPlayOpen && alertaPlayCandId && alertaPlayDestino && (
+      {alertaPlayOpen && alertaPlayCandId && alertaPlayDestino && createPortal(
         <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
             <div className="flex items-start gap-3">
@@ -2454,7 +2461,8 @@ export default function VagaDetalheAdmin() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── Modal: Novo candidato (manual) ───────────────────────── */}
