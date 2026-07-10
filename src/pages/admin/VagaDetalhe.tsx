@@ -113,6 +113,7 @@ interface CandidatoExtra {
   disc_c?: number | null;
   disc_perfil?: string | null;
   curriculo_url?: string | null;
+  foto_url?: string | null;
   linkedin?: string | null;
   cidade_estado?: string | null;
   mensagem?: string | null;
@@ -431,7 +432,7 @@ export default function VagaDetalheAdmin() {
   type CandidaturaSite = {
     id: string; nome: string; email: string | null; telefone: string | null;
     cpf: string | null; cidade: string | null; escolaridade: string | null; linkedin: string | null;
-    created_at: string; curriculo_nome: string | null; curriculo_url: string | null;
+    created_at: string; curriculo_nome: string | null; curriculo_url: string | null; foto_url: string | null;
     observacoes: string | null; banco_talentos: boolean; etapa_azumi: string | null;
     avaliacao_estrelas: number | null;
     disc_resultado_candidato?: Array<{
@@ -471,6 +472,7 @@ export default function VagaDetalheAdmin() {
               disc_c: disc?.score_c ?? null,
               disc_perfil: disc?.fator_predominante ?? null,
               curriculo_url: row.curriculo_url,
+              foto_url: row.foto_url,
               linkedin: row.linkedin,
               cidade_estado: row.cidade ?? null,
               mensagem: row.observacoes,
@@ -4608,9 +4610,13 @@ function CandidatoDetailSheet({
         {/* Header fixo */}
         <header className="px-5 pt-5 pb-4 border-b border-border bg-card">
           <div className="flex items-start gap-3">
-            <div className="h-12 w-12 rounded-md bg-gradient-brand flex items-center justify-center text-sm font-semibold text-white shrink-0">
-              {iniciais}
-            </div>
+            {candidatoExtra?.foto_url ? (
+              <img src={candidatoExtra.foto_url} alt="" className="h-12 w-12 rounded-md object-cover shrink-0" />
+            ) : (
+              <div className="h-12 w-12 rounded-md bg-gradient-brand flex items-center justify-center text-sm font-semibold text-white shrink-0">
+                {iniciais}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="font-display text-xl font-semibold truncate">{cand.nome}</h2>

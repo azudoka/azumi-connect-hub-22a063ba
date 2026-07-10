@@ -81,6 +81,9 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
   const [c, setC] = useState<Cadastro>(CADASTRO_INIT);
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [cpfEncontrado, setCpfEncontrado] = useState<{
+    nome: string; email: string; telefone: string; cidade: string | null; escolaridade: string | null; linkedin: string | null;
+  } | null>(null);
 
   if (!open) return null;
 
@@ -92,7 +95,23 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
     setStep(1);
     setC(CADASTRO_INIT);
     setErro("");
+    setCpfEncontrado(null);
     onClose();
+  }
+
+  async function verificarCpfExistente(cpfDigitado: string) {
+    const cpfLimpo = cpfDigitado.replace(/\D/g, "");
+    if (cpfLimpo.length < 11) return;
+    const { data } = await supabase
+      .from("candidates")
+      .select("nome, email, telefone, cidade, escolaridade, linkedin")
+      .eq("cpf", cpfDigitado)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data) {
+      setCpfEncontrado(data);
+    }
   }
 
   function validarStep1(): string {
@@ -139,6 +158,21 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
       }
     }
 
+    let fotoUrl: string | null = null;
+    if (c.foto) {
+      const ext = c.foto.name.split(".").pop() ?? "jpg";
+      const path = `fotos/${Date.now()}_${c.nome.replace(/\s+/g, "_")}.${ext}`;
+      const { data: upData, error: upError } = await supabase.storage
+        .from("public-applications")
+        .upload(path, c.foto, { upsert: false });
+      if (upError) {
+        console.error("[foto] storage:", upError.message);
+      } else if (upData) {
+        const { data: urlData } = supabase.storage.from("public-applications").getPublicUrl(upData.path);
+        fotoUrl = urlData.publicUrl;
+      }
+    }
+
     // Inserção em candidates (tabela principal — migração Fase A)
     // DISC (scores/perfilDim) não tem colunas diretas em candidates —
     // candidate_profile_id seria o lugar correto, mas requer criar um perfil separado.
@@ -160,6 +194,7 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
       observacoes: c.mensagem || null,
       curriculo_nome: c.curriculo?.name ?? null,
       curriculo_url: curriculoUrl,
+      foto_url: fotoUrl,
       disponibilidade_inicio: modo === "banco" ? (c.disponibilidade || null) : null,
       banco_talentos: modo === "banco",
       etapa_azumi: "recebido",
@@ -314,9 +349,50 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
                   <Input value={c.telefone} onChange={(v) => up("telefone", v)} placeholder="(00) 00000-0000" />
                 </Field>
                 <Field label="CPF *">
-                  <Input value={c.cpf} onChange={(v) => up("cpf", v)} placeholder="000.000.000-00" />
+                  <Input
+                    value={c.cpf}
+                    onChange={(v) => { up("cpf", v); setCpfEncontrado(null); }}
+                    placeholder="000.000.000-00"
+                    onBlur={() => verificarCpfExistente(c.cpf)}
+                  />
                 </Field>
               </Grid2>
+
+              {cpfEncontrado && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm">
+                  <p className="font-medium text-blue-900 mb-2">
+                    Encontramos um cadastro anterior com esse CPF. Quer reaproveitar seus dados (nome, e-mail, telefone, cidade, escolaridade) ou prefere preencher tudo de novo?
+                  </p>
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setC((p) => ({
+                          ...p,
+                          nome: cpfEncontrado.nome || p.nome,
+                          email: cpfEncontrado.email || p.email,
+                          telefone: cpfEncontrado.telefone || p.telefone,
+                          cidadeEstado: cpfEncontrado.cidade || p.cidadeEstado,
+                          escolaridade: cpfEncontrado.escolaridade || p.escolaridade,
+                          linkedin: cpfEncontrado.linkedin || p.linkedin,
+                        }));
+                        setCpfEncontrado(null);
+                      }}
+                      className="rounded-md bg-blue-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-800"
+                    >
+                      Reaproveitar dados
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCpfEncontrado(null)}
+                      className="rounded-md border border-blue-300 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                    >
+                      Preencher do zero
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <Grid2>
                 <Field label="Data de nascimento *">
                   <Input type="date" value={c.nascimento} onChange={(v) => up("nascimento", v)} />
@@ -535,13 +611,14 @@ function Grid2({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</div>;
 }
 
-function Input({ value, onChange, type = "text", placeholder }: { value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) {
+function Input({ value, onChange, type = "text", placeholder, onBlur }: { value: string; onChange: (v: string) => void; type?: string; placeholder?: string; onBlur?: () => void }) {
   return (
     <input
       type={type}
       value={value}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
       className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
     />
   );
