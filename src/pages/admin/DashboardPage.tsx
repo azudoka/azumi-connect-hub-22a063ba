@@ -653,8 +653,8 @@ function AdminDashboard() {
               </div>
               <div className="flex items-center gap-4">
                 {[
-                  { label: "Ana B.",    cor: "#3B82F6" },
-                  { label: "Camila T.", cor: "#8B5CF6" },
+                  { label: "Ana B.",    cor: "hsl(var(--primary))" },
+                  { label: "Camila T.", cor: "hsl(var(--highlight))" },
                   { label: "Rafael M.", cor: "#06B6D4" },
                 ].map((c) => (
                   <span key={c.label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -676,8 +676,8 @@ function AdminDashboard() {
                     name === "ana" ? "Ana B." : name === "camila" ? "Camila T." : "Rafael M.",
                   ]}
                 />
-                <Bar dataKey="ana"    fill="#3B82F6" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="camila" fill="#8B5CF6" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="ana"    fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="camila" fill="hsl(var(--highlight))" radius={[3, 3, 0, 0]} />
                 <Bar dataKey="rafael" fill="#06B6D4" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -721,9 +721,9 @@ function AdminDashboard() {
                   <Line
                     type="monotone"
                     dataKey="nps"
-                    stroke="#3B82F6"
+                    stroke="hsl(var(--primary))"
                     strokeWidth={2}
-                    dot={{ r: 3, fill: "#3B82F6" }}
+                    dot={{ r: 3, fill: "hsl(var(--primary))" }}
                     activeDot={{ r: 5 }}
                   />
                 </LineChart>
