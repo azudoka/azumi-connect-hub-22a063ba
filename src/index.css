@@ -81,6 +81,7 @@
     --navy-dark: 213 95% 7%;
 
     --radius: 0.625rem;
+    --radius-btn: 9999px;    /* Connect — pill, espelha o contorno da logo */
 
     /* Sidebar — Connect: light com lavagem azul+violeta */
     --sidebar-background: 220 40% 99%;
@@ -122,6 +123,10 @@
        por engano, já que o Tailwind agora lê var(--font-display)/var(--font-body). */
     --font-display: 'Sora', 'Space Grotesk', sans-serif;
     --font-body: 'Space Grotesk', 'Inter', sans-serif;
+
+    /* Botão — mantém o radius atual até a Fase Hub. O Connect virou pill;
+       o Hub, quando chegar a vez, vira canto grande suave (14px), nunca pill. */
+    --radius-btn: 0.625rem;
 
     --background: 191 35% 97%;
     --foreground: 213 40% 14%;
@@ -181,18 +186,18 @@
 
   /* ── Sidebar brand — Connect (azul escuro) ── */
   .sidebar-connect-brand {
-    --sidebar-background: 217 85% 22%;
-    --sidebar-foreground: 214 60% 92%;
-    --sidebar-primary: 217 92% 65%;
-    --sidebar-accent: 217 75% 28%;
+    --sidebar-background: 219 52% 16%;      /* Tinta Connect #14233F */
+    --sidebar-foreground: 220 55% 92%;
+    --sidebar-primary: 217 70% 70%;         /* Céu Connect #7FA8E8 */
+    --sidebar-accent: 219 40% 24%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 217 60% 30%;
-    --muted-foreground: 214 40% 78%;
+    --sidebar-border: 219 35% 30%;
+    --muted-foreground: 220 30% 75%;
     --foreground: 0 0% 100%;
-    --card: 217 60% 26%;
-    --secondary: 217 55% 24%;
-    --border: 217 50% 32%;
-    --gradient-sidebar: linear-gradient(180deg, hsl(217 90% 18% / 0.88) 0%, hsl(217 85% 28% / 0.88) 100%);
+    --card: 219 40% 22%;
+    --secondary: 219 38% 20%;
+    --border: 219 35% 28%;
+    --gradient-sidebar: linear-gradient(180deg, hsl(219 55% 13% / 0.9) 0%, hsl(219 50% 20% / 0.9) 100%);
   }
 
   /* ── Sidebar brand — Hub (roxo escuro) ── */
