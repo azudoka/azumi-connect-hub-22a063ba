@@ -10,7 +10,7 @@ import {
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/PageHeader";
-import { KpiCard } from "@/components/KpiCard";
+import { ConnectStatCard } from "@/components/ConnectStatCard";
 import { Timer } from "@/components/Timer";
 import { EmptyState } from "@/components/EmptyState";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -538,7 +538,7 @@ export default function HorasPage() {
       <section className="bg-card border border-border rounded-xl p-5 mb-6">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+            <div className="h-9 w-9 rounded-lg bg-[hsl(var(--primary)/0.1)] text-primary flex items-center justify-center">
               <TimerIcon className="h-4 w-4" />
             </div>
             <div>
@@ -597,7 +597,7 @@ export default function HorasPage() {
         </div>
 
         {timerAtivo ? (
-          <div className="rounded-lg border border-border bg-background/40 p-4 flex items-center gap-4 flex-wrap">
+          <div className="rounded-lg border border-border bg-[hsl(var(--background)/0.4)] p-4 flex items-center gap-4 flex-wrap">
             <Timer
               key={timerKey}
               onStop={handleTimerStop}
@@ -632,7 +632,7 @@ export default function HorasPage() {
             </span>
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-border bg-background/30 p-5 flex items-center justify-between gap-4 flex-wrap">
+          <div className="rounded-lg border border-dashed border-border bg-[hsl(var(--background)/0.3)] p-5 flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
                 <Clock className="h-5 w-5" />
@@ -678,7 +678,7 @@ export default function HorasPage() {
           <AccordionItem value="manual" className="border-none">
             <AccordionTrigger className="px-5 py-4 hover:no-underline">
               <div className="flex items-center gap-2">
-                <div className="h-9 w-9 rounded-lg bg-warning/15 text-warning flex items-center justify-center">
+                <div className="h-9 w-9 rounded-lg bg-[hsl(var(--warning)/0.15)] text-warning flex items-center justify-center">
                   <PenSquare className="h-4 w-4" />
                 </div>
                 <div className="text-left">
@@ -777,7 +777,7 @@ export default function HorasPage() {
                       return dur === null ? (
                         <p className="text-[10px] text-destructive">A hora de fim deve ser maior que a de início.</p>
                       ) : (
-                        <p className="text-[10px] text-muted-foreground">Duração calculada: <span className="text-foreground font-data">{dur.toFixed(2)}h</span></p>
+                        <p className="text-[10px] text-muted-foreground">Duração calculada: <span className="text-foreground tabular-nums">{dur.toFixed(2)}h</span></p>
                       );
                     })()
                   )}
@@ -813,7 +813,7 @@ export default function HorasPage() {
           <AccordionItem value="interacao" className="border-none">
             <AccordionTrigger className="px-5 py-4 hover:no-underline">
               <div className="flex items-center gap-2">
-                <div className="h-9 w-9 rounded-lg bg-info/15 text-info flex items-center justify-center">
+                <div className="h-9 w-9 rounded-lg bg-[hsl(var(--info)/0.15)] text-info flex items-center justify-center">
                   <MessageSquare className="h-4 w-4" />
                 </div>
                 <div className="text-left">
@@ -838,8 +838,8 @@ export default function HorasPage() {
                         className={cn(
                           "px-3 py-1.5 rounded-full border text-xs transition-colors",
                           iCanal === c
-                            ? "border-primary bg-primary/10 text-primary font-medium"
-                            : "border-border hover:bg-secondary/50"
+                            ? "border-primary bg-[hsl(var(--primary)/0.1)] text-primary font-medium"
+                            : "border-border hover:bg-[hsl(var(--secondary)/0.5)]"
                         )}
                       >
                         {c}
@@ -945,9 +945,26 @@ export default function HorasPage() {
 
       {/* ───────── 3. Extrato de Horas ───────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-        <KpiCard label="Total no período" value={`${totalHoras.toFixed(2)}h`} icon={Clock} />
-        <KpiCard label="Via timer" value={`${totalTimer.toFixed(2)}h`} icon={TimerIcon} hint={`${filtrados.filter(l => l.tipo === "timer").length} entradas`} />
-        <KpiCard label="Manuais" value={`${totalManual.toFixed(2)}h`} icon={PenSquare} hint={`${filtrados.filter(l => l.tipo === "manual").length} entradas`} />
+        <ConnectStatCard variant="terminal" label="Total no período" value={totalHoras.toFixed(2)} suffix="h" />
+        <ConnectStatCard
+          className="sm:col-span-2"
+          variant="stack"
+          label="Composição — timer vs. manual"
+          segments={[
+            {
+              label: "Via timer",
+              value: `${totalTimer.toFixed(2)}h · ${filtrados.filter((l) => l.tipo === "timer").length} entradas`,
+              percent: totalHoras > 0 ? (totalTimer / totalHoras) * 100 : 0,
+              tone: "blue",
+            },
+            {
+              label: "Manuais",
+              value: `${totalManual.toFixed(2)}h · ${filtrados.filter((l) => l.tipo === "manual").length} entradas`,
+              percent: totalHoras > 0 ? (totalManual / totalHoras) * 100 : 0,
+              tone: "violet",
+            },
+          ]}
+        />
       </div>
 
       <section className="bg-card border border-border rounded-xl overflow-hidden">
@@ -1032,7 +1049,7 @@ export default function HorasPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
+              <thead className="bg-[hsl(var(--secondary)/0.4)] text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
                   <th className="w-8" />
                   <th className="text-left font-medium px-4 py-3">Data</th>
@@ -1056,7 +1073,7 @@ export default function HorasPage() {
                         onClick={() => hasDetalhe && setExpandido(isOpen ? null : l.id)}
                         className={cn(
                           "border-t border-border transition-colors",
-                          hasDetalhe ? "cursor-pointer hover:bg-secondary/30" : ""
+                          hasDetalhe ? "cursor-pointer hover:bg-[hsl(var(--secondary)/0.3)]" : ""
                         )}
                       >
                         <td className="px-2 py-3 text-muted-foreground">
@@ -1064,7 +1081,7 @@ export default function HorasPage() {
                             isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
                           ) : null}
                         </td>
-                        <td className="px-4 py-3 font-data text-xs">
+                        <td className="px-4 py-3 text-xs tabular-nums">
                           {format(new Date(l.data), "dd/MM/yy", { locale: ptBR })}
                         </td>
                         <td className="px-4 py-3 font-medium">{l.empresaNome}</td>
@@ -1075,20 +1092,20 @@ export default function HorasPage() {
                             <div className="text-[10px] text-primary mt-0.5">Etapa: {l.etapaVaga}</div>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-right font-data tabular-nums">{l.horas.toFixed(2)}h</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{l.horas.toFixed(2)}h</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {l.tipo === "timer" ? (
-                              <span className="badge-pill bg-info/15 text-info border-info/30">
+                              <span className="badge-pill bg-[hsl(var(--info)/0.15)] text-info border-[hsl(var(--info)/0.3)]">
                                 <TimerIcon className="h-3 w-3" /> Timer
                               </span>
                             ) : (
-                              <span className="badge-pill bg-warning/15 text-warning border-warning/30">
+                              <span className="badge-pill bg-[hsl(var(--warning)/0.15)] text-warning border-[hsl(var(--warning)/0.3)]">
                                 <PenSquare className="h-3 w-3" /> Manual
                               </span>
                             )}
                             {l.requerRevisao && (
-                              <span className="badge-pill bg-destructive/15 text-destructive border-destructive/30">
+                              <span className="badge-pill bg-[hsl(var(--destructive)/0.15)] text-destructive border-[hsl(var(--destructive)/0.3)]">
                                 <AlertTriangle className="h-3 w-3" /> Revisar
                               </span>
                             )}
@@ -1097,7 +1114,7 @@ export default function HorasPage() {
                         <td className="px-4 py-3 text-xs">{l.consultorNome}</td>
                       </tr>
                       {isOpen && hasDetalhe && (
-                        <tr key={`${l.id}-det`} className="bg-secondary/20 border-t border-border">
+                        <tr key={`${l.id}-det`} className="bg-[hsl(var(--secondary)/0.2)] border-t border-border">
                           <td />
                           <td colSpan={7} className="px-4 py-3">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
@@ -1135,7 +1152,7 @@ export default function HorasPage() {
               Interações externas registradas
             </h4>
             <table className="w-full text-sm">
-              <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
+              <thead className="bg-[hsl(var(--secondary)/0.4)] text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
                   <th className="text-left font-medium px-4 py-2">Data</th>
                   <th className="text-left font-medium px-4 py-2">Canal</th>
@@ -1146,12 +1163,12 @@ export default function HorasPage() {
               </thead>
               <tbody>
                 {interacoes.map((int) => (
-                  <tr key={int.id} className="border-t border-border hover:bg-secondary/20">
-                    <td className="px-4 py-2 font-data text-xs">
+                  <tr key={int.id} className="border-t border-border hover:bg-[hsl(var(--secondary)/0.2)]">
+                    <td className="px-4 py-2 text-xs tabular-nums">
                       {format(new Date(int.data), "dd/MM/yy", { locale: ptBR })}
                     </td>
                     <td className="px-4 py-2">
-                      <span className="badge-pill bg-info/15 text-info border-info/30">
+                      <span className="badge-pill bg-[hsl(var(--info)/0.15)] text-info border-[hsl(var(--info)/0.3)]">
                         {int.canal}
                       </span>
                     </td>
@@ -1159,7 +1176,7 @@ export default function HorasPage() {
                     <td className="px-4 py-2 text-muted-foreground text-xs max-w-[200px] truncate">
                       {int.descricao}
                     </td>
-                    <td className="px-4 py-2 text-right font-data text-xs">
+                    <td className="px-4 py-2 text-right text-xs tabular-nums">
                       {Math.floor(int.duracaoMin / 60) > 0
                         ? `${Math.floor(int.duracaoMin / 60)}h `
                         : ""}
@@ -1220,7 +1237,7 @@ export default function HorasPage() {
               )}
               <span className="block text-xs text-muted-foreground">
                 Horas a registrar:{" "}
-                <span className="font-data font-medium text-foreground">
+                <span className="font-medium tabular-nums text-foreground">
                   {(segundosParaGravar / 3600).toFixed(2)}h
                 </span>
               </span>
@@ -1262,8 +1279,8 @@ export default function HorasPage() {
                 className={cn(
                   "w-full text-left px-4 py-2.5 rounded-lg border text-sm transition-colors",
                   etapaSelecionada === etapa
-                    ? "border-primary bg-primary/10 text-primary font-medium"
-                    : "border-border hover:bg-secondary/50"
+                    ? "border-primary bg-[hsl(var(--primary)/0.1)] text-primary font-medium"
+                    : "border-border hover:bg-[hsl(var(--secondary)/0.5)]"
                 )}
               >
                 {etapa}
