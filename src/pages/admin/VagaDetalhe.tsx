@@ -2115,13 +2115,84 @@ export default function VagaDetalheAdmin() {
               </button>
               <button
                 onClick={async () => {
+                  if (!vaga) return;
                   setEnviando(true);
-                  await new Promise((r) => setTimeout(r, 800));
-                  setEnviando(false);
-                  setEnviarOpen(false);
-                  toast.success(`${candidatosVaga.filter(c => colunasEstado[c.id] === "Entrevista Cliente").length} perfil(is) enviado(s) para ${vaga.empresa}.`, {
-                    description: "O cliente foi notificado e tem 48h para emitir parecer.",
-                  });
+                  const candidatosParaEnviar = candidatosVaga.filter(
+                    (c) => colunasEstado[c.id] === "Entrevista Cliente"
+                  );
+                  try {
+                    // 1. Marcar timestamp de envio nos candidatos
+                    await Promise.all(
+                      candidatosParaEnviar.map((c) =>
+                        supabase
+                          .from("candidates")
+                          .update({ enviado_cliente_em: new Date().toISOString() })
+                          .eq("id", c.id)
+                      )
+                    );
+
+                    // 2. Buscar dados da vaga direto do banco (is_avulsa, email, company_id)
+                    const { data: js } = await supabase
+                      .from("job_solicitations")
+                      .select("is_avulsa, avulsa_solicitante_email, company_id")
+                      .eq("id", vaga.id)
+                      .single();
+
+                    if (js?.is_avulsa) {
+                      // 2a. Avulso — e-mail pro solicitante
+                      await fetch("https://azumi-email-api.vercel.app/api/send-email", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          to: js.avulsa_solicitante_email,
+                          subject: `Novos perfis selecionados — ${vaga.titulo}`,
+                          html: `
+                            <div style="font-family:sans-serif;max-width:560px;margin:0 auto">
+                              <h2 style="color:#034C8B">Perfis selecionados para avaliação</h2>
+                              <p>Vaga: <strong>${vaga.titulo}</strong></p>
+                              <p>${candidatosParaEnviar.length} candidato(s) avançaram para a etapa de decisão do cliente:</p>
+                              <ul>
+                                ${candidatosParaEnviar.map((c) => `<li>${c.nome}${(c as any).perfilDom ? ` — ${(c as any).perfilDom}` : ""}</li>`).join("")}
+                              </ul>
+                              <p>Você tem <strong>48h</strong> para enviar seu parecer. Entre em contato com seu consultor Azumi para mais detalhes.</p>
+                              <p style="font-size:12px;color:#666">Enviado automaticamente por Azumi Connect · ${new Date().toLocaleString("pt-BR")}</p>
+                            </div>
+                          `,
+                        }),
+                      });
+                    } else if (js?.company_id) {
+                      // 2b. Empresa cadastrada — notificação in-app
+                      const { data: usuariosCliente } = await supabase
+                        .from("users_profile")
+                        .select("id")
+                        .eq("company_id", js.company_id);
+
+                      if (usuariosCliente && usuariosCliente.length > 0) {
+                        await Promise.all(
+                          usuariosCliente.map((u) =>
+                            supabase.from("notifications").insert({
+                              user_id: u.id,
+                              title: "Novos perfis para sua vaga",
+                              message: `${candidatosParaEnviar.length} candidato(s) para "${vaga.titulo}" aguardam seu parecer.`,
+                              type: "atracao",
+                              link: `/cliente/atracao/${vaga.id}`,
+                            })
+                          )
+                        );
+                      }
+                    }
+
+                    toast.success(
+                      `${candidatosParaEnviar.length} perfil(is) enviado(s) para ${vaga.empresa}.`,
+                      { description: "O cliente foi notificado e tem 48h para emitir parecer." }
+                    );
+                  } catch (err) {
+                    console.error("[envio-cliente]", err);
+                    toast.error("Erro ao enviar perfis. Tente novamente.");
+                  } finally {
+                    setEnviando(false);
+                    setEnviarOpen(false);
+                  }
                 }}
                 disabled={enviando}
                 className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5 disabled:opacity-50"
