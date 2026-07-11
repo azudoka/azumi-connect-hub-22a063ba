@@ -166,7 +166,7 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
       aria-label="Navegação principal"
     >
       {/* Logo */}
-      <div className="h-16 flex items-center px-4 border-b border-sidebar-border/60">
+      <div className="h-20 flex items-center px-4 border-b border-sidebar-border/60">
         <AzumiLogo product="Connect" collapsed={isCollapsed} light />
       </div>
 

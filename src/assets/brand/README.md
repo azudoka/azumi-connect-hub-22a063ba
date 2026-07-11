@@ -1,32 +1,50 @@
 # Azumi Brand Assets
 
-Todos os arquivos são PNG de alta resolução. Não há vetorial (SVG) por enquanto.
+## Nomenclatura esperada (subir com estes nomes exatos)
 
-## Connect (tons de azul)
+### Connect (tons de azul)
 
-| Arquivo                  | Dimensões   | Uso                                                          |
-|--------------------------|-------------|--------------------------------------------------------------|
-| `connect-logo.png`       | 1536×1024   | Logo horizontal (ícone + wordmark), para fundo escuro        |
-| `connect-logo-light.png` | 1536×1024   | Logo horizontal, variante para fundo escuro (texto claro)    |
-| `connect-icon.png`       | 2750×2750   | Só o ícone (círculos) — sidebar colapsada                    |
+| Arquivo                   | Uso                                              |
+|---------------------------|--------------------------------------------------|
+| `connect-icone-claro.png` | Ícone (só símbolo), para usar em fundo claro     |
+| `connect-icone-escuro.png`| Ícone (só símbolo), para usar em fundo escuro    |
+| `connect-logo-claro.png`  | Logo completo (símbolo + texto), fundo claro     |
+| `connect-logo-escuro.png` | Logo completo (símbolo + texto), fundo escuro    |
 
-## Hub (tons de roxo)
+### Hub (tons de roxo/rosa)
 
-| Arquivo               | Dimensões   | Uso                                                          |
-|-----------------------|-------------|--------------------------------------------------------------|
-| `hub-logo.png`        | 1536×1024   | Logo horizontal, fundo claro                                 |
-| `hub-logo-light.png`  | 1536×1024   | Logo horizontal, variante para fundo escuro                  |
-| `hub-icon.png`        | 2750×2750   | Só o ícone — sidebar colapsada                               |
+| Arquivo              | Uso                                                   |
+|----------------------|-------------------------------------------------------|
+| `hub-icone-claro.png`| Ícone Hub, versão para fundo claro                    |
+| `hub-icone-rosa.png` | Ícone Hub, versão colorida (rosa/roxo) — padrão       |
+| `hub-logo-branco.png`| Logo completo Hub, texto branco (fundo escuro)        |
+| `hub-logo-preto.png` | Logo completo Hub, texto preto (fundo claro)          |
+| `hub-logo-rosa.png`  | Logo completo Hub, versão colorida                    |
 
-## Outros
+### Outros
 
-| Arquivo           | Dimensões | Uso                              |
-|-------------------|-----------|----------------------------------|
-| `capa-vagas.png`  | 1536×1024 | Banner hero da página pública de vagas |
+| Arquivo          | Uso                             |
+|------------------|---------------------------------|
+| `capa-vagas.png` | Banner hero da página de vagas  |
+
+---
+
+## Arquivos atuais (fallback enquanto os novos não chegam)
+
+Os arquivos abaixo existem no repo e são usados como fallback até os
+arquivos acima serem adicionados:
+
+- `connect-logo.png` / `connect-logo-light.png` → fallback connect logo
+- `connect-icon.png` → fallback connect ícone
+- `hub-logo.png` / `hub-logo-light.png` → fallback hub logo
+- `hub-icon.png` → fallback hub ícone
+
+Quando os arquivos novos chegarem, rodar `git mv` para renomear os
+antigos ou simplesmente adicionar os novos com os nomes corretos acima.
+O `AzumiLogo.tsx` já tem os imports preparados como comentário — basta
+descomentar e apagar os imports antigos.
 
 ## Prop `light` em `<AzumiLogo>`
 
-- `light={false}` (padrão) → usa `*-logo.png` — para sidebar/área com fundo claro
-- `light={true}` → usa `*-logo-light.png` — para sidebar escura, hero, fundo navy
-
-Para atualizar os arquivos, substitua diretamente mantendo os nomes exatos acima.
+- `light={false}` → versão clara (fundo claro da página)
+- `light={true}` → versão escura/clara pra fundo escuro (sidebar azul/roxa)

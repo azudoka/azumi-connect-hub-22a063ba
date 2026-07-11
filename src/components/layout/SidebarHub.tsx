@@ -307,7 +307,7 @@ export function SidebarHub({ profile }: { profile: HubProfile }) {
       aria-label="Navegação Hub"
     >
       {/* Logo */}
-      <div style={{ height: 64, display: "flex", alignItems: "center", padding: "0 16px", borderBottom: "1px solid hsl(var(--sidebar-border) / 0.6)" }}>
+      <div style={{ height: 80, display: "flex", alignItems: "center", padding: "0 16px", borderBottom: "1px solid hsl(var(--sidebar-border) / 0.6)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: isCollapsed ? 0 : 8 }}>
           <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#3B82F6,#031D38)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <span style={{ color: "white", fontSize: 13, fontWeight: 800, fontFamily: "'Urbanist',sans-serif" }}>A</span>

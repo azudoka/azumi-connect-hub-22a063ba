@@ -139,7 +139,7 @@ export default function VagasPublicasPage() {
               aria-label="Instagram da Azumi RH"
               className="text-white/70 hover:text-white transition-colors"
             >
-              <Instagram className="h-4 w-4" />
+              <Instagram className="h-5 w-5" />
             </a>
             <a
               href="https://www.linkedin.com/company/azumirh"
@@ -148,7 +148,7 @@ export default function VagasPublicasPage() {
               aria-label="LinkedIn da Azumi RH"
               className="text-white/70 hover:text-white transition-colors"
             >
-              <Linkedin className="h-4 w-4" />
+              <Linkedin className="h-5 w-5" />
             </a>
             <a
               href="https://azumirh.com.br"
@@ -157,16 +157,17 @@ export default function VagasPublicasPage() {
               aria-label="Site da Azumi RH"
               className="text-white/70 hover:text-white transition-colors"
             >
-              <Globe className="h-4 w-4" />
+              <Globe className="h-5 w-5" />
             </a>
           </div>
         </div>
 
         <div className="relative z-10 mx-auto mt-10 max-w-5xl text-center text-white">
-          <h1 className="font-display text-4xl font-bold sm:text-5xl leading-tight">
+          <h1 className="font-display text-4xl font-bold sm:text-6xl leading-tight text-white">
             Encontre sua próxima{" "}
-            <span className="text-blue-300">oportunidade</span> de trabalho<br className="hidden sm:block" /> com a{" "}
-            <span className="text-blue-300">Azumi</span>
+            <span className="font-black underline decoration-4 decoration-blue-400 underline-offset-4">oportunidade</span>{" "}
+            de trabalho com a{" "}
+            <span className="font-black underline decoration-4 decoration-blue-400 underline-offset-4">Azumi RH</span>.
           </h1>
           <p className="mt-3 font-sans text-white/75 text-lg">Vagas selecionadas pela nossa equipe especializada em RH</p>
         </div>
