@@ -96,7 +96,7 @@ const URGENCIA_LABEL = { alta: "Alta", media: "Média", baixa: "Baixa" } as cons
 
 function StatusPill({ s }: { s: Status }) {
   const map: Record<Status, string> = {
-    aberta:     "bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30",
+    aberta:     "bg-[hsl(var(--primary)/0.15)] text-primary border-[hsl(var(--primary)/0.30)]",
     andamento:  "bg-amber-500/15 text-amber-500 border-amber-500/30",
     finalizada: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30",
     cancelada:  "bg-[#424447]/20 text-muted-foreground border-border",
@@ -113,7 +113,7 @@ function UrgPill({ u }: { u: Solicitacao["urgencia"] }) {
   const map = {
     baixa: "bg-muted text-muted-foreground border-border",
     media: "bg-amber-500/10 text-amber-500 border-amber-500/30",
-    alta:  "bg-destructive/15 text-destructive border-destructive/30",
+    alta:  "bg-[hsl(var(--destructive)/0.15)] text-destructive border-[hsl(var(--destructive)/0.3)]",
   } as const;
   return <span className={cn("badge-pill", map[u])}>{u}</span>;
 }
@@ -199,7 +199,7 @@ function MensagemChat({
         {editando ? (
           <div className="space-y-1">
             <textarea
-              className="text-sm rounded-xl px-3 py-2 bg-primary/10 border border-primary/30 resize-none w-full min-h-[60px] focus:outline-none"
+              className="text-sm rounded-xl px-3 py-2 bg-[hsl(var(--primary)/0.1)] border border-[hsl(var(--primary)/0.3)] resize-none w-full min-h-[60px] focus:outline-none"
               value={textoEdit}
               onChange={(e) => setTextoEdit(e.target.value)}
               autoFocus
@@ -251,7 +251,7 @@ function MensagemChat({
             )}
             <div
               className={cn(
-                "text-[10px] font-data mt-1 text-right",
+                "text-[10px]  mt-1 text-right",
                 isMe ? "text-primary-foreground/70" : "text-muted-foreground"
               )}
             >
@@ -373,7 +373,7 @@ function AdminView() {
         actions={
           <Button
             onClick={() => setNovaOpen(true)}
-            className="rounded-[100px] bg-[#3B82F6] hover:bg-[#3B82F6]/90 text-white gap-1.5"
+            className="rounded-[100px] bg-primary hover:bg-[hsl(var(--primary)/0.90)] text-white gap-1.5"
           >
             <Plus className="h-4 w-4" /> Nova solicitação
           </Button>
@@ -388,7 +388,7 @@ function AdminView() {
           { label: "Finalizadas", value: kpis.finalizadas, cor: "text-success" },
         ].map((k) => (
           <div key={k.label} className="rounded-xl border border-border bg-card p-4">
-            <div className={cn("text-2xl font-semibold font-data", k.cor)}>
+            <div className={cn("text-2xl font-semibold ", k.cor)}>
               {k.value}
             </div>
             <div className="text-xs text-muted-foreground mt-1">{k.label}</div>
@@ -439,7 +439,7 @@ function AdminView() {
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/40 hover:bg-muted/40">
+            <TableRow className="bg-[hsl(var(--muted)/0.4)] hover:bg-[hsl(var(--muted)/0.4)]">
               <TableHead className="w-[20%]">Protocolo</TableHead>
               <TableHead className="w-[18%]">Empresa</TableHead>
               <TableHead className="w-[14%]">Tipo</TableHead>
@@ -454,7 +454,7 @@ function AdminView() {
               <TableRow key={s.id} onClick={() => openPanel(s)} className="cursor-pointer">
                 <TableCell>
                   <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-sm font-medium text-[#3B82F6]">{s.protocolo}</span>
+                    <span className="text-sm font-medium text-primary">{s.protocolo}</span>
                     <CopyBtn value={s.protocolo} />
                   </div>
                 </TableCell>
@@ -499,7 +499,7 @@ function AdminView() {
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="font-mono text-sm font-medium text-[#3B82F6] truncate">{selected.protocolo}</span>
+                <span className="text-sm font-medium text-primary truncate">{selected.protocolo}</span>
                 <CopyBtn value={selected.protocolo} />
               </div>
               <button onClick={closePanel} className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground">
@@ -523,7 +523,7 @@ function AdminView() {
               </div>
 
               {selected.obsInterna && (
-                <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 text-xs">
+                <div className="rounded-lg border border-[hsl(var(--warning)/0.3)] bg-[hsl(var(--warning)/0.05)] p-3 text-xs">
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 flex items-center gap-1">
                     <Lock className="h-3 w-3" />
                     Observação interna (somente equipe Azumi)
@@ -583,7 +583,7 @@ function AdminView() {
                 {selected.status === "aberta" && (
                   <>
                     <Button
-                      className="rounded-[100px] bg-[#3B82F6] hover:bg-[#3B82F6]/90 text-white"
+                      className="rounded-[100px] bg-primary hover:bg-[hsl(var(--primary)/0.90)] text-white"
                       onClick={() => {
                         atualizarSolicitacao(selected.id, { status: "andamento" });
                         toast.success("Solicitação assumida.");
@@ -732,8 +732,8 @@ function AdminView() {
                 className={cn(
                   "w-full text-left px-4 py-2.5 rounded-lg border text-sm transition-colors flex items-center gap-3",
                   consultorDestino === c.id
-                    ? "border-primary bg-primary/10 text-primary font-medium"
-                    : "border-border hover:bg-secondary/50"
+                    ? "border-primary bg-[hsl(var(--primary)/0.1)] text-primary font-medium"
+                    : "border-border hover:bg-[hsl(var(--secondary)/0.5)]"
                 )}
               >
                 <span className="h-8 w-8 rounded-full bg-gradient-brand text-white flex items-center justify-center text-xs font-semibold">
@@ -829,8 +829,8 @@ function AdminView() {
                     className={cn(
                       "flex-1 rounded-full border px-3 py-2 text-xs transition-colors",
                       nUrgencia === u
-                        ? "border-primary bg-primary/10 font-medium"
-                        : "border-border hover:bg-muted/40"
+                        ? "border-primary bg-[hsl(var(--primary)/0.1)] font-medium"
+                        : "border-border hover:bg-[hsl(var(--muted)/0.4)]"
                     )}
                   >
                     {URGENCIA_LABEL[u]}
@@ -871,7 +871,7 @@ function AdminView() {
               </Label>
               <Textarea
                 rows={3}
-                className="resize-none border-warning/40 bg-warning/5"
+                className="resize-none border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.05)]"
                 value={nObsInterna}
                 onChange={(e) => setNObsInterna(e.target.value)}
                 placeholder="Ex: Cliente ligou pedindo urgência, veio por WhatsApp..."
