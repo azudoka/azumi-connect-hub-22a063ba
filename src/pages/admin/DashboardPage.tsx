@@ -182,6 +182,7 @@ export default function DashboardPage() {
 
 function AdminDashboard() {
   const navigate = useNavigate();
+  const { usuario } = useAuth();
   const { pode } = usePermissao();
   const { ocultar } = useValorFinanceiro();
   const now = useMemo(() => new Date(), []);
