@@ -1,28 +1,21 @@
-// Arquivos atuais (fallback enquanto os novos não chegam)
-import connectLogo from "@/assets/brand/connect-logo.png";
-import connectLogoLight from "@/assets/brand/connect-logo-light.png";
-import connectIcon from "@/assets/brand/connect-icon.png";
-import hubLogo from "@/assets/brand/hub-logo.png";
-import hubLogoLight from "@/assets/brand/hub-logo-light.png";
-import hubIcon from "@/assets/brand/hub-icon.png";
+// Connect
+import connectLogoClaro from "@/assets/brand/connect-logo-claro.svg";
+import connectLogoEscuro from "@/assets/brand/connect-logo-escuro.svg";
+import connectIconeClaro from "@/assets/brand/connect-icone-claro.svg";
+import connectIconeEscuro from "@/assets/brand/connect-icone-escuro.svg";
 
-// Quando os arquivos novos chegarem, substituir pelos imports abaixo:
-// import connectLogoClaro from "@/assets/brand/connect-logo-claro.png";
-// import connectLogoEscuro from "@/assets/brand/connect-logo-escuro.png";
-// import connectIconeClaro from "@/assets/brand/connect-icone-claro.png";
-// import connectIconeEscuro from "@/assets/brand/connect-icone-escuro.png";
-// import hubLogoPreto from "@/assets/brand/hub-logo-preto.png";
-// import hubLogoBranco from "@/assets/brand/hub-logo-branco.png";
-// import hubLogoRosa from "@/assets/brand/hub-logo-rosa.png";
-// import hubIconeClaro from "@/assets/brand/hub-icone-claro.png";
-// import hubIconeRosa from "@/assets/brand/hub-icone-rosa.png";
+// Hub
+import hubLogoBranco from "@/assets/brand/hub-logo-branco.svg";
+import hubLogoPreto from "@/assets/brand/hub-logo-preto.svg";
+import hubIconeRosa from "@/assets/brand/hub-icone-rosa.svg";
+import hubIconeClaro from "@/assets/brand/hub-icone-claro.svg";
 
 interface AzumiMarkProps {
   size?: number;
   className?: string;
 }
 
-/** SVG mark mantido para uso standalone se necessário. */
+/** SVG mark mantido para uso standalone (relatórios, PDF, etc). */
 export function AzumiMark({ size = 28, className }: AzumiMarkProps) {
   const id = `azumi-mark-grad-${size}`;
   const r = size / 2;
@@ -51,11 +44,10 @@ export function AzumiMark({ size = 28, className }: AzumiMarkProps) {
 
 interface AzumiLogoProps {
   product?: "Connect" | "Hub";
-  /** true = logo sobre fundo escuro (usa variante light/branca) */
+  /** true = sobre fundo escuro; false = sobre fundo claro */
   light?: boolean;
   collapsed?: boolean;
   size?: number;
-  /** reservado para compatibilidade — sem efeito com logos PNG */
   hideSubtitle?: boolean;
 }
 
@@ -66,10 +58,16 @@ export function AzumiLogo({
   size = 22,
 }: AzumiLogoProps) {
   if (collapsed) {
-    const icon = product === "Hub" ? hubIcon : connectIcon;
+    const icon =
+      product === "Hub"
+        ? light ? hubIconeRosa : hubIconeClaro
+        : light ? connectIconeEscuro : connectIconeClaro;
     const glowColor = product === "Hub" ? "#A78BFA" : "#60A5FA";
     return (
-      <div className="relative flex items-center justify-center" style={{ height: size + 22, width: size + 22 }}>
+      <div
+        className="relative flex items-center justify-center"
+        style={{ height: size + 22, width: size + 22 }}
+      >
         <div
           className="absolute inset-0 rounded-full blur-md opacity-40"
           style={{ background: glowColor }}
@@ -77,21 +75,33 @@ export function AzumiLogo({
         <img
           src={icon}
           alt={product}
-          style={{ height: size + 18, width: size + 18, objectFit: "contain", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.25))" }}
+          style={{
+            height: size + 18,
+            width: size + 18,
+            objectFit: "contain",
+            filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.25))",
+          }}
           className="relative z-10"
         />
       </div>
     );
   }
+
   const src =
     product === "Hub"
-      ? light ? hubLogoLight : hubLogo
-      : light ? connectLogoLight : connectLogo;
+      ? light ? hubLogoBranco : hubLogoPreto
+      : light ? connectLogoEscuro : connectLogoClaro;
+
   return (
     <img
       src={src}
       alt={`${product} by Azumi`}
-      style={{ height: size * 3.4, width: "auto", objectFit: "contain", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.25))" }}
+      style={{
+        height: size * 3.4,
+        width: "auto",
+        objectFit: "contain",
+        filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.25))",
+      }}
     />
   );
 }
