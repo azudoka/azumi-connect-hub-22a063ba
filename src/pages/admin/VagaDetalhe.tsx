@@ -2638,7 +2638,11 @@ export default function VagaDetalheAdmin() {
       {/* ── Modal: Convidar candidato por link ───────────────────── */}
       {convidarOpen && (
         <ModalShell title="Convidar candidato" onClose={() => setConvidarOpen(false)}>
-          <ConvidarLinkForm vagaId={vaga.id} onClose={() => setConvidarOpen(false)} />
+          <ConvidarLinkForm
+            vagaId={vaga.id}
+            questionariosVaga={questionariosVaga}
+            onClose={() => setConvidarOpen(false)}
+          />
         </ModalShell>
       )}
 
@@ -3512,22 +3516,105 @@ function NovoCandidatoForm({
   );
 }
 
-function ConvidarLinkForm({ vagaId, onClose }: { vagaId: string; onClose: () => void }) {
-  const link = `${window.location.origin}/aplicar/${vagaId}?ref=convite`;
+function ConvidarLinkForm({
+  vagaId,
+  questionariosVaga,
+  onClose,
+}: {
+  vagaId: string;
+  questionariosVaga: { id: string; nome: string }[];
+  onClose: () => void;
+}) {
+  const [questSelecionado, setQuestSelecionado] = useState("");
+  const [gerando, setGerando] = useState(false);
+  const [linkGerado, setLinkGerado] = useState("");
+
+  async function gerar() {
+    setGerando(true);
+    setLinkGerado("");
+
+    if (questSelecionado) {
+      // Cria registro de convite com questionário vinculado
+      const { data: cqRow, error } = await supabase
+        .from("candidate_questionnaires")
+        .insert({
+          job_id: vagaId,
+          questionnaire_id: questSelecionado,
+          token: crypto.randomUUID(),
+          status: "pendente",
+          enviado_em: new Date().toISOString(),
+        })
+        .select("token")
+        .single();
+
+      if (error || !cqRow) {
+        toast.error("Erro ao gerar convite.");
+        setGerando(false);
+        return;
+      }
+      const urlCompleta = `${window.location.origin}/candidatar-convite/${(cqRow as any).token}`;
+      const link = await criarLinkCurto(urlCompleta, "convite_vaga");
+      setLinkGerado(link);
+    } else {
+      // Convite simples sem questionário
+      const urlCompleta = `${window.location.origin}/aplicar/${vagaId}?ref=convite`;
+      const link = await criarLinkCurto(urlCompleta, "convite_vaga");
+      setLinkGerado(link);
+    }
+
+    setGerando(false);
+  }
+
   return (
-    <div className="space-y-3 text-sm">
-      <p>Compartilhe o link abaixo com o candidato para se inscrever diretamente na vaga.</p>
-      <div className="flex gap-2">
-        <input readOnly value={link} className="flex-1 h-9 px-3 rounded-md border border-border bg-background text-xs" />
+    <div className="space-y-4 text-sm">
+      <p className="text-muted-foreground">Gere um link de convite para o candidato se inscrever diretamente nesta vaga.</p>
+
+      {questionariosVaga.length > 0 && (
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-foreground">Questionário (opcional)</label>
+          <select
+            value={questSelecionado}
+            onChange={(e) => setQuestSelecionado(e.target.value)}
+            className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm"
+          >
+            <option value="">Sem questionário</option>
+            {questionariosVaga.map((q) => (
+              <option key={q.id} value={q.id}>{q.nome}</option>
+            ))}
+          </select>
+          {questSelecionado && (
+            <p className="text-[11px] text-muted-foreground">
+              Após preencher a candidatura, o candidato será redirecionado para responder o questionário.
+            </p>
+          )}
+        </div>
+      )}
+
+      {linkGerado ? (
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <input readOnly value={linkGerado} className="flex-1 h-9 px-3 rounded-md border border-border bg-background text-xs" />
+            <button
+              onClick={() => { navigator.clipboard?.writeText(linkGerado); toast.success("Link copiado!"); }}
+              className="h-9 px-3 rounded-md border border-border hover:bg-secondary text-xs inline-flex items-center gap-1.5"
+            >
+              <Copy className="h-3.5 w-3.5" /> Copiar
+            </button>
+          </div>
+          <p className="text-[11px] text-muted-foreground">Link válido para uso único. Gere um novo para cada candidato.</p>
+        </div>
+      ) : (
         <button
-          onClick={() => { navigator.clipboard?.writeText(link); toast.success("Link copiado."); }}
-          className="h-9 px-3 rounded-md border border-border hover:bg-secondary text-xs inline-flex items-center gap-1.5"
+          onClick={gerar}
+          disabled={gerando}
+          className="w-full h-9 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50"
         >
-          <Copy className="h-3.5 w-3.5" /> Copiar
+          {gerando ? "Gerando…" : "Gerar link de convite"}
         </button>
-      </div>
-      <div className="flex justify-end pt-2">
-        <button onClick={onClose} className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium">Fechar</button>
+      )}
+
+      <div className="flex justify-end pt-1">
+        <button onClick={onClose} className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm">Fechar</button>
       </div>
     </div>
   );
