@@ -260,11 +260,11 @@ export default function AtracaoLista() {
         subtitle="Gestão de todas as vagas em andamento"
         actions={
           <>
-            <div className="flex items-center bg-secondary rounded-lg p-0.5">
+            <div className="flex items-center bg-secondary rounded-full p-0.5">
               <button
                 onClick={() => setView("kanban")}
                 className={cn(
-                  "h-7 px-2.5 rounded-md text-xs flex items-center gap-1.5",
+                  "h-7 px-2.5 rounded-full text-xs flex items-center gap-1.5",
                   view === "kanban" && "bg-card shadow-card text-foreground",
                 )}
               >
@@ -273,25 +273,25 @@ export default function AtracaoLista() {
               <button
                 onClick={() => setView("list")}
                 className={cn(
-                  "h-7 px-2.5 rounded-md text-xs flex items-center gap-1.5",
+                  "h-7 px-2.5 rounded-full text-xs flex items-center gap-1.5",
                   view === "list" && "bg-card shadow-card text-foreground",
                 )}
               >
                 <List className="h-3.5 w-3.5" /> Lista
               </button>
             </div>
-            <button className="h-9 px-3 rounded-lg border border-border hover:bg-secondary text-sm flex items-center gap-1.5">
+            <button className="h-9 px-3 rounded-full border border-border hover:bg-secondary text-sm flex items-center gap-1.5">
               <Filter className="h-4 w-4" /> Filtros
             </button>
             <button
               onClick={() => setBancoOpen(true)}
-              className="h-9 px-3 rounded-lg border border-border hover:bg-secondary text-sm font-medium flex items-center gap-1.5"
+              className="h-9 px-3 rounded-full border border-border hover:bg-secondary text-sm font-medium flex items-center gap-1.5"
             >
               <Users className="h-4 w-4" /> Banco de Talentos
             </button>
             <button
               onClick={() => setNovaVagaOpen(true)}
-              className="h-9 px-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5"
+              className="h-9 px-3 rounded-full bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5"
             >
               <Plus className="h-4 w-4" /> Nova vaga
             </button>
@@ -300,9 +300,9 @@ export default function AtracaoLista() {
       />
 
       {/* Banner com as regras de negócio (Handoff): limite de envio + plano */}
-      <div className="mb-3 rounded-xl border border-info/30 bg-info/10 px-4 py-3 flex items-start gap-3">
+      <div className="mb-3 rounded-xl border border-[hsl(var(--info)/0.3)] bg-[hsl(var(--info)/0.1)] px-4 py-3 flex items-start gap-3">
         <Info className="h-4 w-4 text-info shrink-0 mt-0.5" />
-        <div className="text-xs text-info/90 leading-relaxed">
+        <div className="text-xs text-[hsl(var(--info)/0.9)] leading-relaxed">
           Envie no máximo <strong>{MAX_CANDIDATOS_POR_ENVIO} candidatos por etapa</strong> ao cliente
           (acima disso é necessária justificativa). Vagas do tipo <strong>Hunt Executivo</strong> não
           são permitidas no plano Ongoing.
@@ -311,9 +311,9 @@ export default function AtracaoLista() {
 
       {/* Alerta SLA crítico (perfis enviados há muito tempo) */}
       {totalCriticas > 0 && (
-        <div className="mb-5 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 flex items-start gap-3">
+        <div className="mb-5 rounded-xl border border-[hsl(var(--warning)/0.3)] bg-[hsl(var(--warning)/0.1)] px-4 py-3 flex items-start gap-3">
           <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-          <div className="text-xs text-warning/90 leading-relaxed">
+          <div className="text-xs text-[hsl(var(--warning)/0.9)] leading-relaxed">
             <strong>{totalCriticas}</strong>{" "}
             {totalCriticas === 1 ? "vaga com SLA crítico" : "vagas com SLA crítico"} em
             "Perfis enviados". Cobrança de parecer recomendada.
@@ -388,7 +388,7 @@ export default function AtracaoLista() {
                   }}
                   className={cn(
                     "bg-card border rounded-xl p-3 min-h-[280px] transition-colors",
-                    isOver ? "border-primary ring-2 ring-primary/20" : "border-border",
+                    isOver ? "border-primary ring-2 ring-[hsl(var(--primary)/0.2)]" : "border-border",
                   )}
                 >
                   <div className="flex items-center justify-between mb-3 px-1">
@@ -419,7 +419,7 @@ export default function AtracaoLista() {
                               setDragOverCol(null);
                             }}
                             className={cn(
-                              "block bg-background/60 border border-border rounded-lg p-3 transition-colors cursor-grab active:cursor-grabbing hover:border-primary/40",
+                              "block bg-background/60 border border-border rounded-lg p-3 transition-colors cursor-grab active:cursor-grabbing hover:border-[hsl(var(--primary)/0.4)]",
                               draggingId === v.id && "opacity-50",
                             )}
                           >
@@ -584,7 +584,7 @@ export default function AtracaoLista() {
                     onClick={() => { setTipoEmpresa(tipo); setEmpresaCadastradaId(""); setNEmpresa(""); }}
                     className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition ${
                       tipoEmpresa === tipo
-                        ? "border-primary bg-primary/10 text-primary"
+                        ? "border-primary bg-[hsl(var(--primary)/0.1)] text-primary"
                         : "border-border bg-background text-muted-foreground hover:bg-secondary"
                     }`}
                   >
@@ -714,7 +714,7 @@ export default function AtracaoLista() {
                       className={cn(
                         "rounded-full border px-3 py-1 text-xs transition-colors",
                         sel
-                          ? "border-primary bg-primary/10 text-primary font-medium"
+                          ? "border-primary bg-[hsl(var(--primary)/0.1)] text-primary font-medium"
                           : "border-border hover:bg-muted/40"
                       )}
                     >
@@ -771,7 +771,7 @@ export default function AtracaoLista() {
                   </label>
 
                   {pubPublicar && (
-                    <div className="space-y-4 border-l-2 border-primary/30 pl-4">
+                    <div className="space-y-4 border-l-2 border-[hsl(var(--primary)/0.3)] pl-4">
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
@@ -890,7 +890,7 @@ export default function AtracaoLista() {
                         />
                       </div>
 
-                      <div className="rounded-md bg-info/10 border border-info/20 px-3 py-2 text-xs text-info">
+                      <div className="rounded-md bg-[hsl(var(--info)/0.1)] border border-[hsl(var(--info)/0.2)] px-3 py-2 text-xs text-info">
                         ℹ️ Status inicial: <strong>Não publicada</strong>. Para tornar pública, use o botão
                         "Publicar no site" na tela interna da vaga.
                       </div>
