@@ -539,21 +539,7 @@ export default function VagaDetalheAdmin() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [colunasEstado, candidatosExtras]);
 
-  const [questionariosVaga, setQuestionariosVaga] = useState<QuestionarioVaga[]>([
-    {
-      id: "q-disc",
-      nome: "Avaliação técnica padrão",
-      descricao: "Perguntas básicas de fit técnico para a vaga.",
-      perguntas: [
-        { id: "p1", ordem: 1, texto: "Conte uma situação em que você liderou uma mudança importante.", tipo: "texto_livre", obrigatoria: true },
-        { id: "p2", ordem: 2, texto: "Como você lida com prazos apertados?", tipo: "escala_1_5", obrigatoria: true },
-        { id: "p3", ordem: 3, texto: "Modelo de trabalho preferido?", tipo: "multipla_escolha", obrigatoria: false, opcoes: ["Presencial", "Híbrido", "Remoto"] },
-      ],
-      criadoPor: "Patricia Lima",
-      criadoEm: new Date().toLocaleDateString("pt-BR"),
-      respostasPorCandidato: {},
-    },
-  ]);
+  const [questionariosVaga, setQuestionariosVaga] = useState<QuestionarioVaga[]>([]);
   const [eventos, setEventos] = useState<EventoEntrevista[]>([]);
   const [mensagens, setMensagens] = useState<MensagemVaga[]>([
     { id: "mv1", autor: "Ana Beatriz", iniciais: "AB", quando: "06/04 14:20",
@@ -673,6 +659,79 @@ export default function VagaDetalheAdmin() {
     const urlCompleta = `${window.location.origin}/disc/${discWhatsOpen}`;
     criarLinkCurto(urlCompleta, "disc").then(setLinkDiscCurto);
   }, [discWhatsOpen]);
+
+  // Carrega todos os questionários do banco ao montar (não filtra por vaga — são reaproveitáveis)
+  useEffect(() => {
+    supabase
+      .from("questionnaires")
+      .select("*, questionnaire_questions(*)")
+      .order("created_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (error || !data) return;
+        const mapeados: QuestionarioVaga[] = data.map((row: any) => ({
+          id: row.id,
+          nome: row.titulo,
+          descricao: row.descricao ?? undefined,
+          perguntas: ((row.questionnaire_questions ?? []) as any[])
+            .sort((a, b) => a.ordem - b.ordem)
+            .map((p) => ({
+              id: p.id,
+              ordem: p.ordem,
+              texto: p.texto,
+              tipo: p.tipo as TipoPergunta,
+              obrigatoria: p.obrigatoria,
+              opcoes: Array.isArray(p.opcoes) ? p.opcoes : undefined,
+            })),
+          criadoPor: "—",
+          criadoEm: new Date(row.created_at).toLocaleDateString("pt-BR"),
+          respostasPorCandidato: {},
+        }));
+        setQuestionariosVaga(mapeados);
+      });
+  }, []);
+
+  async function salvarQuestionario(q: QuestionarioVaga) {
+    const isNovo = editorQuestId === "novo";
+
+    const { data: questRow, error: errQuest } = isNovo
+      ? await supabase.from("questionnaires").insert({ titulo: q.nome, descricao: q.descricao ?? null }).select("id").single()
+      : await supabase.from("questionnaires").update({ titulo: q.nome, descricao: q.descricao ?? null }).eq("id", q.id).select("id").single();
+
+    if (errQuest || !questRow) {
+      toast.error("Erro ao salvar questionário: " + (errQuest?.message ?? "desconhecido"));
+      return;
+    }
+
+    const questionnaireId = (questRow as any).id as string;
+
+    if (!isNovo) {
+      await supabase.from("questionnaire_questions").delete().eq("questionnaire_id", questionnaireId);
+    }
+
+    const { error: errPerguntas } = await supabase.from("questionnaire_questions").insert(
+      q.perguntas.map((p, i) => ({
+        questionnaire_id: questionnaireId,
+        ordem: i + 1,
+        texto: p.texto,
+        tipo: p.tipo,
+        obrigatoria: p.obrigatoria,
+        opcoes: p.opcoes ?? null,
+      }))
+    );
+
+    if (errPerguntas) {
+      toast.error("Questionário salvo, mas houve erro nas perguntas: " + errPerguntas.message);
+    }
+
+    const questionarioCompleto: QuestionarioVaga = { ...q, id: questionnaireId };
+    setQuestionariosVaga((prev) =>
+      isNovo
+        ? [...prev, questionarioCompleto]
+        : prev.map((x) => (x.id === q.id ? questionarioCompleto : x))
+    );
+    setEditorQuestId(null);
+    toast.success(`Questionário "${q.nome}" salvo.`);
+  }
 
   async function recarregarVaga() {
     if (!id || vagaMock) return;
@@ -2582,19 +2641,7 @@ export default function VagaDetalheAdmin() {
         <QuestionarioEditorModal
           existing={editorQuestId !== "novo" ? questionariosVaga.find((q) => q.id === editorQuestId) ?? null : null}
           onClose={() => setEditorQuestId(null)}
-          onSave={(q) => {
-            setQuestionariosVaga((prev) => {
-              const idx = prev.findIndex((x) => x.id === q.id);
-              if (idx >= 0) {
-                const copia = [...prev];
-                copia[idx] = { ...prev[idx], ...q, respostasPorCandidato: prev[idx].respostasPorCandidato };
-                return copia;
-              }
-              return [...prev, q];
-            });
-            setEditorQuestId(null);
-            toast.success(`Questionário "${q.nome}" salvo.`);
-          }}
+          onSave={salvarQuestionario}
         />
       )}
 
@@ -2608,9 +2655,12 @@ export default function VagaDetalheAdmin() {
               <div className="flex justify-end gap-2 pt-2">
                 <button onClick={() => setExcluirQuestId(null)} className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm">Cancelar</button>
                 <button
-                  onClick={() => {
-                    setQuestionariosVaga((prev) => prev.filter((x) => x.id !== excluirQuestId));
+                  onClick={async () => {
+                    const idParaExcluir = excluirQuestId!;
                     setExcluirQuestId(null);
+                    await supabase.from("questionnaire_questions").delete().eq("questionnaire_id", idParaExcluir);
+                    await supabase.from("questionnaires").delete().eq("id", idParaExcluir);
+                    setQuestionariosVaga((prev) => prev.filter((x) => x.id !== idParaExcluir));
                     toast.warning("Questionário excluído.");
                   }}
                   className="h-9 px-4 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium inline-flex items-center gap-1.5"
