@@ -357,7 +357,7 @@ function AdminDashboard() {
 
           {/* 2. Atividade + Alertas */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
-            <Card className="lg:col-span-3 p-6 border-t-[3px] border-t-primary">
+            <Card className="lg:col-span-3 p-6 rounded-xl shadow-[0_1px_4px_rgba(133,146,173,0.2)] border-0">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                   Últimas atualizações
@@ -414,7 +414,7 @@ function AdminDashboard() {
               )}
             </Card>
 
-            <Card className="lg:col-span-2 p-6 border-t-[3px] border-t-destructive">
+            <Card className="lg:col-span-2 p-6 rounded-xl shadow-[0_1px_4px_rgba(133,146,173,0.2)] border-0">
               <div className="flex items-center gap-2 mb-2">
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Alertas ativos</h2>
                 <span className="badge-pill bg-[hsl(var(--destructive)/0.15)] text-destructive border border-[hsl(var(--destructive)/0.3)] text-xs">
@@ -457,7 +457,7 @@ function AdminDashboard() {
           </div>
 
           {/* 3. Entregáveis próximos do prazo */}
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden rounded-xl shadow-[0_1px_4px_rgba(133,146,173,0.2)] border-0">
             <div className="p-5 border-b border-border">
               <h2 className="font-display text-lg font-semibold">
                 Entregáveis com prazo nos próximos 30 dias
@@ -528,54 +528,39 @@ function AdminDashboard() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
               <ConnectStatCard
-                variant="highlight"
+                variant="stat"
                 icon={TrendingUp}
-                title="Faturado"
-                description={`Meta: ${ocultar(formatBRL(fin.metaFaturamento))}`}
-                metricValue={ocultar(formatBRL(fin.faturado))}
-                metricLabel={`${pctFaturamento.toFixed(1)}% da meta`}
-                actionLabel="Ver →"
-                onAction={() => navigate("/app/financeiro")}
+                tone="blue"
+                label={`Faturado — meta ${ocultar(formatBRL(fin.metaFaturamento))}`}
+                value={ocultar(formatBRL(fin.faturado))}
+                deltaValue={`${pctFaturamento.toFixed(1)}%`}
+                positive={pctFaturamento >= 80}
+                barPercent={pctFaturamento}
                 onClick={() => navigate("/app/financeiro")}
-                chart={
-                  <div className="h-1.5 rounded-full bg-primary-foreground/20 overflow-hidden">
-                    <div className="h-full rounded-full bg-primary-foreground" style={{ width: `${Math.min(100, pctFaturamento)}%` }} />
-                  </div>
-                }
               />
 
               <ConnectStatCard
-                variant="highlight"
+                variant="stat"
                 icon={CheckCircle2}
-                title="Recebido"
-                description={`Pendente: ${ocultar(formatBRL(fin.pendente))}`}
-                metricValue={ocultar(formatBRL(fin.recebido))}
-                metricLabel={`${pctRecebido.toFixed(1)}% recebido`}
-                actionLabel="Ver →"
-                onAction={() => navigate("/app/financeiro")}
+                tone="green"
+                label={`Recebido — pendente ${ocultar(formatBRL(fin.pendente))}`}
+                value={ocultar(formatBRL(fin.recebido))}
+                deltaValue={`${pctRecebido.toFixed(1)}%`}
+                positive={pctRecebido >= 50}
+                barPercent={pctRecebido}
                 onClick={() => navigate("/app/financeiro")}
-                chart={
-                  <div className="h-1.5 rounded-full bg-primary-foreground/20 overflow-hidden">
-                    <div className="h-full rounded-full bg-primary-foreground" style={{ width: `${Math.min(100, pctRecebido)}%` }} />
-                  </div>
-                }
               />
 
               <ConnectStatCard
-                variant="highlight"
+                variant="stat"
                 icon={Wallet}
-                title="Repasses pendentes"
-                description={`Repassado: ${ocultar(formatBRL(fin.repassado))}`}
-                metricValue={ocultar(formatBRL(fin.repassesPendentes))}
-                metricLabel={`${pctRepassado.toFixed(1)}% já repassado`}
-                actionLabel="Ver →"
-                onAction={() => navigate("/app/financeiro")}
+                tone="teal"
+                label={`Repasses — já repassado ${ocultar(formatBRL(fin.repassado))}`}
+                value={ocultar(formatBRL(fin.repassesPendentes))}
+                deltaValue={`${pctRepassado.toFixed(1)}%`}
+                positive={pctRepassado >= 50}
+                barPercent={pctRepassado}
                 onClick={() => navigate("/app/financeiro")}
-                chart={
-                  <div className="h-1.5 rounded-full bg-primary-foreground/20 overflow-hidden">
-                    <div className="h-full rounded-full bg-primary-foreground" style={{ width: `${Math.min(100, pctRepassado)}%` }} />
-                  </div>
-                }
               />
             </div>
             </div>
