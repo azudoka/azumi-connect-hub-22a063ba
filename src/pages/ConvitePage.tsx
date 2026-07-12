@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { X, Upload, Check, ChevronRight, FileText, Loader2 } from "lucide-react";
+import { Check, ChevronRight, Loader2, UserCheck, RotateCcw } from "lucide-react";
 import DiscTeste from "@/components/disc/DiscTeste";
 import type { DiscDim, DiscScores } from "@/components/disc/discQuestions";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,23 +30,26 @@ const ESCOLARIDADES = [
   "Ensino Fundamental", "Ensino Médio", "Técnico/Tecnólogo",
   "Superior incompleto", "Superior completo", "Pós-graduação/MBA", "Mestrado/Doutorado",
 ];
-const ORIGENS = ["LinkedIn", "Instagram", "Indicação", "Google", "Site Azumi", "Outro"];
 
 interface Cadastro {
-  foto: File | null; fotoPreview: string | null;
-  nome: string; email: string; telefone: string; cpf: string;
-  nascimento: string; cidadeEstado: string; bairro: string; escolaridade: string;
-  filhos: "nao_informar" | "nao" | "sim" | "";
-  linkedin: string; portfolio: string; origem: string;
-  curriculo: File | null; mensagem: string; aceitePrivacidade: boolean;
+  nome: string;
+  email: string;
+  telefone: string;
+  cpf: string;
+  escolaridade: string;
+  aceitePrivacidade: boolean;
 }
 
 const INIT: Cadastro = {
-  foto: null, fotoPreview: null, nome: "", email: "", telefone: "", cpf: "",
-  nascimento: "", cidadeEstado: "", bairro: "", escolaridade: "", filhos: "",
-  linkedin: "", portfolio: "", origem: "", curriculo: null, mensagem: "",
-  aceitePrivacidade: false,
+  nome: "", email: "", telefone: "", cpf: "", escolaridade: "", aceitePrivacidade: false,
 };
+
+interface CandidatoEncontrado {
+  nome: string;
+  email: string;
+  telefone: string;
+  escolaridade: string | null;
+}
 
 export default function ConvitePage() {
   const { token } = useParams<{ token: string }>();
@@ -58,7 +61,6 @@ export default function ConvitePage() {
   const [jobTitulo, setJobTitulo] = useState("Vaga");
   const [perguntas, setPerguntas] = useState<Pergunta[]>([]);
 
-  // steps: 1 = dados, 2 = DISC, 3 = questionário (opcional), "ok" = sucesso
   const [step, setStep] = useState<1 | 2 | 3 | "ok">(1);
   const [c, setC] = useState<Cadastro>(INIT);
   const [erroForm, setErroForm] = useState("");
@@ -67,10 +69,14 @@ export default function ConvitePage() {
   const [respostas, setRespostas] = useState<Record<string, string>>({});
   const [enviando, setEnviando] = useState(false);
 
+  // CPF lookup
+  const [candidatoEncontrado, setCandidatoEncontrado] = useState<CandidatoEncontrado | null>(null);
+  const [mostrarBannerCpf, setMostrarBannerCpf] = useState(false);
+  const cpfBuscadoRef = useRef<string>("");
+
   useEffect(() => {
     if (!token) { setErro("Link inválido."); setCarregando(false); return; }
     (async () => {
-      // Busca convite
       const { data: cqData, error: cqError } = await supabase
         .from("candidate_questionnaires")
         .select("id, job_id, questionnaire_id, status")
@@ -82,7 +88,6 @@ export default function ConvitePage() {
 
       setConvite(cqData as Convite);
 
-      // Busca título da vaga
       const { data: jobData } = await supabase
         .from("job_solicitations")
         .select("titulo")
@@ -90,7 +95,6 @@ export default function ConvitePage() {
         .maybeSingle();
       if (jobData?.titulo) setJobTitulo(jobData.titulo);
 
-      // Busca perguntas do questionário (se tiver)
       if (cqData.questionnaire_id) {
         const { data: questData } = await supabase
           .from("questionnaires")
@@ -107,7 +111,6 @@ export default function ConvitePage() {
               opcoes: Array.isArray(p.opcoes) ? p.opcoes : undefined,
             }));
           setPerguntas(qs);
-          // pré-seleciona primeira opção em multipla_escolha
           const init: Record<string, string> = {};
           qs.forEach((p) => { if (p.tipo === "multipla_escolha" && p.opcoes?.length) init[p.id] = p.opcoes[0]; });
           setRespostas(init);
@@ -122,17 +125,41 @@ export default function ConvitePage() {
     setC((p) => ({ ...p, [k]: v }));
   }
 
+  async function buscarPorCpf() {
+    const cpfTrimmed = c.cpf.trim();
+    if (!cpfTrimmed || cpfTrimmed === cpfBuscadoRef.current) return;
+    cpfBuscadoRef.current = cpfTrimmed;
+
+    const { data } = await supabase
+      .from("candidates")
+      .select("nome, email, telefone, escolaridade")
+      .eq("cpf", cpfTrimmed)
+      .limit(1)
+      .maybeSingle();
+
+    if (data) {
+      setCandidatoEncontrado(data as CandidatoEncontrado);
+      setMostrarBannerCpf(true);
+    }
+  }
+
+  function reaproveitarDados() {
+    if (!candidatoEncontrado) return;
+    setC((p) => ({
+      ...p,
+      nome: candidatoEncontrado.nome || p.nome,
+      email: candidatoEncontrado.email || p.email,
+      telefone: candidatoEncontrado.telefone || p.telefone,
+      escolaridade: candidatoEncontrado.escolaridade || p.escolaridade,
+    }));
+    setMostrarBannerCpf(false);
+  }
+
   function validarStep1(): string {
     if (!c.nome.trim()) return "Informe seu nome completo.";
     if (!c.email.trim()) return "Informe o email.";
     if (!c.telefone.trim()) return "Informe o telefone.";
     if (!c.cpf.trim()) return "Informe o CPF.";
-    if (!c.nascimento) return "Informe a data de nascimento.";
-    if (!c.cidadeEstado.trim()) return "Informe cidade/estado.";
-    if (!c.bairro.trim()) return "Informe o bairro.";
-    if (!c.escolaridade) return "Selecione a escolaridade.";
-    if (!c.origem) return "Como ficou sabendo desta vaga?";
-    if (!c.curriculo) return "Anexe seu currículo.";
     if (!c.aceitePrivacidade) return "Aceite a Política de Privacidade para continuar.";
     return "";
   }
@@ -164,19 +191,6 @@ export default function ConvitePage() {
     if (!convite) return;
     setEnviando(true);
 
-    // Upload currículo
-    let curriculoUrl: string | null = null;
-    if (c.curriculo) {
-      const ext = c.curriculo.name.split(".").pop() ?? "pdf";
-      const path = `${convite.job_id}/${Date.now()}_${c.nome.replace(/\s+/g, "_")}.${ext}`;
-      const { data: upData } = await supabase.storage.from("curriculos").upload(path, c.curriculo, { upsert: false });
-      if (upData) {
-        const { data: urlData } = supabase.storage.from("curriculos").getPublicUrl(upData.path);
-        curriculoUrl = urlData.publicUrl;
-      }
-    }
-
-    // 1. Cria candidato
     const { data: cand, error: candErr } = await supabase
       .from("candidates")
       .insert({
@@ -185,17 +199,8 @@ export default function ConvitePage() {
         email: c.email,
         telefone: c.telefone,
         cpf: c.cpf || null,
-        data_nascimento: c.nascimento || null,
-        cidade: c.cidadeEstado || null,
-        bairro: c.bairro || null,
         escolaridade: c.escolaridade || null,
-        possui_filhos: c.filhos || null,
-        linkedin: c.linkedin || null,
-        portfolio_url: c.portfolio || null,
         origem: "convite",
-        observacoes: c.mensagem || null,
-        curriculo_nome: c.curriculo?.name ?? null,
-        curriculo_url: curriculoUrl,
         banco_talentos: false,
         etapa_azumi: "recebido",
         lgpd_aceite: c.aceitePrivacidade,
@@ -210,7 +215,6 @@ export default function ConvitePage() {
       return;
     }
 
-    // 2. DISC
     const entries = (["D", "I", "S", "C"] as const).map((k) => ({ k, v: scores[k] })).sort((a, b) => b.v - a.v);
     await supabase.from("disc_resultado_candidato").insert({
       candidato_id: cand.id,
@@ -219,7 +223,6 @@ export default function ConvitePage() {
       fator_secundario: entries[1]?.k ?? null,
     });
 
-    // 3. Atualiza convite + grava respostas
     await supabase.from("candidate_questionnaires").update({
       candidate_id: cand.id,
       status: "respondido",
@@ -236,7 +239,6 @@ export default function ConvitePage() {
       );
     }
 
-    // Email de notificação
     fetch(EMAIL_API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -257,7 +259,6 @@ export default function ConvitePage() {
     setStep("ok");
   }
 
-  // ── Estados de carregamento / erro / já respondido ────────────────
   if (carregando) {
     return (
       <div className="min-h-screen flex items-center justify-center text-slate-500 text-sm">
@@ -284,7 +285,6 @@ export default function ConvitePage() {
   }
 
   const temQuestionario = !!convite?.questionnaire_id && perguntas.length > 0;
-  const totalSteps = temQuestionario ? 3 : 2;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-stretch justify-center overflow-y-auto bg-black/70 sm:items-center sm:p-6">
@@ -322,28 +322,41 @@ export default function ConvitePage() {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
-          {/* ── Step 1: Dados ───────────────────────────────── */}
+
+          {/* ── Step 1: Dados ─────────────────────────────────── */}
           {step === 1 && (
             <div className="mx-auto max-w-2xl space-y-5">
-              {/* Foto */}
-              <div>
-                <label className="mb-1 block font-sans text-xs font-medium text-foreground">Foto (opcional)</label>
-                <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-border bg-muted font-sans text-xs text-muted-foreground">
-                    {c.fotoPreview ? <img src={c.fotoPreview} alt="" className="h-full w-full object-cover" /> : "Sem foto"}
+
+              {/* Banner CPF encontrado */}
+              {mostrarBannerCpf && candidatoEncontrado && (
+                <div className="flex flex-col gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="h-4 w-4 shrink-0 text-primary" />
+                    <p className="font-sans text-sm font-medium text-foreground">
+                      Encontramos um cadastro anterior com este CPF.
+                    </p>
                   </div>
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 font-sans text-xs text-foreground hover:bg-muted">
-                    <Upload className="h-3.5 w-3.5" /> Enviar foto
-                    <input type="file" accept="image/jpeg,image/png" className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0] ?? null;
-                        if (f && f.size > 5 * 1024 * 1024) { setErroForm("Foto maior que 5MB"); return; }
-                        if (f) { const r = new FileReader(); r.onload = () => setC((p) => ({ ...p, foto: f, fotoPreview: r.result as string })); r.readAsDataURL(f); }
-                      }}
-                    />
-                  </label>
+                  <p className="font-sans text-xs text-muted-foreground">
+                    Deseja reaproveitar os dados de <strong>{candidatoEncontrado.nome}</strong>?
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={reaproveitarDados}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 font-sans text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                    >
+                      <UserCheck className="h-3.5 w-3.5" /> Reaproveitar dados
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMostrarBannerCpf(false)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 font-sans text-xs font-medium text-foreground hover:bg-muted"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" /> Preencher do zero
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <Grid2>
                 <Field label="Nome completo *"><FInput value={c.nome} onChange={(v) => up("nome", v)} /></Field>
@@ -351,66 +364,21 @@ export default function ConvitePage() {
               </Grid2>
               <Grid2>
                 <Field label="Telefone *"><FInput value={c.telefone} onChange={(v) => up("telefone", v)} placeholder="(00) 00000-0000" /></Field>
-                <Field label="CPF *"><FInput value={c.cpf} onChange={(v) => up("cpf", v)} placeholder="000.000.000-00" /></Field>
-              </Grid2>
-              <Grid2>
-                <Field label="Data de nascimento *"><FInput type="date" value={c.nascimento} onChange={(v) => up("nascimento", v)} /></Field>
-                <Field label="Cidade / Estado *"><FInput value={c.cidadeEstado} onChange={(v) => up("cidadeEstado", v)} placeholder="Ex.: Curitiba, PR" /></Field>
-              </Grid2>
-              <Grid2>
-                <Field label="Bairro *"><FInput value={c.bairro} onChange={(v) => up("bairro", v)} /></Field>
-                <Field label="Escolaridade *">
-                  <FSelect value={c.escolaridade} onChange={(v) => up("escolaridade", v)}>
-                    <option value="">Selecione...</option>
-                    {ESCOLARIDADES.map((e) => <option key={e} value={e}>{e}</option>)}
-                  </FSelect>
+                <Field label="CPF *">
+                  <FInput
+                    value={c.cpf}
+                    onChange={(v) => { up("cpf", v); setMostrarBannerCpf(false); cpfBuscadoRef.current = ""; }}
+                    placeholder="000.000.000-00"
+                    onBlur={buscarPorCpf}
+                  />
                 </Field>
               </Grid2>
 
-              <Field label="Possui filhos?">
-                <div className="flex flex-wrap gap-2">
-                  {[{ v: "nao_informar", l: "Prefiro não informar" }, { v: "nao", l: "Não" }, { v: "sim", l: "Sim" }].map((o) => (
-                    <button key={o.v} type="button" onClick={() => up("filhos", o.v as Cadastro["filhos"])}
-                      className={`rounded-full border px-3 py-1.5 font-sans text-xs font-medium transition ${c.filhos === o.v ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-foreground hover:bg-muted"}`}
-                    >{o.l}</button>
-                  ))}
-                </div>
-              </Field>
-
-              <Grid2>
-                <Field label="LinkedIn"><FInput value={c.linkedin} onChange={(v) => up("linkedin", v)} placeholder="linkedin.com/in/..." /></Field>
-                <Field label="Portfólio ou link adicional"><FInput value={c.portfolio} onChange={(v) => up("portfolio", v)} /></Field>
-              </Grid2>
-
-              <Field label="Como ficou sabendo desta vaga? *">
-                <div className="flex flex-wrap gap-2">
-                  {ORIGENS.map((o) => (
-                    <button key={o} type="button" onClick={() => up("origem", o)}
-                      className={`rounded-full border px-3 py-1.5 font-sans text-xs font-medium transition ${c.origem === o ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-foreground hover:bg-muted"}`}
-                    >{o}</button>
-                  ))}
-                </div>
-              </Field>
-
-              <Field label="Currículo *">
-                <label className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-6 text-center transition ${c.curriculo ? "border-success bg-[hsl(var(--success)/0.08)]" : "border-border bg-muted/50 hover:bg-muted"}`}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) { if (f.size > 5 * 1024 * 1024) { setErroForm("Currículo maior que 5MB"); return; } up("curriculo", f); } }}
-                >
-                  {c.curriculo
-                    ? <div className="flex items-center gap-2 font-sans text-sm text-success"><FileText className="h-4 w-4" />{c.curriculo.name}</div>
-                    : <><Upload className="mb-2 h-5 w-5 text-muted-foreground" /><p className="font-sans text-sm font-medium text-foreground">Arraste ou clique para selecionar</p><p className="mt-0.5 font-sans text-xs text-muted-foreground">PDF, DOC ou DOCX — máx 5MB</p></>
-                  }
-                  <input type="file" accept=".pdf,.doc,.docx" className="hidden"
-                    onChange={(e) => { const f = e.target.files?.[0] ?? null; if (f && f.size > 5 * 1024 * 1024) { setErroForm("Currículo maior que 5MB"); return; } up("curriculo", f); }}
-                  />
-                </label>
-              </Field>
-
-              <Field label="Mensagem (opcional)">
-                <textarea rows={3} maxLength={500} value={c.mensagem} onChange={(e) => up("mensagem", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 font-sans text-sm text-foreground focus:border-primary focus:outline-none" />
-                <p className="mt-1 text-right font-sans text-[10px] text-muted-foreground">{c.mensagem.length}/500</p>
+              <Field label="Escolaridade (opcional)">
+                <FSelect value={c.escolaridade} onChange={(v) => up("escolaridade", v)}>
+                  <option value="">Selecione...</option>
+                  {ESCOLARIDADES.map((e) => <option key={e} value={e}>{e}</option>)}
+                </FSelect>
               </Field>
 
               <label className="flex items-start gap-2 font-sans text-xs text-foreground">
@@ -427,14 +395,14 @@ export default function ConvitePage() {
             </div>
           )}
 
-          {/* ── Step 2: DISC ────────────────────────────────── */}
+          {/* ── Step 2: DISC ──────────────────────────────────── */}
           {step === 2 && (
             <div className="mx-auto max-w-2xl">
               <DiscTeste candidateName={c.nome || "Candidato"} onComplete={aoCompletarDisc} />
             </div>
           )}
 
-          {/* ── Step 3: Questionário ─────────────────────────── */}
+          {/* ── Step 3: Questionário ──────────────────────────── */}
           {step === 3 && (
             <div className="mx-auto max-w-2xl space-y-6">
               <div>
@@ -497,7 +465,7 @@ export default function ConvitePage() {
             </div>
           )}
 
-          {/* ── OK ──────────────────────────────────────────── */}
+          {/* ── OK ────────────────────────────────────────────── */}
           {step === "ok" && (
             <div className="mx-auto max-w-md py-10 text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[hsl(var(--success)/0.15)] text-success">
@@ -532,9 +500,13 @@ function Grid2({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</div>;
 }
 
-function FInput({ value, onChange, type = "text", placeholder }: { value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) {
+function FInput({ value, onChange, type = "text", placeholder, onBlur }: {
+  value: string; onChange: (v: string) => void; type?: string; placeholder?: string; onBlur?: () => void;
+}) {
   return (
-    <input type={type} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)}
+    <input type={type} value={value} placeholder={placeholder}
+      onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
       className="w-full rounded-lg border border-border bg-background px-3 py-2 font-sans text-sm text-foreground focus:border-primary focus:outline-none" />
   );
 }
