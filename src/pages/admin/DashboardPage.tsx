@@ -33,6 +33,7 @@ import {
 
 import { PageHeader } from "@/components/PageHeader";
 import { KpiCard } from "@/components/KpiCard";
+import { ConnectStatCard } from "@/components/ConnectStatCard";
 import { usePermissao } from "@/config/permissoes";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SlaBar } from "@/components/SlaBar";
@@ -96,12 +97,12 @@ const ATIVIDADES: AtividadeRecente[] = [
 ];
 
 const ATIVIDADE_META: Record<AtividadeIcon, { Icon: typeof CheckCircle2; cls: string }> = {
-  check: { Icon: CheckCircle2, cls: "bg-success/15 text-success" },
-  clock: { Icon: Clock,        cls: "bg-primary/15 text-primary" },
-  file:  { Icon: FileText,     cls: "bg-info/15 text-info" },
-  alert: { Icon: AlertTriangle, cls: "bg-destructive/15 text-destructive" },
-  plus:  { Icon: Plus,         cls: "bg-success/15 text-success" },
-  send:  { Icon: Send,         cls: "bg-primary/15 text-primary" },
+  check: { Icon: CheckCircle2, cls: "bg-[hsl(var(--success)/0.15)] text-success" },
+  clock: { Icon: Clock,        cls: "bg-[hsl(var(--primary)/0.15)] text-primary" },
+  file:  { Icon: FileText,     cls: "bg-[hsl(var(--info)/0.15)] text-info" },
+  alert: { Icon: AlertTriangle, cls: "bg-[hsl(var(--destructive)/0.15)] text-destructive" },
+  plus:  { Icon: Plus,         cls: "bg-[hsl(var(--success)/0.15)] text-success" },
+  send:  { Icon: Send,         cls: "bg-[hsl(var(--primary)/0.15)] text-primary" },
 };
 
 interface Alerta {
@@ -212,9 +213,9 @@ function AdminDashboard() {
 
   // Mock — Operação
   const ATRASOS_POR_CONSULTOR = [
-    { nome: "Ana B.",    itens: 2, cor: "#E24B4A" },
-    { nome: "Camila T.", itens: 3, cor: "#E24B4A" },
-    { nome: "Rafael M.", itens: 1, cor: "#EF9F27" },
+    { nome: "Ana B.",    itens: 2, cor: "hsl(var(--destructive))" },
+    { nome: "Camila T.", itens: 3, cor: "hsl(var(--destructive))" },
+    { nome: "Rafael M.", itens: 1, cor: "hsl(var(--warning))" },
   ];
 
   const PRODUTIVIDADE_SEMANAS = [
@@ -242,9 +243,9 @@ function AdminDashboard() {
   ];
 
   const ENGAJAMENTO_PIZZA = [
-    { name: "Ativos",            value: 2, fill: "#639922" },
-    { name: "Sem resposta +5d",  value: 1, fill: "#EF9F27" },
-    { name: "SLA crítico",       value: 2, fill: "#E24B4A" },
+    { name: "Ativos",            value: 2, fill: "hsl(var(--success))" },
+    { name: "Sem resposta +5d",  value: 1, fill: "hsl(var(--warning))" },
+    { name: "SLA crítico",       value: 2, fill: "hsl(var(--destructive))" },
   ];
 
   const ENGAJAMENTO_SLA = [
@@ -254,10 +255,12 @@ function AdminDashboard() {
 
   return (
     <div>
-      <PageHeader
-        title={`${saudacao}, ${usuario?.nome?.split(" ")[0] ?? "Ana"} 👋`}
-        subtitle={dataCapitalizada}
-      />
+      <div className="relative overflow-hidden rounded-2xl p-6 sm:p-7 text-primary-foreground bg-[image:radial-gradient(circle_at_1px_1px,hsl(0_0%_100%/0.14)_1px,transparent_0),linear-gradient(120deg,hsl(var(--primary)),hsl(var(--primary-glow)))] [background-size:16px_16px,100%_100%]">
+        <p className="font-display text-2xl sm:text-[28px] font-bold leading-tight">
+          {saudacao}, {usuario?.nome?.split(" ")[0] ?? "Ana"} 👋
+        </p>
+        <p className="text-sm text-primary-foreground/80 mt-1">{dataCapitalizada}</p>
+      </div>
 
       <Tabs defaultValue="visao-geral" className="w-full mt-6">
         <TabsList className="mb-6">
@@ -269,39 +272,37 @@ function AdminDashboard() {
         <TabsContent value="visao-geral" className="mt-0 space-y-6">
 
           {/* 1. KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <KpiCard
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+            <ConnectStatCard
+              variant="terminal"
               label="Projetos ativos"
               value="6"
-              icon={Briefcase}
-              hint="+1 desde semana passada"
-              trend={{ value: "+1", positive: true }}
+              deltaLabel="+1 desde semana passada"
               onClick={() => navigate("/app/projetos")}
             />
-            <KpiCard
+            <ConnectStatCard
+              variant="delta"
               label="Horas no mês"
               value="115h"
-              icon={Clock}
-              hint="vs 98h mês anterior"
-              trend={{ value: "+17%", positive: true }}
+              previousLabel="98h mês anterior"
+              deltaValue="+17%"
+              positive
               onClick={() => navigate("/app/horas")}
             />
             {pode("financeiro.ver_valores") && (
-              <KpiCard
+              <ConnectStatCard
+                variant="radial"
                 label="Faturamento do mês"
-                value={ocultar(formatBRL(fin.faturado))}
-                icon={CircleDollarSign}
-                hint={`Meta: ${ocultar(formatBRL(fin.metaFaturamento))}`}
-                trend={{ value: ocultar(`${pctFaturamento}% da meta`), positive: pctFaturamento >= 80 }}
+                percent={pctFaturamento}
+                contextLabel={`${ocultar(formatBRL(fin.faturado))} de meta ${ocultar(formatBRL(fin.metaFaturamento))}`}
                 onClick={() => navigate("/app/financeiro")}
               />
             )}
-            <KpiCard
+            <ConnectStatCard
+              variant="terminal"
               label="Entregáveis em atraso"
-              value={String(atrasados)}
-              icon={AlertTriangle}
-              hint={atrasados > 0 ? "Requer atenção imediata" : "Tudo no prazo"}
-              className={cn(atrasados > 0 && "ring-1 ring-destructive/40")}
+              value={atrasados}
+              deltaLabel={atrasados > 0 ? "Requer atenção imediata" : "Tudo no prazo"}
               onClick={() => navigate("/app/projetos")}
             />
           </div>
@@ -355,7 +356,7 @@ function AdminDashboard() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <h2 className="font-display text-lg font-semibold">Alertas ativos</h2>
-                  <span className="badge-pill bg-destructive/15 text-destructive border border-destructive/30 text-xs">
+                  <span className="badge-pill bg-[hsl(var(--destructive)/0.15)] text-destructive border border-[hsl(var(--destructive)/0.3)] text-xs">
                     {ALERTAS.length}
                   </span>
                 </div>
@@ -377,8 +378,8 @@ function AdminDashboard() {
                           className={cn(
                             "flex items-start gap-2 rounded-lg border p-3 transition-colors hover:brightness-95",
                             isCritical
-                              ? "border-destructive/30 bg-destructive/5"
-                              : "border-warning/30 bg-warning/5"
+                              ? "border-[hsl(var(--destructive)/0.3)] bg-[hsl(var(--destructive)/0.05)]"
+                              : "border-[hsl(var(--warning)/0.3)] bg-[hsl(var(--warning)/0.05)]"
                           )}
                         >
                           <AlertTriangle
@@ -434,7 +435,7 @@ function AdminDashboard() {
                     return (
                       <TableRow
                         key={e.id}
-                        className={cn(e.destaque && "bg-warning/10 hover:bg-warning/15")}
+                        className={cn(e.destaque && "bg-[hsl(var(--warning)/0.1)] hover:bg-[hsl(var(--warning)/0.15)]")}
                       >
                         <TableCell className="font-medium">{e.nome}</TableCell>
                         <TableCell className="text-muted-foreground">{e.projeto}</TableCell>
@@ -447,7 +448,7 @@ function AdminDashboard() {
                             <span className="text-sm">{e.responsavel}</span>
                           </div>
                         </TableCell>
-                        <TableCell className={cn("font-data tabular-nums", atrasada && "text-destructive font-semibold")}>
+                        <TableCell className={cn("tabular-nums", atrasada && "text-destructive font-semibold")}>
                           {formatDateBR(e.prazo)}
                         </TableCell>
                         <TableCell>
@@ -474,10 +475,10 @@ function AdminDashboard() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Faturado</p>
-                    <p className="font-data text-2xl font-semibold tabular-nums mt-1">{ocultar(formatBRL(fin.faturado))}</p>
+                    <p className="text-2xl font-semibold tabular-nums mt-1">{ocultar(formatBRL(fin.faturado))}</p>
                     <p className="text-xs text-muted-foreground mt-1">Meta: {ocultar(formatBRL(fin.metaFaturamento))}</p>
                   </div>
-                  <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                  <div className="h-9 w-9 rounded-lg bg-[hsl(var(--primary)/0.1)] text-primary flex items-center justify-center">
                     <TrendingUp className="h-4 w-4" />
                   </div>
                 </div>
@@ -488,17 +489,17 @@ function AdminDashboard() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Recebido</p>
-                    <p className="font-data text-2xl font-semibold tabular-nums mt-1">{ocultar(formatBRL(fin.recebido))}</p>
+                    <p className="text-2xl font-semibold tabular-nums mt-1">{ocultar(formatBRL(fin.recebido))}</p>
                     <p className="text-xs text-muted-foreground mt-1">Pendente: {ocultar(formatBRL(fin.pendente))}</p>
                   </div>
-                  <div className="h-9 w-9 rounded-lg bg-success/15 text-success flex items-center justify-center">
+                  <div className="h-9 w-9 rounded-lg bg-[hsl(var(--success)/0.15)] text-success flex items-center justify-center">
                     <CheckCircle2 className="h-4 w-4" />
                   </div>
                 </div>
                 <div className="mt-4 space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Taxa de recebimento</span>
-                    <span className="font-data tabular-nums">{pctRecebido.toFixed(1)}%</span>
+                    <span className="tabular-nums">{pctRecebido.toFixed(1)}%</span>
                   </div>
                   <Progress value={pctRecebido} className="h-1.5" />
                 </div>
@@ -508,17 +509,17 @@ function AdminDashboard() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Repasses pendentes</p>
-                    <p className="font-data text-2xl font-semibold tabular-nums mt-1">{ocultar(formatBRL(fin.repassesPendentes))}</p>
+                    <p className="text-2xl font-semibold tabular-nums mt-1">{ocultar(formatBRL(fin.repassesPendentes))}</p>
                     <p className="text-xs text-muted-foreground mt-1">Repassado: {ocultar(formatBRL(fin.repassado))}</p>
                   </div>
-                  <div className="h-9 w-9 rounded-lg bg-info/15 text-info flex items-center justify-center">
+                  <div className="h-9 w-9 rounded-lg bg-[hsl(var(--info)/0.15)] text-info flex items-center justify-center">
                     <Wallet className="h-4 w-4" />
                   </div>
                 </div>
                 <div className="mt-4 space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">% já repassado</span>
-                    <span className="font-data tabular-nums">{pctRepassado.toFixed(1)}%</span>
+                    <span className="tabular-nums">{pctRepassado.toFixed(1)}%</span>
                   </div>
                   <Progress value={pctRepassado} className="h-1.5" />
                 </div>
@@ -541,21 +542,21 @@ function AdminDashboard() {
                   <AlertTriangle className="h-4 w-4 text-destructive" />
                   Tarefas em atraso
                 </h2>
-                <span className="badge-pill bg-destructive/15 text-destructive border border-destructive/30 text-xs">
+                <span className="badge-pill bg-[hsl(var(--destructive)/0.15)] text-destructive border border-[hsl(var(--destructive)/0.3)] text-xs">
                   6 entregáveis
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-3 mb-4">
                 <div>
-                  <div className="font-data text-2xl font-semibold">6</div>
+                  <div className="text-2xl font-semibold">6</div>
                   <div className="text-xs text-muted-foreground">em atraso agora</div>
                 </div>
                 <div>
-                  <div className="font-data text-2xl font-semibold text-warning">22</div>
+                  <div className="text-2xl font-semibold text-warning">22</div>
                   <div className="text-xs text-muted-foreground">dias — maior atraso</div>
                 </div>
                 <div>
-                  <div className="font-data text-2xl font-semibold">8.5</div>
+                  <div className="text-2xl font-semibold">8.5</div>
                   <div className="text-xs text-muted-foreground">dias em média</div>
                 </div>
               </div>
@@ -584,7 +585,7 @@ function AdminDashboard() {
                   <CheckCircle2 className="h-4 w-4 text-primary" />
                   Engajamento do cliente
                 </h2>
-                <span className="badge-pill bg-warning/15 text-warning border border-warning/30 text-xs">
+                <span className="badge-pill bg-[hsl(var(--warning)/0.15)] text-warning border border-[hsl(var(--warning)/0.3)] text-xs">
                   2 SLA crítico
                 </span>
               </div>
@@ -629,7 +630,7 @@ function AdminDashboard() {
                       className="h-full rounded-full"
                       style={{
                         width: `${Math.min(100, Math.round(((72 - c.slaH) / 72) * 100))}%`,
-                        background: c.slaH < 12 ? "#E24B4A" : "#EF9F27",
+                        background: c.slaH < 12 ? "hsl(var(--destructive))" : "hsl(var(--warning))",
                       }}
                     />
                   </div>
@@ -693,18 +694,18 @@ function AdminDashboard() {
                   <Star className="h-4 w-4 text-warning" />
                   NPS de satisfação
                 </h2>
-                <span className="badge-pill bg-primary/15 text-primary border border-primary/30 text-xs">
+                <span className="badge-pill bg-[hsl(var(--primary)/0.15)] text-primary border border-[hsl(var(--primary)/0.3)] text-xs">
                   +3 vs mês ant.
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <div className="font-data text-3xl font-semibold text-primary">81</div>
+                  <div className="text-3xl font-semibold text-primary">81</div>
                   <div className="text-xs text-muted-foreground">NPS médio mai/26</div>
                   <div className="text-xs text-success mt-1">↑ tendência positiva</div>
                 </div>
                 <div>
-                  <div className="font-data text-3xl font-semibold">4.3</div>
+                  <div className="text-3xl font-semibold">4.3</div>
                   <div className="text-xs text-muted-foreground">estrelas médias</div>
                   <div className="text-xs text-muted-foreground mt-1">18 avaliações</div>
                 </div>
@@ -737,21 +738,21 @@ function AdminDashboard() {
                   <Target className="h-4 w-4 text-primary" />
                   SLA de vagas ativas
                 </h2>
-                <span className="badge-pill bg-destructive/15 text-destructive border border-destructive/30 text-xs">
+                <span className="badge-pill bg-[hsl(var(--destructive)/0.15)] text-destructive border border-[hsl(var(--destructive)/0.3)] text-xs">
                   2 estouradas
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-3 mb-4">
                 <div>
-                  <div className="font-data text-2xl font-semibold">5</div>
+                  <div className="text-2xl font-semibold">5</div>
                   <div className="text-xs text-muted-foreground">vagas ativas</div>
                 </div>
                 <div>
-                  <div className="font-data text-2xl font-semibold text-warning">26</div>
+                  <div className="text-2xl font-semibold text-warning">26</div>
                   <div className="text-xs text-muted-foreground">dias médio</div>
                 </div>
                 <div>
-                  <div className="font-data text-2xl font-semibold text-destructive">2</div>
+                  <div className="text-2xl font-semibold text-destructive">2</div>
                   <div className="text-xs text-muted-foreground">SLA estourado</div>
                 </div>
               </div>
@@ -760,7 +761,7 @@ function AdminDashboard() {
               </p>
               <div className="space-y-2.5">
                 {VAGAS_SLA.map((v, i) => {
-                  const cor      = v.pct > 100 ? "#E24B4A" : v.pct > 60 ? "#EF9F27" : "#639922";
+                  const cor      = v.pct > 100 ? "hsl(var(--destructive))" : v.pct > 60 ? "hsl(var(--warning))" : "hsl(var(--success))";
                   const textCor  = v.pct > 100 ? "#A32D2D" : v.pct > 60 ? "#854F0B" : "#3B6D11";
                   return (
                     <div key={i} className="flex items-center gap-2">
@@ -782,7 +783,7 @@ function AdminDashboard() {
                           )}
                         </div>
                       </div>
-                      <span className="text-xs font-medium w-8 text-right shrink-0 font-data" style={{ color: textCor }}>
+                      <span className="text-xs font-medium w-8 text-right shrink-0" style={{ color: textCor }}>
                         {v.dias}d
                       </span>
                     </div>
