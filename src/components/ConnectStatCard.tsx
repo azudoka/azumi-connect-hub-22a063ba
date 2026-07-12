@@ -16,6 +16,7 @@ import type { ReactNode } from "react";
  *   stack     (E) — composição em barra empilhada com legenda
  *   spec      (F) — ficha técnica compacta (linhas label/valor)
  *   highlight (5) — card de destaque isolado, 1 por seção
+ *   stat      (8) — referência MaterialM: ícone circular colorido + número + selo de variação + label
  *
  * Todas usam só as fontes aprovadas (font-display / font-sans, sem mono) e
  * só tokens semânticos (--primary, --border, --success, --destructive...),
@@ -35,6 +36,53 @@ type TagTone = keyof typeof TAG_COLORS;
 interface BaseProps {
   className?: string;
   onClick?: () => void;
+}
+
+// ---------- 8 · Stat (referência MaterialM) ----------
+interface StatProps extends BaseProps {
+  variant: "stat";
+  icon: LucideIcon;
+  label: string;
+  value: string | number;
+  deltaValue?: string;
+  positive?: boolean;
+  tone: TagTone;
+}
+
+function StatCard({ icon: Icon, label, value, deltaValue, positive = true, tone, className, onClick }: StatProps) {
+  const color = TAG_COLORS[tone];
+  return (
+    <div
+      onClick={onClick}
+      style={{ background: `${color}14` }}
+      className={cn(
+        "rounded-2xl p-5",
+        onClick && "cursor-pointer hover:brightness-[0.98] transition-[filter]",
+        className
+      )}
+    >
+      <div
+        className="h-11 w-11 rounded-full flex items-center justify-center mb-4"
+        style={{ background: color }}
+      >
+        <Icon className="h-5 w-5 text-white" />
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="font-display text-2xl font-bold tabular-nums" style={{ color }}>
+          {value}
+        </span>
+        {deltaValue && (
+          <span className={cn(
+            "text-[11px] font-semibold px-1.5 py-0.5 rounded-full",
+            positive ? "bg-[hsl(var(--success)/0.15)] text-success" : "bg-[hsl(var(--destructive)/0.15)] text-destructive"
+          )}>
+            {deltaValue}
+          </span>
+        )}
+      </div>
+      <p className="text-sm text-muted-foreground mt-1">{label}</p>
+    </div>
+  );
 }
 
 // ---------- A · Terminal ----------
@@ -308,7 +356,7 @@ function HighlightCard({
       </div>
       <h3 className="font-display text-lg font-bold max-w-[78%] leading-tight">{title}</h3>
       <p className="mt-1 text-xs text-primary-foreground/85 max-w-[85%] leading-relaxed">{description}</p>
-      {chart && <div className="mt-3">{chart}</div>}
+      {chart && <div className="mt-3 max-h-16 overflow-hidden">{chart}</div>}
       <div className="mt-auto">
         <div className="my-4 h-px bg-primary-foreground/25" />
         <div className="flex items-end justify-between gap-2">
@@ -338,7 +386,8 @@ export type ConnectStatCardProps =
   | ListProps
   | StackProps
   | SpecProps
-  | HighlightProps;
+  | HighlightProps
+  | StatProps;
 
 export function ConnectStatCard(props: ConnectStatCardProps) {
   switch (props.variant) {
@@ -356,5 +405,7 @@ export function ConnectStatCard(props: ConnectStatCardProps) {
       return <SpecCard {...props} />;
     case "highlight":
       return <HighlightCard {...props} />;
+    case "stat":
+      return <StatCard {...props} />;
   }
 }
