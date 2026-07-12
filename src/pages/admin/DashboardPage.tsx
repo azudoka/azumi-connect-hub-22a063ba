@@ -86,12 +86,14 @@ interface AtividadeRecente {
   icon: AtividadeIcon;
   texto: string;
   quando: string;
+  /** Se a atividade tem uma pessoa específica por trás, mostramos o avatar dela em vez do ícone genérico */
+  autor?: string;
 }
 
 const ATIVIDADES: AtividadeRecente[] = [
-  { id: "a1", icon: "check", texto: 'Ana Beatriz marcou "Diagnóstico inicial" como aprovado pelo cliente', quando: "há 2h" },
-  { id: "a2", icon: "clock", texto: 'Rafael Moura iniciou timer em "Hunting — Dev Full Stack"', quando: "há 3h" },
-  { id: "a3", icon: "file",  texto: 'Camila Torres lançou 2h manuais em "Estruturação de RH"', quando: "há 5h" },
+  { id: "a1", icon: "check", texto: 'Ana Beatriz marcou "Diagnóstico inicial" como aprovado pelo cliente', quando: "há 2h", autor: "Ana Beatriz" },
+  { id: "a2", icon: "clock", texto: 'Rafael Moura iniciou timer em "Hunting — Dev Full Stack"', quando: "há 3h", autor: "Rafael Moura" },
+  { id: "a3", icon: "file",  texto: 'Camila Torres lançou 2h manuais em "Estruturação de RH"', quando: "há 5h", autor: "Camila Torres" },
   { id: "a4", icon: "alert", texto: "Fatura FAT-2026-0001 venceu sem pagamento (Kentaki Foods)", quando: "há 6h" },
   { id: "a5", icon: "plus",  texto: 'Novo projeto criado: "Implantação de PDP" (Grupo Maverick)', quando: "ontem" },
   { id: "a6", icon: "send",  texto: "Cronograma CRON-2026-0009 enviado para aprovação do cliente (Tech Plural)", quando: "ontem" },
@@ -119,14 +121,14 @@ const ALERTAS: Alerta[] = [
     id: "al1",
     severidade: "critical",
     titulo: "Fatura FAT-2026-0001 em atraso",
-    descricao: "R$ 8.500 · Kentaki Foods",
+    descricao: "Kentaki Foods",
     to: "/app/financeiro",
   },
   {
     id: "al2",
     severidade: "critical",
     titulo: "Fatura FAT-2026-0005 em atraso",
-    descricao: "R$ 7.300 · Tech Plural",
+    descricao: "Tech Plural",
     to: "/app/financeiro",
   },
   {
@@ -294,64 +296,61 @@ function AdminDashboard() {
         {/* ── ABA VISÃO GERAL ── */}
         <TabsContent value="visao-geral" className="mt-0 space-y-6">
 
-          {/* 1. KPIs — todos no modelo de card aprovado (destaque) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
-            <ConnectStatCard
-              variant="highlight"
-              icon={Briefcase}
-              title="Projetos ativos"
-              description="+1 desde a semana passada"
-              metricValue="6"
-              metricLabel="em andamento agora"
-              actionLabel="Ver →"
-              onAction={() => navigate("/app/projetos")}
-              onClick={() => navigate("/app/projetos")}
-            />
-            <ConnectStatCard
-              variant="highlight"
-              icon={Clock}
-              title="Horas no mês"
-              description="98h no mês anterior · +17%"
-              metricValue="115h"
-              metricLabel="lançadas até agora"
-              actionLabel="Ver →"
-              onAction={() => navigate("/app/horas")}
-              onClick={() => navigate("/app/horas")}
-            />
+          {/* 1. KPIs — estrutura MaterialM: 1 card largo + 3 cards de estatística circular */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-start">
             {pode("financeiro.ver_valores") && (
               <ConnectStatCard
                 variant="highlight"
                 icon={CircleDollarSign}
                 title="Faturamento do mês"
                 description={`${ocultar(formatBRL(fin.faturado))} de meta ${ocultar(formatBRL(fin.metaFaturamento))}`}
+                metricValue={`${pctFaturamento}%`}
+                metricLabel="da meta batida"
                 actionLabel="Ver →"
                 onAction={() => navigate("/app/financeiro")}
                 onClick={() => navigate("/app/financeiro")}
+                className="lg:col-span-2"
                 chart={
-                  <div className="flex items-end gap-3 h-14">
+                  <div className="flex items-end gap-4">
                     {[
                       { label: "Faturado", v: fin.faturado, max: fin.metaFaturamento },
                       { label: "Meta", v: fin.metaFaturamento, max: fin.metaFaturamento },
                     ].map((b) => (
                       <div key={b.label} className="flex flex-col items-center gap-1">
-                        <div className="w-7 rounded-t-md bg-primary-foreground/85" style={{ height: `${Math.max(6, (b.v / b.max) * 56)}px` }} />
+                        <div className="w-6 rounded-t-md bg-primary-foreground/85" style={{ height: `${Math.max(6, (b.v / b.max) * 36)}px` }} />
                         <span className="text-[9px] text-primary-foreground/70">{b.label}</span>
                       </div>
                     ))}
-                    <span className="text-lg font-bold tabular-nums ml-1">{pctFaturamento}%</span>
                   </div>
                 }
               />
             )}
             <ConnectStatCard
-              variant="highlight"
+              variant="stat"
+              icon={Briefcase}
+              tone="blue"
+              label="Projetos ativos"
+              value="6"
+              deltaValue="+1"
+              positive
+              onClick={() => navigate("/app/projetos")}
+            />
+            <ConnectStatCard
+              variant="stat"
+              icon={Clock}
+              tone="violet"
+              label="Horas no mês"
+              value="115h"
+              deltaValue="+17%"
+              positive
+              onClick={() => navigate("/app/horas")}
+            />
+            <ConnectStatCard
+              variant="stat"
               icon={AlertTriangle}
-              title="Entregáveis em atraso"
-              description={atrasados > 0 ? "Requer atenção imediata" : "Tudo no prazo, sem pendências"}
-              metricValue={atrasados}
-              metricLabel="em atraso agora"
-              actionLabel="Ver →"
-              onAction={() => navigate("/app/projetos")}
+              tone={atrasados > 0 ? "red" : "green"}
+              label="Entregáveis em atraso"
+              value={atrasados}
               onClick={() => navigate("/app/projetos")}
             />
           </div>
@@ -382,15 +381,28 @@ function AdminDashboard() {
                   {ATIVIDADES.map((a, i) => {
                     const meta = ATIVIDADE_META[a.icon];
                     const Icon = meta.Icon;
+                    const iniciais = a.autor?.split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]).join("").toUpperCase();
+                    const corAvatar = ["#264478", "#6B3FBF", "#12786B", "#B4740E"][
+                      a.autor ? a.autor.charCodeAt(0) % 4 : 0
+                    ];
                     return (
                       <li
                         key={a.id}
                         style={{ animationDelay: `${i * 70}ms`, animationFillMode: "backwards" }}
                         className="flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500"
                       >
-                        <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center shrink-0", meta.cls)}>
-                          <Icon className="h-4 w-4" />
-                        </div>
+                        {a.autor ? (
+                          <div
+                            className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 text-xs font-semibold text-white"
+                            style={{ background: corAvatar }}
+                          >
+                            {iniciais}
+                          </div>
+                        ) : (
+                          <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center shrink-0", meta.cls)}>
+                            <Icon className="h-4 w-4" />
+                          </div>
+                        )}
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium leading-snug">{a.texto}</p>
                         </div>
@@ -422,18 +434,17 @@ function AdminDashboard() {
                     const isCritical = al.severidade === "critical";
                     return (
                       <Link key={al.id} to={al.to} className="group flex items-center gap-3 py-3.5 hover:bg-muted/30 transition-colors -mx-1 px-1 rounded-md">
-                        <span className={cn(
-                          "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
-                          isCritical ? "bg-[hsl(var(--destructive)/0.12)] text-destructive" : "bg-[hsl(var(--warning)/0.12)] text-warning"
-                        )}>
-                          <AlertTriangle className="h-4 w-4" />
-                        </span>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium leading-snug truncate">{al.titulo}</p>
-                          <p className={cn("text-[11px] font-medium mt-0.5", isCritical ? "text-destructive" : "text-warning")}>
-                            {isCritical ? "Crítico" : "Atenção"}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{al.descricao.match(/R\$/) ? ocultar(al.descricao) : al.descricao}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium leading-snug truncate">{al.titulo}</p>
+                            <span className={cn(
+                              "shrink-0 badge-pill text-[10px] font-semibold px-2 py-0.5",
+                              isCritical ? "bg-[hsl(var(--destructive)/0.15)] text-destructive" : "bg-[hsl(var(--warning)/0.15)] text-warning"
+                            )}>
+                              {isCritical ? "Crítico" : "Atenção"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">{al.descricao}</p>
                         </div>
                         <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                       </Link>
@@ -462,47 +473,48 @@ function AdminDashboard() {
                 description="Nenhum entregável com prazo nos próximos 30 dias."
               />
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Entregável</TableHead>
-                    <TableHead>Projeto</TableHead>
-                    <TableHead>Empresa</TableHead>
-                    <TableHead>Responsável</TableHead>
-                    <TableHead>Prazo</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {ENTREGAVEIS.map((e) => {
-                    const atrasada = e.prazo < hojeISO;
-                    return (
-                      <TableRow
-                        key={e.id}
-                        className={cn(e.destaque && "bg-[hsl(var(--warning)/0.1)] hover:bg-[hsl(var(--warning)/0.15)]")}
-                      >
-                        <TableCell className="font-medium">{e.nome}</TableCell>
-                        <TableCell className="text-muted-foreground">{e.projeto}</TableCell>
-                        <TableCell>{e.empresa}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="h-6 w-6 rounded-md bg-[image:linear-gradient(135deg,hsl(var(--primary)),hsl(var(--primary-glow)))] flex items-center justify-center text-[9px] font-semibold text-white shrink-0">
-                              {e.responsavel.split(" ").map((n) => n[0]).slice(0, 2).join("")}
-                            </div>
-                            <span className="text-sm">{e.responsavel}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className={cn("tabular-nums", atrasada && "text-destructive font-semibold")}>
-                          {formatDateBR(e.prazo)}
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge status={e.status}>{e.statusLabel}</StatusBadge>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+              <div className="p-3 space-y-2">
+                <div className="hidden md:grid grid-cols-[1.6fr_1fr_1fr_1fr_0.8fr] gap-4 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <span>Entregável</span>
+                  <span>Empresa</span>
+                  <span>Responsável</span>
+                  <span>Prazo</span>
+                  <span className="text-right">Status</span>
+                </div>
+                {ENTREGAVEIS.map((e) => {
+                  const atrasada = e.prazo < hojeISO;
+                  return (
+                    <Link
+                      key={e.id}
+                      to="/app/projetos"
+                      className={cn(
+                        "grid grid-cols-1 md:grid-cols-[1.6fr_1fr_1fr_1fr_0.8fr] items-center gap-2 md:gap-4 rounded-xl border p-4 transition-colors",
+                        e.destaque
+                          ? "border-[hsl(var(--warning)/0.35)] bg-[hsl(var(--warning)/0.08)] hover:bg-[hsl(var(--warning)/0.14)]"
+                          : "border-border bg-card hover:bg-muted/30"
+                      )}
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold truncate">{e.nome}</p>
+                        <p className="text-xs text-muted-foreground truncate">{e.projeto}</p>
+                      </div>
+                      <span className="text-sm text-muted-foreground truncate">{e.empresa}</span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="h-6 w-6 rounded-md bg-[image:linear-gradient(135deg,hsl(var(--primary)),hsl(var(--primary-glow)))] flex items-center justify-center text-[9px] font-semibold text-white shrink-0">
+                          {e.responsavel.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                        </div>
+                        <span className="text-sm truncate">{e.responsavel}</span>
+                      </div>
+                      <span className={cn("text-sm tabular-nums", atrasada && "text-destructive font-semibold")}>
+                        {formatDateBR(e.prazo)}
+                      </span>
+                      <div className="md:text-right">
+                        <StatusBadge status={e.status}>{e.statusLabel}</StatusBadge>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
             )}
           </Card>
 
