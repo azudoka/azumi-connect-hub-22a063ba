@@ -3,7 +3,7 @@ import { ConnectStatCard } from "@/components/ConnectStatCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SlaBar } from "@/components/SlaBar";
 import { vagas as vagasMock, type StatusKey } from "@/data/mock";
-import { criarVaga, publicarVaga, listarVagas, type VagaSupabase } from "@/services/vagasService";
+import { criarVaga, publicarVaga, listarVagas, atualizarEtapa, type VagaSupabase } from "@/services/vagasService";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, LayoutGrid, List, Filter, Info, AlertTriangle, Users, ChevronDown, ChevronRight, Megaphone } from "lucide-react";
 
@@ -223,6 +223,8 @@ export default function AtracaoLista() {
       toast.warning(`Pulou ${idxDestino - idxAtual} etapas — verifique se é intencional.`);
     }
 
+    const etapaAnterior = vaga.etapaFunil;
+
     setVagas((prev) =>
       prev
         .map((v) => (v.id === vagaId ? { ...v, etapaFunil: destino } : v))
@@ -232,6 +234,12 @@ export default function AtracaoLista() {
           return pa !== pb ? pa - pb : b.id.localeCompare(a.id);
         })
     );
+
+    atualizarEtapa(vagaId, destino).catch((err) => {
+      console.error("[moverVaga] falha ao persistir", err);
+      toast.error("Erro ao salvar a mudança de etapa — revertendo.");
+      setVagas((prev) => prev.map((v) => (v.id === vagaId ? { ...v, etapaFunil: etapaAnterior } : v)));
+    });
 
     if (destino === "perfis_enviados") {
       toast.success("Perfis enviados ao cliente — aguarde avaliação.");
