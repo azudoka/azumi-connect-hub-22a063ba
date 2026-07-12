@@ -198,7 +198,7 @@ export default function UsuariosPage() {
               <TableRow key={u.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-lg bg-gradient-brand flex items-center justify-center text-xs font-semibold text-white shrink-0">
+                    <div className="h-9 w-9 rounded-lg bg-[image:linear-gradient(135deg,hsl(var(--primary)),hsl(var(--primary-glow)))] flex items-center justify-center text-xs font-semibold text-white shrink-0">
                       {u.iniciais}
                     </div>
                     <div className="min-w-0">
