@@ -114,6 +114,7 @@ interface TerminalProps extends BaseProps {
 }
 
 function TerminalCard({ label, value, suffix, deltaLabel, sparkline, className, onClick }: TerminalProps) {
+  const cardShadow = { boxShadow: "0 1px 4px rgba(133,146,173,0.2)" };
   const points =
     sparkline && sparkline.length > 1
       ? sparkline
@@ -124,9 +125,10 @@ function TerminalCard({ label, value, suffix, deltaLabel, sparkline, className, 
   return (
     <div
       onClick={onClick}
+      style={cardShadow}
       className={cn(
-        "bg-card border-l-[3px] border-primary border-y border-r border-border rounded-xl p-4",
-        onClick && "cursor-pointer hover:shadow-card transition-shadow",
+        "bg-card rounded-xl p-6",
+        onClick && "cursor-pointer hover:-translate-y-1 hover:shadow-lg transition-all duration-200",
         className
       )}
     >
@@ -157,12 +159,14 @@ function RadialCard({ label, percent, contextLabel, className, onClick }: Radial
   const r = 30;
   const c = 2 * Math.PI * r;
   const offset = c - (Math.min(100, Math.max(0, percent)) / 100) * c;
+  const cardShadow = { boxShadow: "0 1px 4px rgba(133,146,173,0.2)" };
   return (
     <div
       onClick={onClick}
+      style={cardShadow}
       className={cn(
-        "bg-card border border-border rounded-xl p-4 flex flex-col items-center text-center",
-        onClick && "cursor-pointer hover:shadow-card transition-shadow",
+        "bg-card rounded-xl p-6 flex flex-col items-center text-center",
+        onClick && "cursor-pointer hover:-translate-y-1 hover:shadow-lg transition-all duration-200",
         className
       )}
     >
@@ -195,12 +199,14 @@ interface DeltaProps extends BaseProps {
 }
 
 function DeltaCard({ label, value, previousLabel, deltaValue, positive = true, className, onClick }: DeltaProps) {
+  const cardShadow = { boxShadow: "0 1px 4px rgba(133,146,173,0.2)" };
   return (
     <div
       onClick={onClick}
+      style={cardShadow}
       className={cn(
-        "bg-card border border-border rounded-xl p-4",
-        onClick && "cursor-pointer hover:shadow-card transition-shadow",
+        "bg-card rounded-xl p-6",
+        onClick && "cursor-pointer hover:-translate-y-1 hover:shadow-lg transition-all duration-200",
         className
       )}
     >
@@ -232,12 +238,14 @@ interface ListProps extends BaseProps {
 }
 
 function ListCard({ label, items, footer, className, onClick }: ListProps) {
+  const cardShadow = { boxShadow: "0 1px 4px rgba(133,146,173,0.2)" };
   return (
     <div
       onClick={onClick}
+      style={cardShadow}
       className={cn(
-        "bg-card border border-border rounded-xl p-4",
-        onClick && "cursor-pointer hover:shadow-card transition-shadow",
+        "bg-card rounded-xl p-6",
+        onClick && "cursor-pointer hover:-translate-y-1 hover:shadow-lg transition-all duration-200",
         className
       )}
     >
@@ -269,12 +277,14 @@ interface StackProps extends BaseProps {
 }
 
 function StackCard({ label, segments, className, onClick }: StackProps) {
+  const cardShadow = { boxShadow: "0 1px 4px rgba(133,146,173,0.2)" };
   return (
     <div
       onClick={onClick}
+      style={cardShadow}
       className={cn(
-        "bg-card border border-border rounded-xl p-4",
-        onClick && "cursor-pointer hover:shadow-card transition-shadow",
+        "bg-card rounded-xl p-6",
+        onClick && "cursor-pointer hover:-translate-y-1 hover:shadow-lg transition-all duration-200",
         className
       )}
     >
@@ -308,12 +318,14 @@ interface SpecProps extends BaseProps {
 }
 
 function SpecCard({ label, rows, className, onClick }: SpecProps) {
+  const cardShadow = { boxShadow: "0 1px 4px rgba(133,146,173,0.2)" };
   return (
     <div
       onClick={onClick}
+      style={cardShadow}
       className={cn(
-        "bg-card border border-border rounded-xl p-4",
-        onClick && "cursor-pointer hover:shadow-card transition-shadow",
+        "bg-card rounded-xl p-6",
+        onClick && "cursor-pointer hover:-translate-y-1 hover:shadow-lg transition-all duration-200",
         className
       )}
     >
