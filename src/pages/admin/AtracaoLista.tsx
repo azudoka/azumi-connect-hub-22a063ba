@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/PageHeader";
+import { ConnectStatCard } from "@/components/ConnectStatCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SlaBar } from "@/components/SlaBar";
 import { vagas as vagasMock, type StatusKey } from "@/data/mock";
@@ -299,8 +300,38 @@ export default function AtracaoLista() {
         }
       />
 
+      {/* Painel de visão geral — substitui o banner solto de SLA crítico por dado de verdade */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3">
+        <ConnectStatCard variant="terminal" label="Vagas ativas" value={vagasAtivas.length} />
+        <ConnectStatCard
+          variant="list"
+          label="SLA crítico"
+          items={vagasAtivas
+            .filter((v) => isSlaCritico(v.etapaFunil, v.sla))
+            .slice(0, 3)
+            .map((v) => ({ label: v.titulo, tone: "red" as const }))}
+          footer={
+            totalCriticas > 0
+              ? `${totalCriticas} vaga${totalCriticas === 1 ? "" : "s"} em "Perfis enviados" — cobrança recomendada`
+              : "Nenhuma vaga crítica no momento"
+          }
+        />
+        <ConnectStatCard
+          variant="stack"
+          label="Distribuição por etapa"
+          segments={FUNIL_ETAPAS.map((etapa, i) => ({
+            label: FUNIL_ETAPA_LABEL[etapa],
+            value: String(vagasAtivas.filter((v) => v.etapaFunil === etapa).length),
+            percent: vagasAtivas.length > 0
+              ? (vagasAtivas.filter((v) => v.etapaFunil === etapa).length / vagasAtivas.length) * 100
+              : 0,
+            tone: (["blue", "violet", "teal", "amber", "green"] as const)[i % 5],
+          }))}
+        />
+      </div>
+
       {/* Banner com as regras de negócio (Handoff): limite de envio + plano */}
-      <div className="mb-3 rounded-xl border border-[hsl(var(--info)/0.3)] bg-[hsl(var(--info)/0.1)] px-4 py-3 flex items-start gap-3">
+      <div className="mb-5 rounded-xl border border-[hsl(var(--info)/0.3)] bg-[hsl(var(--info)/0.1)] px-4 py-3 flex items-start gap-3">
         <Info className="h-4 w-4 text-info shrink-0 mt-0.5" />
         <div className="text-xs text-[hsl(var(--info)/0.9)] leading-relaxed">
           Envie no máximo <strong>{MAX_CANDIDATOS_POR_ENVIO} candidatos por etapa</strong> ao cliente
@@ -308,18 +339,6 @@ export default function AtracaoLista() {
           são permitidas no plano Ongoing.
         </div>
       </div>
-
-      {/* Alerta SLA crítico (perfis enviados há muito tempo) */}
-      {totalCriticas > 0 && (
-        <div className="mb-5 rounded-xl border border-[hsl(var(--warning)/0.3)] bg-[hsl(var(--warning)/0.1)] px-4 py-3 flex items-start gap-3">
-          <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-          <div className="text-xs text-[hsl(var(--warning)/0.9)] leading-relaxed">
-            <strong>{totalCriticas}</strong>{" "}
-            {totalCriticas === 1 ? "vaga com SLA crítico" : "vagas com SLA crítico"} em
-            "Perfis enviados". Cobrança de parecer recomendada.
-          </div>
-        </div>
-      )}
 
       {loadingVagas && (
         <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
@@ -356,7 +375,7 @@ export default function AtracaoLista() {
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/70 truncate">
                     {FUNIL_ETAPA_LABEL[etapa]}
                   </span>
-                  <span className="font-data text-[10px] text-muted-foreground tabular-nums">
+                  <span className="text-[10px] text-muted-foreground tabular-nums">
                     {inicio} <span className="text-foreground/40">→</span> {fim}
                   </span>
                 </div>
@@ -368,6 +387,9 @@ export default function AtracaoLista() {
             {FUNIL_ETAPAS.map((etapa) => {
               const items = vagasAtivas.filter((v) => v.etapaFunil === etapa);
               const isOver = dragOverCol === etapa;
+              const corEtapa = (["#264478", "#6B3FBF", "#12786B", "#B4740E", "#1E8A4C"] as const)[
+                FUNIL_ETAPAS.indexOf(etapa) % 5
+              ];
               return (
                 <div
                   key={etapa}
@@ -386,8 +408,9 @@ export default function AtracaoLista() {
                     setDraggingId(null);
                     if (id) moverVaga(id, etapa);
                   }}
+                  style={{ borderTopColor: corEtapa }}
                   className={cn(
-                    "bg-card border rounded-xl p-3 min-h-[280px] transition-colors",
+                    "bg-card border border-t-[3px] rounded-xl p-3 min-h-[280px] transition-colors",
                     isOver ? "border-primary ring-2 ring-[hsl(var(--primary)/0.2)]" : "border-border",
                   )}
                 >
@@ -395,7 +418,12 @@ export default function AtracaoLista() {
                     <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       {FUNIL_ETAPA_LABEL[etapa]}
                     </span>
-                    <span className="font-data text-xs text-muted-foreground">{items.length}</span>
+                    <span
+                      className="text-[10px] font-semibold tabular-nums rounded-full px-1.5 py-0.5"
+                      style={{ background: `${corEtapa}1A`, color: corEtapa }}
+                    >
+                      {items.length}
+                    </span>
                   </div>
                   {items.length === 0 ? (
                     <div className="flex items-center justify-center h-32 text-xs text-muted-foreground border border-dashed border-border/60 rounded-md">
@@ -504,7 +532,7 @@ export default function AtracaoLista() {
                   <td className="px-4 py-3">{FUNIL_ETAPA_LABEL[v.etapaFunil]}</td>
                   <td className="px-4 py-3"><StatusBadge status={v.status} /></td>
                   <td className="px-4 py-3"><SlaBar percent={v.sla} /></td>
-                  <td className="px-4 py-3 text-right font-data">{v.candidatosTotal}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{v.candidatosTotal}</td>
                 </tr>
               ))}
             </tbody>
