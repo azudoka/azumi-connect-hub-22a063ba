@@ -9,7 +9,7 @@ import { SectionDivider } from "@/components/SectionDivider";
 import { SlaBar } from "@/components/SlaBar";
 import { DiscBars } from "@/components/DiscBars";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { vagas, candidatos, etapasVaga, comentariosVaga, getGestorDaVaga, type JanelaDisponibilidade } from "@/data/mock";
+import { vagas, candidatos, comentariosVaga, getGestorDaVaga, type JanelaDisponibilidade } from "@/data/mock";
 import { getParecerCliente, getFeedback1aLeva, resetSeedDemo } from "@/data/atracaoClienteStore";
 import {
   criarAgendamento,
@@ -1222,10 +1222,36 @@ export default function VagaDetalheAdmin() {
         <div className="lg:col-span-2 bg-card border border-border rounded-xl p-4 card-hover">
           <h3 className="font-display font-semibold mb-3">Timeline da vaga</h3>
           <div className="flex items-start overflow-x-auto pb-1 -mx-1 px-1">
-            {etapasVaga.map((e, idx) => {
+            {(() => {
+              const ORDEM: Record<string, number> = {
+                "Recebido": 2, "Triagem": 2, "Questionário": 3, "Entrevista Azumi": 3,
+                "Teste Técnico": 3, "Entrevista Cliente": 4, "Proposta": 5,
+                "Contratado": 5, "Reprovado": 5, "Banco de Talentos": 2,
+              };
+              const progressoCandidatos = candidatosVaga
+                .filter((cv) => candidatosExtras.some((ex) => ex.id === cv.id))
+                .map((cv) => colunasEstado[cv.id]);
+              const etapaAtualIdx = progressoCandidatos.length === 0
+                ? (vaga.publicacao === "publicada" ? 1 : 0)
+                : Math.max(1, ...progressoCandidatos.map((col) => ORDEM[col] ?? 1));
+              const dataAbertura = vaga.criado_em
+                ? new Date(vaga.criado_em).toLocaleDateString("pt-BR")
+                : "—";
+              const etapasVagaReal = [
+                { nome: "Briefing",         inicio: dataAbertura, fim: "—" },
+                { nome: "Divulgação",       inicio: "—",          fim: "—" },
+                { nome: "Triagem",          inicio: "—",          fim: "—" },
+                { nome: "Quest/Entrevista", inicio: "—",          fim: "—" },
+                { nome: "Perfis enviados",  inicio: "—",          fim: "—" },
+                { nome: "Decisão final",    inicio: "—",          fim: "—" },
+              ].map((e, idx) => ({
+                ...e,
+                status: idx < etapaAtualIdx ? "concluida" : idx === etapaAtualIdx ? "andamento" : "pendente",
+              }));
+              return etapasVagaReal.map((e, idx) => {
               const done = e.status === "concluida";
               const active = e.status === "andamento";
-              const isLast = idx === etapasVaga.length - 1;
+              const isLast = idx === etapasVagaReal.length - 1;
               return (
                 <div key={idx} className={cn("flex items-start", !isLast && "flex-1 min-w-[84px]")}>
                   <div className="flex flex-col items-center w-[84px] shrink-0">
@@ -1249,10 +1275,18 @@ export default function VagaDetalheAdmin() {
                   )}
                 </div>
               );
-            })}
+            });
+            })()}
           </div>
           <div className="mt-4">
-            <SlaBar percent={vaga.sla} label={`SLA da vaga · ${vaga.diasAbertos}/${vaga.diasPrevistos} dias`} />
+            {(() => {
+              const diasAbertos = vaga.criado_em
+                ? Math.floor((Date.now() - new Date(vaga.criado_em).getTime()) / (1000 * 60 * 60 * 24))
+                : 0;
+              const diasPrevistos = vaga.sla_dias ?? 30;
+              const percentSla = Math.min(100, Math.round((diasAbertos / diasPrevistos) * 100));
+              return <SlaBar percent={percentSla} label={`SLA da vaga · ${diasAbertos}/${diasPrevistos} dias`} />;
+            })()}
           </div>
         </div>
 
@@ -1601,13 +1635,12 @@ export default function VagaDetalheAdmin() {
                               </div>
                             )}
 
-                            {/* Estrelas — visível apenas na Triagem */}
-                            {colunasEstado[c.id] === "Triagem" && (
-                              <div
-                                className="flex items-center gap-0.5 pt-0.5"
-                                title="Avaliação interna (não visível ao cliente)"
-                                onMouseDown={(e) => e.stopPropagation()}
-                              >
+                            {/* Estrelas — avaliação interna, visível em qualquer etapa */}
+                            <div
+                              className="flex items-center gap-0.5 pt-0.5"
+                              title="Avaliação interna (não visível ao cliente)"
+                              onMouseDown={(e) => e.stopPropagation()}
+                            >
                                 {[1,2,3,4,5].map((n) => {
                                   const nota = avaliacaoEstrelas[c.id] ?? 0;
                                   return (
@@ -1635,8 +1668,7 @@ export default function VagaDetalheAdmin() {
                                 ) : (
                                   <span className="text-[10px] text-muted-foreground ml-1">Avaliar internamente</span>
                                 )}
-                              </div>
-                            )}
+                            </div>
 
                             {/* Linha 4: Ações rápidas */}
                             {!isContratado && (
