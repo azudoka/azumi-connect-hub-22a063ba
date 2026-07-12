@@ -991,13 +991,6 @@ export default function VagaDetalheAdmin() {
     const id = draggingId;
     setDraggingId(null);
     setDragOverCol(null);
-    const timerAtivo = localStorage.getItem("azumi_timer_ativo") === "true";
-    if (!timerAtivo && coluna !== "Recebido") {
-      setAlertaPlayCandId(id);
-      setAlertaPlayDestino(coluna);
-      setAlertaPlayOpen(true);
-      return;
-    }
     if (tentarMoverSemAlerta(id, coluna)) return;
     const colunaAtual = colunasEstado[id];
     const indexAtual = colunas.indexOf(colunaAtual);
