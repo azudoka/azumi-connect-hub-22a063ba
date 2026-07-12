@@ -43,7 +43,7 @@
     --muted-foreground: 218 10% 45%;
 
     /* Tipografia — Kit de Marca Connect v1 (variável, cada produto sobrescreve a sua) */
-    --font-display: 'Big Shoulders Display', sans-serif;
+    --font-display: 'Inter', sans-serif;
     --font-body: 'Inter', sans-serif;
 
     /* Brand named (reutilizáveis) */
