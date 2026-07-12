@@ -41,7 +41,8 @@ interface BaseProps {
 // ---------- 8 · Stat (referência MaterialM) ----------
 interface StatProps extends BaseProps {
   variant: "stat";
-  icon: LucideIcon;
+  /** Nome do ícone Iconify (conjunto Solar), ex: "solar:case-round-bold-duotone" */
+  icon: string;
   label: string;
   value: string | number;
   deltaValue?: string;
@@ -51,25 +52,30 @@ interface StatProps extends BaseProps {
   barPercent?: number;
 }
 
-function StatCard({ icon: Icon, label, value, deltaValue, positive = true, tone, barPercent, className, onClick }: StatProps) {
+function StatCard({ icon, label, value, deltaValue, positive = true, tone, barPercent, className, onClick }: StatProps) {
   const color = TAG_COLORS[tone];
   return (
     <div
       onClick={onClick}
       style={{ background: `${color}1F`, boxShadow: "0 1px 4px hsl(var(--foreground)/0.08)" }}
       className={cn(
-        "rounded-xl p-6",
-        onClick && "cursor-pointer hover:brightness-[0.98] transition-[filter]",
+        "relative overflow-hidden rounded-xl p-6 transition-all duration-200 ease-out",
+        onClick && "cursor-pointer hover:-translate-y-1 hover:shadow-lg",
         className
       )}
     >
+      {/* Elemento decorativo — preenche o espaço vazio à direita, mesmo truque visual da referência */}
       <div
-        className="h-12 w-12 rounded-full flex items-center justify-center mb-4"
+        className="absolute -top-6 -right-6 h-28 w-28 rounded-full pointer-events-none"
+        style={{ background: `${color}14` }}
+      />
+      <div
+        className="relative h-12 w-12 rounded-full flex items-center justify-center mb-4"
         style={{ background: color }}
       >
-        <Icon className="h-5 w-5 text-white" />
+        <iconify-icon icon={icon} width="22" height="22" style={{ color: "white" }} />
       </div>
-      <div className="flex items-center gap-2">
+      <div className="relative flex items-center gap-2">
         <span className="font-display text-lg font-semibold text-foreground tabular-nums">
           {value}
         </span>
@@ -86,10 +92,10 @@ function StatCard({ icon: Icon, label, value, deltaValue, positive = true, tone,
           </span>
         )}
       </div>
-      <p className="text-sm font-medium text-muted-foreground mt-1">{label}</p>
+      <p className="relative text-sm font-medium text-muted-foreground mt-1">{label}</p>
       {barPercent !== undefined && (
-        <div className="h-1 rounded-full mt-3 overflow-hidden" style={{ background: `${color}33` }}>
-          <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.max(0, barPercent))}%`, background: color }} />
+        <div className="relative h-1 rounded-full mt-3 overflow-hidden" style={{ background: `${color}33` }}>
+          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.max(0, barPercent))}%`, background: color }} />
         </div>
       )}
     </div>
