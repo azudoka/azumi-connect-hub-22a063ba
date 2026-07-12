@@ -47,9 +47,11 @@ interface StatProps extends BaseProps {
   deltaValue?: string;
   positive?: boolean;
   tone: TagTone;
+  /** Barrinha decorativa fina (0–100), padrão visto no Invoice App do MaterialM */
+  barPercent?: number;
 }
 
-function StatCard({ icon: Icon, label, value, deltaValue, positive = true, tone, className, onClick }: StatProps) {
+function StatCard({ icon: Icon, label, value, deltaValue, positive = true, tone, barPercent, className, onClick }: StatProps) {
   const color = TAG_COLORS[tone];
   return (
     <div
@@ -85,6 +87,11 @@ function StatCard({ icon: Icon, label, value, deltaValue, positive = true, tone,
         )}
       </div>
       <p className="text-sm font-medium text-muted-foreground mt-1">{label}</p>
+      {barPercent !== undefined && (
+        <div className="h-1 rounded-full mt-3 overflow-hidden" style={{ background: `${color}33` }}>
+          <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.max(0, barPercent))}%`, background: color }} />
+        </div>
+      )}
     </div>
   );
 }
