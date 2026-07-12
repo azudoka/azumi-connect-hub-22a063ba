@@ -120,7 +120,7 @@ export function SidebarConnect({ variant = "admin" }: SidebarConnectProps) {
   const inactivityRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resetInactivity = () => {
     if (inactivityRef.current) clearTimeout(inactivityRef.current);
-    inactivityRef.current = setTimeout(() => setCollapsed(true), 10000);
+    inactivityRef.current = setTimeout(() => setCollapsed(true), 5000);
   };
   useEffect(() => {
     resetInactivity();
