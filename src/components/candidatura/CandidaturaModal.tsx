@@ -119,60 +119,63 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
 
   async function concluir(scores: DiscScores, perfilDim: DiscDim) {
     setEnviando(true);
-
-    let curriculoUrl: string | null = null;
-    if (c.curriculo) {
-      const ext = c.curriculo.name.split(".").pop() ?? "pdf";
-      const path = `${vagaId ?? "banco"}/${Date.now()}_${c.nome.replace(/\s+/g, "_")}.${ext}`;
-      const { data: upData, error: upError } = await supabase.storage
-        .from("curriculos")
-        .upload(path, c.curriculo, { upsert: false });
-      if (upError) {
-        console.error("[curriculo] storage:", upError.message);
-      } else if (upData) {
-        const { data: urlData } = supabase.storage.from("curriculos").getPublicUrl(upData.path);
-        curriculoUrl = urlData.publicUrl;
+    setErro("");
+    try {
+      // Currículo — best effort, falha silenciosa não impede a candidatura
+      let curriculoUrl: string | null = null;
+      if (c.curriculo) {
+        const ext = c.curriculo.name.split(".").pop() ?? "pdf";
+        const path = `${vagaId ?? "banco"}/${Date.now()}_${c.nome.replace(/\s+/g, "_")}.${ext}`;
+        const { data: upData, error: upError } = await supabase.storage
+          .from("curriculos")
+          .upload(path, c.curriculo, { upsert: false });
+        if (upError) {
+          console.error("[curriculo] storage:", upError.message);
+        } else if (upData) {
+          const { data: urlData } = supabase.storage.from("curriculos").getPublicUrl(upData.path);
+          curriculoUrl = urlData.publicUrl;
+        }
       }
-    }
 
-    const row = {
-      job_id: vagaId ?? null,
-      nome: c.nome,
-      email: c.email,
-      telefone: c.telefone,
-      cpf: c.cpf || null,
-      data_nascimento: c.nascimento || null,
-      cidade: c.cidadeEstado || null,
-      bairro: c.bairro || null,
-      escolaridade: c.escolaridade || null,
-      possui_filhos: c.filhos || null,
-      linkedin: c.linkedin || null,
-      portfolio_url: c.portfolio || null,
-      origem: c.origem || null,
-      observacoes: c.mensagem || null,
-      curriculo_nome: c.curriculo?.name ?? null,
-      curriculo_url: curriculoUrl,
-      disponibilidade_inicio: modo === "banco" ? (c.disponibilidade || null) : null,
-      banco_talentos: modo === "banco",
-      etapa_azumi: "recebido",
-      lgpd_aceite: c.aceitePrivacidade,
-      lgpd_aceite_at: c.aceitePrivacidade ? new Date().toISOString() : null,
-    };
+      const row = {
+        job_id: vagaId ?? null,
+        nome: c.nome,
+        email: c.email,
+        telefone: c.telefone,
+        cpf: c.cpf || null,
+        data_nascimento: c.nascimento || null,
+        cidade: c.cidadeEstado || null,
+        bairro: c.bairro || null,
+        escolaridade: c.escolaridade || null,
+        possui_filhos: c.filhos || null,
+        linkedin: c.linkedin || null,
+        portfolio_url: c.portfolio || null,
+        origem: c.origem || null,
+        observacoes: c.mensagem || null,
+        curriculo_nome: c.curriculo?.name ?? null,
+        curriculo_url: curriculoUrl,
+        disponibilidade_inicio: modo === "banco" ? (c.disponibilidade || null) : null,
+        banco_talentos: modo === "banco",
+        etapa_azumi: "recebido",
+        lgpd_aceite: c.aceitePrivacidade,
+        lgpd_aceite_at: c.aceitePrivacidade ? new Date().toISOString() : null,
+      };
 
-    const { data: candidatoInserido, error } = await supabase
-      .from("candidates")
-      .insert(row)
-      .select("id")
-      .single();
+      const { data: candidatoInserido, error } = await supabase
+        .from("candidates")
+        .insert(row)
+        .select("id")
+        .single();
 
-    if (error) {
-      console.error("[candidatura] Supabase:", error.message);
-    } else if (candidatoInserido) {
+      // Candidato não foi salvo — jamais mostrar sucesso nesse caso
+      if (error || !candidatoInserido) {
+        throw new Error(error?.message ?? "Não foi possível salvar sua candidatura.");
+      }
+
+      // DISC — best effort, falha não reverte a candidatura já criada
       const entries = (["D", "I", "S", "C"] as const)
         .map((k) => ({ k, v: scores[k] }))
         .sort((a, b) => b.v - a.v);
-      const fatorSecundario = entries[1]?.k ?? null;
-
       const { error: discError } = await supabase
         .from("disc_resultado_candidato")
         .insert({
@@ -182,53 +185,53 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
           score_s: scores.S,
           score_c: scores.C,
           fator_predominante: perfilDim,
-          fator_secundario: fatorSecundario,
+          fator_secundario: entries[1]?.k ?? null,
         });
       if (discError) console.error("[candidatura] DISC:", discError.message);
+
+      // Email — fire and forget, nunca bloqueia nem reverte
+      const linhas = [
+        `<tr><td><strong>Vaga</strong></td><td>${vagaTitulo ?? "Banco de talentos"}</td></tr>`,
+        `<tr><td><strong>Modo</strong></td><td>${modo === "banco" ? "Banco de talentos" : "Candidatura"}</td></tr>`,
+        `<tr><td><strong>Nome</strong></td><td>${c.nome}</td></tr>`,
+        `<tr><td><strong>Email</strong></td><td>${c.email}</td></tr>`,
+        `<tr><td><strong>Telefone</strong></td><td>${c.telefone}</td></tr>`,
+        c.cpf ? `<tr><td><strong>CPF</strong></td><td>${c.cpf}</td></tr>` : "",
+        c.nascimento ? `<tr><td><strong>Nascimento</strong></td><td>${c.nascimento}</td></tr>` : "",
+        c.cidadeEstado ? `<tr><td><strong>Cidade/UF</strong></td><td>${c.cidadeEstado}</td></tr>` : "",
+        c.bairro ? `<tr><td><strong>Bairro</strong></td><td>${c.bairro}</td></tr>` : "",
+        c.escolaridade ? `<tr><td><strong>Escolaridade</strong></td><td>${c.escolaridade}</td></tr>` : "",
+        c.linkedin ? `<tr><td><strong>LinkedIn</strong></td><td>${c.linkedin}</td></tr>` : "",
+        c.portfolio ? `<tr><td><strong>Portfólio</strong></td><td>${c.portfolio}</td></tr>` : "",
+        c.origem ? `<tr><td><strong>Origem</strong></td><td>${c.origem}</td></tr>` : "",
+        c.mensagem ? `<tr><td><strong>Mensagem</strong></td><td>${c.mensagem}</td></tr>` : "",
+        c.curriculo ? `<tr><td><strong>Currículo</strong></td><td>${c.curriculo.name}</td></tr>` : "",
+        c.contratoDesejado ? `<tr><td><strong>Contrato desejado</strong></td><td>${c.contratoDesejado}</td></tr>` : "",
+        c.disponibilidade ? `<tr><td><strong>Disponibilidade</strong></td><td>${c.disponibilidade}</td></tr>` : "",
+        `<tr><td><strong>DISC</strong></td><td>D:${scores.D} I:${scores.I} S:${scores.S} C:${scores.C} — Perfil: ${perfilDim}</td></tr>`,
+      ].filter(Boolean).join("");
+
+      fetch(EMAIL_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: `Nova candidatura: ${c.nome} → ${vagaTitulo ?? "Banco de talentos"}`,
+          html: `<h2 style="color:#031D38">Nova ${modo === "banco" ? "inscrição no banco de talentos" : "candidatura"}</h2>
+            <table cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:14px">${linhas}</table>
+            <p style="margin-top:16px;font-size:12px;color:#666">Enviado automaticamente por Azumi Connect · ${new Date().toLocaleString("pt-BR")}</p>`,
+        }),
+      }).catch((e) => console.error("[candidatura] email:", e));
+
+      setStep("ok");
+    } catch (err: any) {
+      console.error("[candidatura] Falha completa:", err);
+      setErro(
+        "Não conseguimos registrar sua candidatura agora. Tente novamente em instantes ou entre em contato com a Azumi RH."
+      );
+      setStep(1);
+    } finally {
+      setEnviando(false);
     }
-
-    const linhas = [
-      `<tr><td><strong>Vaga</strong></td><td>${vagaTitulo ?? "Banco de talentos"}</td></tr>`,
-      `<tr><td><strong>Modo</strong></td><td>${modo === "banco" ? "Banco de talentos" : "Candidatura"}</td></tr>`,
-      `<tr><td><strong>Nome</strong></td><td>${c.nome}</td></tr>`,
-      `<tr><td><strong>Email</strong></td><td>${c.email}</td></tr>`,
-      `<tr><td><strong>Telefone</strong></td><td>${c.telefone}</td></tr>`,
-      c.cpf ? `<tr><td><strong>CPF</strong></td><td>${c.cpf}</td></tr>` : "",
-      c.nascimento ? `<tr><td><strong>Nascimento</strong></td><td>${c.nascimento}</td></tr>` : "",
-      c.cidadeEstado ? `<tr><td><strong>Cidade/UF</strong></td><td>${c.cidadeEstado}</td></tr>` : "",
-      c.bairro ? `<tr><td><strong>Bairro</strong></td><td>${c.bairro}</td></tr>` : "",
-      c.escolaridade ? `<tr><td><strong>Escolaridade</strong></td><td>${c.escolaridade}</td></tr>` : "",
-      c.linkedin ? `<tr><td><strong>LinkedIn</strong></td><td>${c.linkedin}</td></tr>` : "",
-      c.portfolio ? `<tr><td><strong>Portfólio</strong></td><td>${c.portfolio}</td></tr>` : "",
-      c.origem ? `<tr><td><strong>Origem</strong></td><td>${c.origem}</td></tr>` : "",
-      c.mensagem ? `<tr><td><strong>Mensagem</strong></td><td>${c.mensagem}</td></tr>` : "",
-      c.curriculo ? `<tr><td><strong>Currículo</strong></td><td>${c.curriculo.name}</td></tr>` : "",
-      c.contratoDesejado ? `<tr><td><strong>Contrato desejado</strong></td><td>${c.contratoDesejado}</td></tr>` : "",
-      c.disponibilidade ? `<tr><td><strong>Disponibilidade</strong></td><td>${c.disponibilidade}</td></tr>` : "",
-      `<tr><td><strong>DISC</strong></td><td>D:${scores.D} I:${scores.I} S:${scores.S} C:${scores.C} — Perfil: ${perfilDim}</td></tr>`,
-    ].filter(Boolean).join("");
-
-    const html = `
-      <h2 style="color:#031D38">Nova ${modo === "banco" ? "inscrição no banco de talentos" : "candidatura"}</h2>
-      <table cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:14px">
-        ${linhas}
-      </table>
-      <p style="margin-top:16px;font-size:12px;color:#666">
-        Enviado automaticamente por Azumi Connect · ${new Date().toLocaleString("pt-BR")}
-      </p>
-    `;
-
-    fetch(EMAIL_API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        subject: `Nova candidatura: ${c.nome} → ${vagaTitulo ?? "Banco de talentos"}`,
-        html,
-      }),
-    }).catch((err) => console.error("[candidatura] email:", err));
-
-    setEnviando(false);
-    setStep("ok");
   }
 
   return (
