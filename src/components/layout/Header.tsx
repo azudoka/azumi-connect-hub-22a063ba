@@ -1,4 +1,4 @@
-import { Bell, Search, ChevronDown, AlertTriangle, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Bell, Search, ChevronDown, AlertTriangle, ArrowRight, Eye, EyeOff, Sparkles } from "lucide-react";
 import { useFinanceiro } from "@/context/FinanceiroContext";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
@@ -6,17 +6,20 @@ import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { consumoNotificacoes } from "@/data/mock";
 import { useAuth } from "@/context/AuthContext";
+import { UpgradePlanoModal } from "@/components/UpgradePlanoModal";
 
 interface HeaderProps {
   showSwitcher?: boolean;
   context?: "connect" | "hub";
+  variant?: "admin" | "cliente";
 }
 
-export function Header({ showSwitcher = true, context = "connect" }: HeaderProps) {
+export function Header({ showSwitcher = true, context = "connect", variant = "admin" }: HeaderProps) {
   const navigate = useNavigate();
   const { user, usuario } = useAuth();
   const { visivel, toggle } = useFinanceiro();
   const [openNotif, setOpenNotif] = useState(false);
+  const [openUpgrade, setOpenUpgrade] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
   function switchContext() {
@@ -76,6 +79,16 @@ export function Header({ showSwitcher = true, context = "connect" }: HeaderProps
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          {variant === "cliente" && (
+            <button
+              type="button"
+              onClick={() => setOpenUpgrade(true)}
+              className="h-9 rounded-full px-3.5 flex items-center gap-1.5 text-xs font-semibold bg-primary text-primary-foreground hover:brightness-105 transition-[filter]"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Faça seu upgrade
+            </button>
+          )}
+
           {showSwitcher && (
             <button
               onClick={switchContext}
@@ -210,6 +223,14 @@ export function Header({ showSwitcher = true, context = "connect" }: HeaderProps
           </button>
         </div>
       </div>
+
+      {variant === "cliente" && (
+        <UpgradePlanoModal
+          open={openUpgrade}
+          onClose={() => setOpenUpgrade(false)}
+          planoAtual={usuario?.plano ?? "trial"}
+        />
+      )}
     </header>
   );
 }
