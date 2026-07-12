@@ -1,7 +1,10 @@
-import { Bell, Search, ChevronDown, AlertTriangle, ArrowRight, Eye, EyeOff, Sparkles } from "lucide-react";
+import {
+  Bell, Search, ChevronDown, AlertTriangle, ArrowRight, Eye, EyeOff, Sparkles,
+  User as UserIcon, Settings as SettingsIcon, LogOut as LogOutIcon,
+  Sun, Moon, MessageSquare,
+} from "lucide-react";
 import { useFinanceiro } from "@/context/FinanceiroContext";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { consumoNotificacoes } from "@/data/mock";
@@ -14,22 +17,40 @@ interface HeaderProps {
   variant?: "admin" | "cliente";
 }
 
+// Atalhos do menu de acesso rápido (ícone de grade) — mesmo padrão do app-launcher
+// da referência, só que com destinos reais do Connect.
+const QUICK_LINKS = [
+  { label: "Nova vaga", desc: "Abrir vaga na Atração", icon: "solar:case-round-bold-duotone", to: "/app/atracao" },
+  { label: "Lançar horas", desc: "Timer ou lançamento manual", icon: "solar:clock-circle-bold-duotone", to: "/app/horas" },
+  { label: "Nova fatura", desc: "Gerar cobrança", icon: "solar:bill-list-bold-duotone", to: "/app/financeiro" },
+  { label: "Novo entregável", desc: "Adicionar a um projeto", icon: "solar:document-add-bold-duotone", to: "/app/projetos" },
+];
+const QUICK_SHORTCUTS = [
+  { label: "Financeiro", to: "/app/financeiro" },
+  { label: "Documentos", to: "/app/documentos" },
+  { label: "Auditoria", to: "/app/auditoria" },
+  { label: "Gestão de Conta", to: "/app/gestao-de-conta" },
+];
+
 export function Header({ showSwitcher = true, context = "connect", variant = "admin" }: HeaderProps) {
   const navigate = useNavigate();
-  const { user, usuario } = useAuth();
+  const { logout, user, usuario } = useAuth();
   const { visivel, toggle } = useFinanceiro();
   const [openNotif, setOpenNotif] = useState(false);
+  const [openQuick, setOpenQuick] = useState(false);
+  const [openPerfil, setOpenPerfil] = useState(false);
   const [openUpgrade, setOpenUpgrade] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const quickRef = useRef<HTMLDivElement>(null);
+  const perfilRef = useRef<HTMLDivElement>(null);
 
   function switchContext() {
     if (context === "connect") {
-      // Cliente ADM: por enquanto, não tem Hub liberado (mock).
       if (user?.papel === "cliente") {
         navigate("/cliente/hub-indisponivel");
         return;
       }
-      // Roteamento por papel para perfis com Hub.
       const hubHomeByRole: Record<string, string> = {
         ceo: "/hub/ceo/dashboard",
         lider: "/hub/lider/painel",
@@ -46,44 +67,92 @@ export function Header({ showSwitcher = true, context = "connect", variant = "ad
   // fecha ao clicar fora
   useEffect(() => {
     function onDoc(e: MouseEvent) {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
-        setOpenNotif(false);
-      }
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setOpenNotif(false);
+      if (quickRef.current && !quickRef.current.contains(e.target as Node)) setOpenQuick(false);
+      if (perfilRef.current && !perfilRef.current.contains(e.target as Node)) setOpenPerfil(false);
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  // B08: link contextual conforme o tipo de usuário (admin/cliente)
   const isCliente = typeof window !== "undefined" && window.location.pathname.startsWith("/cliente");
   const linkFor = (empresaId: string) =>
     isCliente ? "/cliente/gestao-conta" : `/app/empresas/${empresaId}`;
 
   const totalAlertas = consumoNotificacoes.filter((n) => n.severidade !== "info").length;
+  const handleLogout = () => { logout(); navigate("/login"); };
 
   return (
     <header className="h-16 shrink-0 border-b border-border bg-[hsl(var(--background)/0.8)] backdrop-blur sticky top-0 z-30">
-      <div className="h-full flex items-center gap-3 px-6">
-        {/* Search — em breve */}
-        <div className="flex-1 max-w-md relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
-          <input
-            type="search"
-            disabled
-            placeholder="Busca global — em breve"
-            className={cn(
-              "w-full h-9 pl-9 pr-4 rounded-lg border outline-none text-sm placeholder:text-muted-foreground/50 cursor-not-allowed opacity-60 backdrop-blur-md transition-all",
-              "bg-[hsl(var(--primary)/0.08)] border-[hsl(var(--primary)/0.25)]"
-            )}
-          />
+      <div className="h-full flex items-center gap-1 px-6">
+
+        {/* Ícone de busca — sem caixa de texto, igual à referência */}
+        <button
+          type="button"
+          title="Busca — em breve"
+          className="h-9 w-9 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground"
+        >
+          <Search className="h-4 w-4" />
+        </button>
+
+        {/* Menu de acesso rápido (ícone de grade) — atalhos reais do Connect */}
+        <div className="relative" ref={quickRef}>
+          <button
+            type="button"
+            onClick={() => setOpenQuick((v) => !v)}
+            title="Acessos rápidos"
+            className="h-9 w-9 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground"
+          >
+            <iconify-icon icon="solar:widget-2-bold-duotone" width="18" height="18" />
+          </button>
+          {openQuick && (
+            <div className="absolute left-0 mt-2 w-[520px] bg-card border border-border rounded-xl shadow-elevated z-50 animate-fade-in overflow-hidden flex">
+              <div className="flex-1 grid grid-cols-2 gap-1 p-3">
+                {QUICK_LINKS.map((q) => (
+                  <Link
+                    key={q.label}
+                    to={q.to}
+                    onClick={() => setOpenQuick(false)}
+                    className="flex items-start gap-2.5 p-2.5 rounded-lg hover:bg-secondary transition-colors"
+                  >
+                    <span className="h-9 w-9 rounded-lg bg-[hsl(var(--primary)/0.1)] text-primary flex items-center justify-center shrink-0">
+                      <iconify-icon icon={q.icon} width="18" height="18" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium truncate">{q.label}</span>
+                      <span className="block text-[11px] text-muted-foreground truncate">{q.desc}</span>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+              <div className="w-[180px] border-l border-border p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
+                  Atalhos
+                </p>
+                <ul className="space-y-0.5">
+                  {QUICK_SHORTCUTS.map((s) => (
+                    <li key={s.label}>
+                      <Link
+                        to={s.to}
+                        onClick={() => setOpenQuick(false)}
+                        className="block px-2 py-1.5 rounded-md text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                      >
+                        {s.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-1">
           {variant === "cliente" && (
             <button
               type="button"
               onClick={() => setOpenUpgrade(true)}
-              className="h-9 rounded-full px-3.5 flex items-center gap-1.5 text-xs font-semibold bg-primary text-primary-foreground hover:brightness-105 transition-[filter]"
+              className="h-9 rounded-full px-3.5 flex items-center gap-1.5 text-xs font-semibold bg-primary text-primary-foreground hover:brightness-105 transition-[filter] mr-1"
             >
               <Sparkles className="h-3.5 w-3.5" /> Faça seu upgrade
             </button>
@@ -93,7 +162,7 @@ export function Header({ showSwitcher = true, context = "connect", variant = "ad
             <button
               onClick={switchContext}
               className={cn(
-                "h-9 rounded-full px-1 flex items-center gap-1 border text-xs font-medium transition-colors",
+                "h-9 rounded-full px-1 flex items-center gap-1 border text-xs font-medium transition-colors mr-1",
                 "border-border bg-[hsl(var(--secondary)/0.4)]"
               )}
               aria-label="Trocar contexto"
@@ -109,7 +178,27 @@ export function Header({ showSwitcher = true, context = "connect", variant = "ad
             </button>
           )}
 
-          {/* B08: Sino com dropdown de notificações de consumo */}
+          {/* Claro/escuro — visual pronto; modo escuro completo é uma frente própria, ainda não liga de verdade */}
+          <button
+            type="button"
+            onClick={() => setDarkMode((v) => !v)}
+            title="Modo escuro (em breve)"
+            className="h-9 w-9 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground"
+          >
+            {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+
+          {/* Mensagens — mapeado pra Solicitações, que é a comunicação real com cliente */}
+          <button
+            type="button"
+            onClick={() => navigate(isCliente ? "/cliente/solicitacoes" : "/app/solicitacoes")}
+            title="Solicitações"
+            className="h-9 w-9 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground"
+          >
+            <MessageSquare className="h-4 w-4" />
+          </button>
+
+          {/* Notificações de consumo */}
           <div className="relative" ref={notifRef}>
             <button
               onClick={() => setOpenNotif((v) => !v)}
@@ -205,22 +294,73 @@ export function Header({ showSwitcher = true, context = "connect", variant = "ad
             {visivel ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
           </button>
 
-          <button className="flex items-center gap-2 h-9 px-2 pr-3 rounded-lg hover:bg-secondary">
-            <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center text-[10px] font-semibold text-primary-foreground">
-              {usuario?.nome
-                ? usuario.nome.split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]).join("").toUpperCase()
-                : "VC"}
-            </div>
-            <div className="text-left hidden sm:block">
-              <div className="text-xs font-medium leading-tight">{usuario?.nome?.split(" ")[0] ?? "Você"}</div>
-              <div className="text-[10px] text-muted-foreground leading-tight">
-                {usuario?.role === "admin" ? "Admin Azumi" :
-                 usuario?.role === "consultor" ? "Consultor Azumi" :
-                 usuario?.empresaNome ?? "Convidado"}
+          {/* Perfil — dropdown completo, destinos reais */}
+          <div className="relative" ref={perfilRef}>
+            <button
+              onClick={() => setOpenPerfil((v) => !v)}
+              className="flex items-center gap-2 h-9 px-2 pr-3 rounded-lg hover:bg-secondary"
+            >
+              <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center text-[10px] font-semibold text-primary-foreground">
+                {usuario?.nome
+                  ? usuario.nome.split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]).join("").toUpperCase()
+                  : "VC"}
               </div>
-            </div>
-            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-          </button>
+              <div className="text-left hidden sm:block">
+                <div className="text-xs font-medium leading-tight">{usuario?.nome?.split(" ")[0] ?? "Você"}</div>
+                <div className="text-[10px] text-muted-foreground leading-tight">
+                  {usuario?.role === "admin" ? "Admin Azumi" :
+                   usuario?.role === "consultor" ? "Consultor Azumi" :
+                   usuario?.empresaNome ?? "Convidado"}
+                </div>
+              </div>
+              <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", openPerfil && "rotate-180")} />
+            </button>
+
+            {openPerfil && (
+              <div className="absolute right-0 mt-2 w-64 bg-card border border-border rounded-xl shadow-elevated z-50 animate-fade-in overflow-hidden">
+                <div className="px-4 py-4 flex items-center gap-3 border-b border-border">
+                  <div className="h-11 w-11 rounded-lg bg-primary flex items-center justify-center text-sm font-semibold text-primary-foreground shrink-0">
+                    {usuario?.nome
+                      ? usuario.nome.split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]).join("").toUpperCase()
+                      : "VC"}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate">{usuario?.nome ?? "Você"}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {usuario?.role === "admin" ? "Admin Azumi" :
+                       usuario?.role === "consultor" ? "Consultor Azumi" :
+                       usuario?.empresaNome ?? "Convidado"}
+                    </p>
+                    {usuario?.email && <p className="text-[11px] text-muted-foreground truncate">{usuario.email}</p>}
+                  </div>
+                </div>
+                <div className="py-1.5">
+                  <Link
+                    to="/app/perfil"
+                    onClick={() => setOpenPerfil(false)}
+                    className="flex items-center gap-2.5 px-4 py-2 text-sm hover:bg-secondary transition-colors"
+                  >
+                    <UserIcon className="h-4 w-4 text-muted-foreground" /> Meu perfil
+                  </Link>
+                  <Link
+                    to="/app/configuracoes"
+                    onClick={() => setOpenPerfil(false)}
+                    className="flex items-center gap-2.5 px-4 py-2 text-sm hover:bg-secondary transition-colors"
+                  >
+                    <SettingsIcon className="h-4 w-4 text-muted-foreground" /> Configurações
+                  </Link>
+                </div>
+                <div className="border-t border-border py-1.5">
+                  <button
+                    onClick={() => { setOpenPerfil(false); handleLogout(); }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-destructive hover:bg-[hsl(var(--destructive)/0.08)] transition-colors"
+                  >
+                    <LogOutIcon className="h-4 w-4" /> Sair
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
