@@ -41,7 +41,7 @@ export default function Empresas() {
         {empresas.map((e) => (
           <Link key={e.id} to={`/app/empresas/${e.id}`} className="bg-card border border-border rounded-xl p-5 card-hover">
             <div className="flex items-start justify-between gap-3">
-              <div className="h-11 w-11 rounded-lg bg-gradient-brand flex items-center justify-center text-white font-display font-semibold">
+              <div className="h-11 w-11 rounded-lg bg-[image:linear-gradient(135deg,hsl(var(--primary)),hsl(var(--primary-glow)))] flex items-center justify-center text-white font-display font-semibold">
                 {e.nome.split(" ").map(n => n[0]).join("").slice(0, 2)}
               </div>
               <StatusBadge status="ativa" />
