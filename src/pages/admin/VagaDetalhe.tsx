@@ -1060,11 +1060,11 @@ export default function VagaDetalheAdmin() {
         <div className="text-xs">
           <span className="text-muted-foreground">Publicação:</span>{" "}
           {publicacao === "publicada" ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-success font-medium">
+            <span className="inline-flex items-center gap-1 rounded-full border border-[hsl(var(--success)/0.3)] bg-[hsl(var(--success)/0.1)] px-2 py-0.5 text-success font-medium">
               <CheckCircle2 className="h-3 w-3" /> Publicada no site da Azumi
             </span>
           ) : publicacao === "em_revisao" ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-warning font-medium">
+            <span className="inline-flex items-center gap-1 rounded-full border border-[hsl(var(--warning)/0.3)] bg-[hsl(var(--warning)/0.1)] px-2 py-0.5 text-warning font-medium">
               <Clock className="h-3 w-3" /> Em revisão
             </span>
           ) : (
@@ -1120,7 +1120,7 @@ export default function VagaDetalheAdmin() {
                   <button
                     type="button"
                     onClick={() => { setStatusMenuOpen(false); setExcluirVagaOpen(true); }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-xs text-destructive hover:bg-destructive/10 transition-colors"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-xs text-destructive hover:bg-[hsl(var(--destructive)/0.1)] transition-colors"
                   >
                     <Trash2 className="h-3 w-3 shrink-0" /> Excluir vaga
                   </button>
@@ -1346,7 +1346,7 @@ export default function VagaDetalheAdmin() {
               <span className={cn(
                 "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border",
                 vagaEncerrada
-                  ? "bg-success/15 text-success border-success/30"
+                  ? "bg-[hsl(var(--success)/0.15)] text-success border-[hsl(var(--success)/0.3)]"
                   : "bg-muted text-muted-foreground border-border"
               )}>
                 <Briefcase className="h-3 w-3" />
@@ -1362,9 +1362,9 @@ export default function VagaDetalheAdmin() {
             const fb = getFeedback1aLeva(vaga.id);
             if (!fb) return null;
             return (
-              <div className="mb-4 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 flex items-start gap-3">
+              <div className="mb-4 rounded-xl border border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.1)] px-4 py-3 flex items-start gap-3">
                 <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-                <div className="text-xs text-warning/90 leading-relaxed">
+                <div className="text-xs text-[hsl(var(--warning)/0.9)] leading-relaxed">
                   <div className="font-semibold text-warning mb-1">
                     Cliente reprovou os 3 perfis da 1ª leva
                   </div>
@@ -1378,7 +1378,7 @@ export default function VagaDetalheAdmin() {
                       {fb.direcionamentos}
                     </div>
                   )}
-                  <div className="mt-1 text-warning/70">
+                  <div className="mt-1 text-[hsl(var(--warning)/0.7)]">
                     Prepare a 2ª leva ajustando o perfil conforme o feedback acima.
                   </div>
                 </div>
@@ -1386,7 +1386,7 @@ export default function VagaDetalheAdmin() {
                   <button
                     type="button"
                     onClick={() => resetSeedDemo()}
-                    className="ml-auto text-[10px] px-2 py-0.5 rounded border border-warning/40 text-warning hover:bg-warning/10 shrink-0"
+                    className="ml-auto text-[10px] px-2 py-0.5 rounded border border-[hsl(var(--warning)/0.4)] text-warning hover:bg-[hsl(var(--warning)/0.1)] shrink-0"
                     title="Limpa o localStorage de demo e recarrega"
                   >
                     ↺ Reset demo
@@ -1407,7 +1407,7 @@ export default function VagaDetalheAdmin() {
                   <li
                     key={c.id}
                     onClick={() => setFichaCandidatoId(c.id)}
-                    className="border border-border rounded-md p-2 flex items-center gap-2 bg-background/40 cursor-pointer hover:border-primary/50 hover:bg-secondary/40 transition-colors"
+                    className="border border-border rounded-md p-2 flex items-center gap-2 bg-[hsl(var(--background)/0.4)] cursor-pointer hover:border-[hsl(var(--primary)/0.5)] hover:bg-[hsl(var(--secondary)/0.4)] transition-colors"
                   >
                     <div className="h-7 w-7 rounded-md bg-[image:linear-gradient(135deg,hsl(var(--primary)),hsl(var(--primary-glow)))] flex items-center justify-center text-[10px] font-semibold text-white">
                       {c.nome.split(" ").map((n) => n[0]).join("").slice(0, 2)}
@@ -1483,7 +1483,7 @@ export default function VagaDetalheAdmin() {
                             setDragOverCol(null);
                           }}
                           className={cn(
-                            "relative bg-background/60 border border-border rounded-lg overflow-hidden hover:border-primary/40 cursor-grab active:cursor-grabbing transition-colors",
+                            "relative bg-[hsl(var(--background)/0.6)] border border-border rounded-lg overflow-hidden hover:border-[hsl(var(--primary)/0.4)] cursor-grab active:cursor-grabbing transition-colors",
                             draggingId === c.id && "opacity-50"
                           )}
                         >
@@ -1597,7 +1597,7 @@ export default function VagaDetalheAdmin() {
                                     style={{ backgroundColor: cfg.cor, color: cfg.corTexto }}
                                   >
                                     {dominante} · {cfg.nome}
-                                    <span className="font-data font-normal opacity-90">{disc[dominante]}%</span>
+                                    <span className="font-normal opacity-90">{disc[dominante]}%</span>
                                   </span>
                                   {secundarios.map(f => (
                                     <span
@@ -1605,7 +1605,7 @@ export default function VagaDetalheAdmin() {
                                       className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border"
                                       style={{ borderColor: DISC_CONFIG[f].cor, color: DISC_CONFIG[f].cor }}
                                     >
-                                      {f} <span className="font-data font-normal opacity-80">{disc[f]}%</span>
+                                      {f} <span className="font-normal opacity-80">{disc[f]}%</span>
                                     </span>
                                   ))}
                                 </div>
@@ -1615,7 +1615,7 @@ export default function VagaDetalheAdmin() {
                             {/* Badge: candidato suspenso */}
                             {suspensos.has(c.id) && (
                               <div className="pt-0.5">
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-warning/15 text-warning border border-warning/30">
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-[hsl(var(--warning)/0.15)] text-warning border border-[hsl(var(--warning)/0.3)]">
                                   <PauseCircle className="h-3 w-3" /> Suspenso
                                 </span>
                               </div>
@@ -1709,7 +1709,7 @@ export default function VagaDetalheAdmin() {
                             const podeAgendar = colunasEstado[c.id] === "Entrevista Azumi" || colunasEstado[c.id] === "Entrevista Cliente";
                             if (!ev && !podeAgendar) return null;
                             return (
-                              <div className="border-t border-border bg-muted/40 px-3 py-2 flex items-center gap-2 text-[11px]">
+                              <div className="border-t border-border bg-[hsl(var(--muted)/0.4)] px-3 py-2 flex items-center gap-2 text-[11px]">
                                 {ev ? (
                                   <>
                                     <CalendarDays className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -1736,14 +1736,14 @@ export default function VagaDetalheAdmin() {
                             const p = getPropostaAtiva(c.id);
                             if (!p) return null;
                             const cls = p.status === "aceita"
-                              ? "bg-success/15 text-success border-success/30"
+                              ? "bg-[hsl(var(--success)/0.15)] text-success border-[hsl(var(--success)/0.3)]"
                               : p.status === "recusada"
-                              ? "bg-destructive/15 text-destructive border-destructive/30"
+                              ? "bg-[hsl(var(--destructive)/0.15)] text-destructive border-[hsl(var(--destructive)/0.3)]"
                               : p.status === "expirada"
                               ? "bg-muted text-muted-foreground border-border"
-                              : "bg-warning/15 text-warning border-warning/30";
+                              : "bg-[hsl(var(--warning)/0.15)] text-warning border-[hsl(var(--warning)/0.3)]";
                             return (
-                              <div className="border-t border-border bg-muted/40 px-3 py-2">
+                              <div className="border-t border-border bg-[hsl(var(--muted)/0.4)] px-3 py-2">
                                 <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border max-w-full truncate", cls)}>
                                   <Send className="h-2.5 w-2.5" /> {statusPropostaLabel(p.status)}
                                 </span>
@@ -1753,7 +1753,7 @@ export default function VagaDetalheAdmin() {
 
                           {/* Etapa 7 — botão Enviar feedback (rodapé) */}
                           {colunasEstado[c.id] === "Reprovado" && (
-                            <div className="border-t border-border bg-muted/40 px-3 py-2 flex items-center gap-1.5">
+                            <div className="border-t border-border bg-[hsl(var(--muted)/0.4)] px-3 py-2 flex items-center gap-1.5">
                               {jaTemFeedback(c.id) ? (
                                 <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                                   <CheckCircle2 className="h-3 w-3 text-success" /> Feedback enviado
@@ -1773,7 +1773,7 @@ export default function VagaDetalheAdmin() {
 
                           {obsAberta && (
                             <div
-                              className="border-t border-border bg-muted/40 p-3 space-y-2"
+                              className="border-t border-border bg-[hsl(var(--muted)/0.4)] p-3 space-y-2"
                               onMouseDown={(e) => e.stopPropagation()}
                               draggable={false}
                               onDragStart={(e) => e.preventDefault()}
@@ -1806,14 +1806,14 @@ export default function VagaDetalheAdmin() {
                           )}
 
                           {isContratado && (
-                            <div className="border-t border-border bg-success/5 px-3 py-2 flex items-center gap-1.5 text-[11px] text-success font-medium">
+                            <div className="border-t border-border bg-[hsl(var(--success)/0.05)] px-3 py-2 flex items-center gap-1.5 text-[11px] text-success font-medium">
                               <CheckCircle2 className="h-3 w-3" />
                               Contratado — processo encerrado
                             </div>
                           )}
 
                           {isBancoTalentos && (
-                            <div className="border-t border-border bg-info/5 px-3 py-2 flex items-center gap-1.5 text-[11px] text-info">
+                            <div className="border-t border-border bg-[hsl(var(--info)/0.05)] px-3 py-2 flex items-center gap-1.5 text-[11px] text-info">
                               <Users className="h-3 w-3" />
                               No banco de talentos
                             </div>
@@ -1906,7 +1906,7 @@ export default function VagaDetalheAdmin() {
             {candidatosVaga.filter(c => colunasEstado[c.id] === "Entrevista Cliente").map((c) => {
               const declinio = declinios[c.id];
               return (
-                <li key={c.id} className="border border-border rounded-lg p-3 bg-background/40">
+                <li key={c.id} className="border border-border rounded-lg p-3 bg-[hsl(var(--background)/0.4)]">
                   <div className="flex items-center gap-3">
                     <div className="h-9 w-9 rounded-md bg-[image:linear-gradient(135deg,hsl(var(--primary)),hsl(var(--primary-glow)))] flex items-center justify-center text-[10px] font-semibold text-white">
                       {c.nome.split(" ").map(n => n[0]).join("").slice(0, 2)}
@@ -1922,11 +1922,11 @@ export default function VagaDetalheAdmin() {
                       <div className="text-[11px] text-muted-foreground">DISC: {c.perfilDom} dominante</div>
                     </div>
                     {declinio ? (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-destructive/15 text-destructive border border-destructive/30">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[hsl(var(--destructive)/0.15)] text-destructive border border-[hsl(var(--destructive)/0.3)]">
                         Declinou
                       </span>
                     ) : (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-success/15 text-success border border-success/30">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[hsl(var(--success)/0.15)] text-success border border-[hsl(var(--success)/0.3)]">
                         Pronto
                       </span>
                     )}
@@ -1966,7 +1966,7 @@ export default function VagaDetalheAdmin() {
                     <button
                       type="button"
                       onClick={() => setDeclinarOpen(c.id)}
-                      className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-destructive/30 text-destructive text-[11px] font-medium hover:bg-destructive/10"
+                      className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-[hsl(var(--destructive)/0.3)] text-destructive text-[11px] font-medium hover:bg-[hsl(var(--destructive)/0.1)]"
                     >
                       <ThumbsDown className="h-3 w-3" /> Registrar declínio
                     </button>
@@ -2018,8 +2018,8 @@ export default function VagaDetalheAdmin() {
             ) : (
               <ul className="space-y-2">
                 {eventos.map((ev) => (
-                  <li key={ev.id} className="flex items-center gap-3 border border-border rounded-lg px-3 py-2 bg-background/40">
-                    <div className="h-9 w-9 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+                  <li key={ev.id} className="flex items-center gap-3 border border-border rounded-lg px-3 py-2 bg-[hsl(var(--background)/0.4)]">
+                    <div className="h-9 w-9 rounded-md bg-[hsl(var(--primary)/0.1)] text-primary flex items-center justify-center">
                       <CalendarDays className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -2069,8 +2069,8 @@ export default function VagaDetalheAdmin() {
                     </div>
                     <div className={cn(
                       "rounded-xl px-3 py-2 text-sm border",
-                      isSistema ? "bg-muted/50 border-border italic"
-                        : c.azumi ? "bg-primary/10 border-primary/20" : "bg-secondary border-border"
+                      isSistema ? "bg-[hsl(var(--muted)/0.5)] border-border italic"
+                        : c.azumi ? "bg-[hsl(var(--primary)/0.1)] border-[hsl(var(--primary)/0.2)]" : "bg-secondary border-border"
                     )}>
                       {c.texto}
                     </div>
@@ -2100,7 +2100,7 @@ export default function VagaDetalheAdmin() {
           ) : (
             <div className="overflow-x-auto rounded-lg border border-border">
               <table className="w-full text-sm">
-                <thead className="bg-secondary/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+                <thead className="bg-[hsl(var(--secondary)/0.4)] text-[11px] uppercase tracking-wider text-muted-foreground">
                   <tr>
                     <th className="text-left px-3 py-2 font-semibold">Título</th>
                     <th className="text-left px-3 py-2 font-semibold">Perguntas</th>
@@ -2117,7 +2117,7 @@ export default function VagaDetalheAdmin() {
                     return (
                       <tr
                         key={q.id}
-                        className="border-t border-border hover:bg-secondary/20 cursor-pointer"
+                        className="border-t border-border hover:bg-[hsl(var(--secondary)/0.2)] cursor-pointer"
                         onClick={() => setEditorQuestId(q.id)}
                       >
                         <td className="px-3 py-2.5">
@@ -2131,10 +2131,10 @@ export default function VagaDetalheAdmin() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-2.5 font-data">{q.perguntas.length}</td>
-                        <td className="px-3 py-2.5 font-data">{respondidos}/{total || 0}</td>
+                        <td className="px-3 py-2.5">{q.perguntas.length}</td>
+                        <td className="px-3 py-2.5">{respondidos}/{total || 0}</td>
                         <td className="px-3 py-2.5">{q.criadoPor}</td>
-                        <td className="px-3 py-2.5 font-data text-muted-foreground">{q.criadoEm}</td>
+                        <td className="px-3 py-2.5 text-muted-foreground">{q.criadoEm}</td>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center justify-end gap-1">
                             <button
@@ -2149,7 +2149,7 @@ export default function VagaDetalheAdmin() {
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); setExcluirQuestId(q.id); }}
-                              className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-destructive/10 text-destructive"
+                              className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-[hsl(var(--destructive)/0.1)] text-destructive"
                               aria-label="Excluir"
                               title="Excluir"
                             >
@@ -2169,10 +2169,10 @@ export default function VagaDetalheAdmin() {
 
       {/* B09: Dialog de confirmação para envio ao cliente */}
       {enviarOpen && createPortal(
-        <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
+        <div className="fixed inset-0 z-[60] bg-[hsl(var(--background)/0.7)] backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
           <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-full bg-warning/15 text-warning flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 rounded-full bg-[hsl(var(--warning)/0.15)] text-warning flex items-center justify-center shrink-0">
                 <AlertTriangle className="h-5 w-5" />
               </div>
               <div className="flex-1 min-w-0">
@@ -2186,7 +2186,7 @@ export default function VagaDetalheAdmin() {
               </div>
             </div>
 
-            <div className="mt-4 rounded-lg border border-border bg-background/40 p-3 space-y-1.5">
+            <div className="mt-4 rounded-lg border border-border bg-[hsl(var(--background)/0.4)] p-3 space-y-1.5">
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Vaga</span>
                 <span className="font-medium">{vaga.titulo}</span>
@@ -2201,7 +2201,7 @@ export default function VagaDetalheAdmin() {
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">SLA do parecer</span>
-                <span className="font-medium font-data">48h após envio</span>
+                <span className="font-medium">48h após envio</span>
               </div>
             </div>
 
@@ -2307,10 +2307,10 @@ export default function VagaDetalheAdmin() {
       )}
 
       {excedeuOpen && createPortal(
-        <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
+        <div className="fixed inset-0 z-[60] bg-[hsl(var(--background)/0.7)] backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
           <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-full bg-destructive/15 text-destructive flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 rounded-full bg-[hsl(var(--destructive)/0.15)] text-destructive flex items-center justify-center shrink-0">
                 <AlertTriangle className="h-5 w-5" />
               </div>
               <div>
@@ -2354,10 +2354,10 @@ export default function VagaDetalheAdmin() {
       {confirmarDesclId && (() => {
         const cand = candidatosVaga.find((c) => c.id === confirmarDesclId);
         return createPortal(
-          <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
+          <div className="fixed inset-0 z-[60] bg-[hsl(var(--background)/0.7)] backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
             <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
               <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-full bg-destructive/15 text-destructive flex items-center justify-center shrink-0">
+                <div className="h-10 w-10 rounded-full bg-[hsl(var(--destructive)/0.15)] text-destructive flex items-center justify-center shrink-0">
                   <UserX className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -2391,11 +2391,11 @@ export default function VagaDetalheAdmin() {
       {confirmarBloquearId && (() => {
         const cand = candidatosVaga.find((c) => c.id === confirmarBloquearId);
         return createPortal(
-          <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()} onClick={() => setConfirmarBloquearId(null)}>
+          <div className="fixed inset-0 z-[60] bg-[hsl(var(--background)/0.7)] backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()} onClick={() => setConfirmarBloquearId(null)}>
             <ScrollLock />
             <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-full bg-destructive/15 text-destructive flex items-center justify-center shrink-0">
+                <div className="h-10 w-10 rounded-full bg-[hsl(var(--destructive)/0.15)] text-destructive flex items-center justify-center shrink-0">
                   <ShieldOff className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -2453,11 +2453,11 @@ export default function VagaDetalheAdmin() {
         const cand = candidatosVaga.find((c) => c.id === confirmarSuspenderId);
         const jaSuspenso = suspensos.has(confirmarSuspenderId);
         return createPortal(
-          <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()} onClick={() => setConfirmarSuspenderId(null)}>
+          <div className="fixed inset-0 z-[60] bg-[hsl(var(--background)/0.7)] backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()} onClick={() => setConfirmarSuspenderId(null)}>
             <ScrollLock />
             <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-full bg-warning/15 text-warning flex items-center justify-center shrink-0">
+                <div className="h-10 w-10 rounded-full bg-[hsl(var(--warning)/0.15)] text-warning flex items-center justify-center shrink-0">
                   <PauseCircle className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -2521,10 +2521,10 @@ export default function VagaDetalheAdmin() {
       {confirmarEnviadosId && (() => {
         const cand = candidatosVaga.find((c) => c.id === confirmarEnviadosId);
         return createPortal(
-          <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
+          <div className="fixed inset-0 z-[60] bg-[hsl(var(--background)/0.7)] backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
             <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
               <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                <div className="h-10 w-10 rounded-full bg-[hsl(var(--primary)/0.15)] text-primary flex items-center justify-center shrink-0">
                   <Send className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -2563,10 +2563,10 @@ export default function VagaDetalheAdmin() {
       {confirmarContratadoId && (() => {
         const cand = candidatosVaga.find((c) => c.id === confirmarContratadoId);
         return createPortal(
-          <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
+          <div className="fixed inset-0 z-[60] bg-[hsl(var(--background)/0.7)] backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
             <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
               <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-full bg-success/15 text-success flex items-center justify-center shrink-0">
+                <div className="h-10 w-10 rounded-full bg-[hsl(var(--success)/0.15)] text-success flex items-center justify-center shrink-0">
                   <CheckCircle2 className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -2602,10 +2602,10 @@ export default function VagaDetalheAdmin() {
 
       {/* Alerta: candidato movido sem timer ativo */}
       {alertaPlayOpen && alertaPlayCandId && alertaPlayDestino && createPortal(
-        <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[60] bg-[hsl(var(--background)/0.7)] backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-md p-6 animate-scale-in">
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-full bg-warning/15 text-warning flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 rounded-full bg-[hsl(var(--warning)/0.15)] text-warning flex items-center justify-center shrink-0">
                 <Play className="h-5 w-5" />
               </div>
               <div className="flex-1 min-w-0">
@@ -3054,7 +3054,7 @@ export default function VagaDetalheAdmin() {
       {relatorioFinalPromptOpen && (
         <ModalShell title="Vaga encerrada 🎉" onClose={() => setRelatorioFinalPromptOpen(false)}>
           <div className="space-y-4 text-sm">
-            <div className="rounded-md border border-success/30 bg-success/10 p-3 text-success text-xs">
+            <div className="rounded-md border border-[hsl(var(--success)/0.3)] bg-[hsl(var(--success)/0.1)] p-3 text-success text-xs">
               Todas as <strong>{posicoesVaga}</strong> posição(ões) desta vaga foram preenchidas.
             </div>
             <p>
@@ -3204,7 +3204,7 @@ function ModalShell({
   useScrollLock(true);
   const maxW = size === "xl" ? "max-w-3xl" : size === "lg" ? "max-w-xl" : "max-w-md";
   return createPortal(
-    <div className="fixed inset-0 z-[60] bg-background/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
+    <div className="fixed inset-0 z-[60] bg-[hsl(var(--background)/0.7)] backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onWheel={(e)=>e.stopPropagation()}><ScrollLock />
       <div className={cn("bg-card border border-border rounded-2xl shadow-elevated w-full max-h-[92vh] flex flex-col animate-scale-in overflow-hidden", maxW)}>
         <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-border">
           <h3 className="font-display text-lg font-semibold">{title}</h3>
@@ -3381,7 +3381,7 @@ function EditVagaModal({
                   onClick={() => setBeneficios((prev) => sel ? prev.filter((x) => x !== b.value) : [...prev, b.value])}
                   className={cn(
                     "rounded-full border px-3 py-1 text-xs transition-colors",
-                    sel ? "border-primary bg-primary/10 text-primary font-medium" : "border-border hover:bg-muted/40"
+                    sel ? "border-primary bg-[hsl(var(--primary)/0.1)] text-primary font-medium" : "border-border hover:bg-[hsl(var(--muted)/0.4)]"
                   )}
                 >
                   {b.label}
@@ -3707,7 +3707,7 @@ function QuestionarioEditorModal({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+    <div className="fixed inset-0 z-[60] bg-[hsl(var(--background)/0.8)] backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-3xl max-h-[92vh] flex flex-col animate-scale-in overflow-hidden">
         <header className="px-6 py-4 border-b border-border flex items-center gap-3">
           <div className="flex-1 min-w-0">
@@ -3758,7 +3758,7 @@ function QuestionarioEditorModal({
 
             <ol className="space-y-3">
               {perguntas.map((p) => (
-                <li key={p.id} className="rounded-lg border border-border bg-background/40 p-3">
+                <li key={p.id} className="rounded-lg border border-border bg-[hsl(var(--background)/0.4)] p-3">
                   <div className="flex items-start gap-2">
                     <div className="h-7 w-7 rounded-md bg-secondary flex items-center justify-center text-xs font-semibold shrink-0">
                       {p.ordem}
@@ -3796,7 +3796,7 @@ function QuestionarioEditorModal({
                             <button
                               type="button"
                               onClick={() => removePergunta(p.id)}
-                              className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-destructive/10 text-destructive"
+                              className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-[hsl(var(--destructive)/0.1)] text-destructive"
                               aria-label="Remover pergunta"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -3824,7 +3824,7 @@ function QuestionarioEditorModal({
                                 type="button"
                                 onClick={() => patchPergunta(p.id, { opcoes: (p.opcoes ?? []).filter((_, j) => j !== i) })}
                                 disabled={(p.opcoes?.length ?? 0) <= 2}
-                                className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-destructive/10 text-destructive disabled:opacity-30 disabled:cursor-not-allowed"
+                                className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-[hsl(var(--destructive)/0.1)] text-destructive disabled:opacity-30 disabled:cursor-not-allowed"
                                 aria-label="Remover opção"
                               >
                                 <XIcon className="h-3.5 w-3.5" />
@@ -3884,7 +3884,7 @@ function EnviarQuestionarioForm({
     <div className="space-y-3 text-sm">
       <p>Deseja enviar um questionário para <strong>{candidatoNome}</strong> agora?</p>
       {questionarios.length === 0 ? (
-        <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+        <div className="rounded-md border border-border bg-[hsl(var(--muted)/0.4)] px-3 py-2 text-xs text-muted-foreground">
           Nenhum questionário disponível. Crie um na aba Questionários.
         </div>
       ) : (
@@ -3987,7 +3987,7 @@ function WhatsTemplateForm({
     <div className="space-y-3 text-sm">
       <div className="grid grid-cols-2 gap-3">
         <Field label="Telefone">
-          <input readOnly value={telefone || "— sem telefone —"} className="w-full h-9 px-3 rounded-md border border-border bg-secondary/40 text-sm" />
+          <input readOnly value={telefone || "— sem telefone —"} className="w-full h-9 px-3 rounded-md border border-border bg-[hsl(var(--secondary)/0.4)] text-sm" />
         </Field>
         <Field label="Template">
           <select value={tplKey} onChange={(e) => selecionar(e.target.value as WhatsTemplateKey)} className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm">
@@ -4064,7 +4064,7 @@ function EnviarPropostaForm({
 
   return (
     <div className="space-y-3 text-sm">
-      <div className="rounded-md border border-border bg-muted/30 p-3 text-xs">
+      <div className="rounded-md border border-border bg-[hsl(var(--muted)/0.3)] p-3 text-xs">
         <div><strong>Candidato:</strong> {candidatoNome}</div>
         <div><strong>Vaga:</strong> {vagaTitulo} — {empresaNome}</div>
       </div>
@@ -4100,10 +4100,10 @@ function EnviarPropostaForm({
           rows={8}
           value={mensagem}
           onChange={(e) => { setMensagem(e.target.value); setTocouMsg(true); }}
-          className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm resize-y font-data"
+          className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm resize-y"
         />
       </Field>
-      <div className="text-[11px] text-muted-foreground rounded-md border border-info/30 bg-info/10 p-2">
+      <div className="text-[11px] text-muted-foreground rounded-md border border-[hsl(var(--info)/0.3)] bg-[hsl(var(--info)/0.1)] p-2">
         ⏱ Após o envio, o candidato terá <strong>24 horas</strong> para aceitar ou recusar a proposta.
       </div>
       <div className="flex justify-end gap-2 pt-2">
@@ -4192,7 +4192,7 @@ function EnviarFeedbackForm({
 
   return (
     <div className="space-y-3 text-sm">
-      <div className="rounded-md border border-border bg-muted/30 p-3 text-xs">
+      <div className="rounded-md border border-border bg-[hsl(var(--muted)/0.3)] p-3 text-xs">
         <div><strong>Candidato:</strong> {candidatoNome}</div>
         <div className="text-muted-foreground">
           {email || "—"} • {telefone || "—"}
@@ -4273,7 +4273,7 @@ function DeclinarForm({
       </Field>
 
       {isCandidatoRecusou && (
-        <div className="rounded-md border border-border bg-muted/30 p-3 text-xs">
+        <div className="rounded-md border border-border bg-[hsl(var(--muted)/0.3)] p-3 text-xs">
           <button
             type="button"
             onClick={() => setVerTemplate((v) => !v)}
@@ -4473,8 +4473,8 @@ function ChatVagaPanel({
           className={cn(
             "text-xs rounded-md px-3 py-2 border inline-flex items-center gap-1.5",
             canal === "interno"
-              ? "bg-muted/40 border-border text-muted-foreground"
-              : "bg-warning/10 border-warning/30 text-warning",
+              ? "bg-[hsl(var(--muted)/0.4)] border-border text-muted-foreground"
+              : "bg-[hsl(var(--warning)/0.1)] border-[hsl(var(--warning)/0.3)] text-warning",
           )}
         >
           {canal === "interno" ? (
@@ -4498,9 +4498,9 @@ function ChatVagaPanel({
                 <div className={cn("max-w-[78%] sm:max-w-[65%] flex flex-col", ehMinha ? "items-end" : "items-start")}>
                   {!ehMinha && (
                     <div className="flex items-center gap-1.5 mb-0.5 px-1">
-                      <span className="text-[11px] font-medium text-foreground/80">{m.autor}</span>
+                      <span className="text-[11px] font-medium text-[hsl(var(--foreground)/0.8)]">{m.autor}</span>
                       {ehCliente && (
-                        <span className="text-[9px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/30">
+                        <span className="text-[9px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full bg-[hsl(var(--warning)/0.15)] text-warning border border-[hsl(var(--warning)/0.3)]">
                           Cliente
                         </span>
                       )}
@@ -4520,7 +4520,7 @@ function ChatVagaPanel({
                         "mt-1.5 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs border",
                         ehMinha
                           ? "bg-primary-foreground/10 border-primary-foreground/30 text-primary-foreground"
-                          : "bg-background/60 border-border text-foreground",
+                          : "bg-[hsl(var(--background)/0.6)] border-border text-foreground",
                       )}>
                         <Paperclip className="h-3 w-3" />
                         <span className="truncate max-w-[220px]">{m.anexo}</span>
@@ -4540,7 +4540,7 @@ function ChatVagaPanel({
       {/* Composer */}
       <div className="border-t border-border p-3">
         {anexoNome && (
-          <div className="mb-2 inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-1 text-xs">
+          <div className="mb-2 inline-flex items-center gap-1.5 rounded-md border border-border bg-[hsl(var(--muted)/0.4)] px-2 py-1 text-xs">
             <Paperclip className="h-3 w-3" />
             <span className="truncate max-w-[220px]">{anexoNome}</span>
             <button onClick={() => setAnexoNome(null)} className="ml-1 hover:text-destructive">
@@ -4594,7 +4594,7 @@ function ChatVagaPanel({
           )}
           <button
             onClick={enviar}
-            className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 hover:bg-primary/90"
+            className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 hover:bg-[hsl(var(--primary)/0.9)]"
             title="Enviar"
           >
             <Send className="h-4 w-4" />
@@ -4627,7 +4627,7 @@ function renderMensagemFormatada(texto: string) {
       const resto = parte.slice(mencao[0].length);
       return (
         <span key={i}>
-          <span className="rounded bg-primary/10 text-primary px-1 font-medium">@{mencao[1]}</span>
+          <span className="rounded bg-[hsl(var(--primary)/0.1)] text-primary px-1 font-medium">@{mencao[1]}</span>
           {resto}
         </span>
       );
@@ -4861,7 +4861,7 @@ function CandidatoDetailSheet({
     <>
       {/* Backdrop — z-30 para ficar abaixo dos modais (z-50) */}
       <div
-        className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+        className="fixed inset-0 z-40 bg-[hsl(var(--background)/0.6)] backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
         onClick={onClose}
         onWheel={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
@@ -4898,17 +4898,17 @@ function CandidatoDetailSheet({
                   </button>
                 )}
                 {etapaAtual && (
-                  <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[hsl(var(--primary)/0.1)] text-primary border border-[hsl(var(--primary)/0.2)]">
                     {etapaAtual}
                   </span>
                 )}
                 {!etapaAtual && cand.status && STATUS_LABEL[cand.status] && (
-                  <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-secondary text-foreground/70 border border-border">
+                  <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-secondary text-[hsl(var(--foreground)/0.7)] border border-border">
                     {STATUS_LABEL[cand.status]}
                   </span>
                 )}
                 {declinio && (
-                  <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/30">
+                  <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[hsl(var(--destructive)/0.1)] text-destructive border border-[hsl(var(--destructive)/0.3)]">
                     Declinado
                   </span>
                 )}
@@ -4916,15 +4916,15 @@ function CandidatoDetailSheet({
                   <span className={cn(
                     "text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border",
                     relatorioStatus === "enviado"
-                      ? "bg-success/10 text-success border-success/30"
-                      : "bg-info/10 text-info border-info/30",
+                      ? "bg-[hsl(var(--success)/0.1)] text-success border-[hsl(var(--success)/0.3)]"
+                      : "bg-[hsl(var(--info)/0.1)] text-info border-[hsl(var(--info)/0.3)]",
                   )}>
                     {relatorioStatus === "enviado" ? "Relatório enviado" : "Relatório em rascunho"}
                   </span>
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                Candidato para <strong className="text-foreground/80">{tituloVaga}</strong>
+                Candidato para <strong className="text-[hsl(var(--foreground)/0.8)]">{tituloVaga}</strong>
               </p>
             </div>
             <button
@@ -4951,10 +4951,10 @@ function CandidatoDetailSheet({
                 ? "Rascunho salvo"
                 : "Gerar relatório";
               const corRelatorio = relatorioStatus === "enviado"
-                ? "bg-success text-success-foreground hover:bg-success/90"
+                ? "bg-success text-success-foreground hover:bg-[hsl(var(--success)/0.9)]"
                 : relatorioStatus === "rascunho"
-                ? "bg-warning/20 text-warning border border-warning/40 hover:bg-warning/30"
-                : "bg-primary text-primary-foreground hover:bg-primary/90";
+                ? "bg-[hsl(var(--warning)/0.2)] text-warning border border-[hsl(var(--warning)/0.4)] hover:bg-[hsl(var(--warning)/0.3)]"
+                : "bg-primary text-primary-foreground hover:bg-[hsl(var(--primary)/0.9)]";
               return (
                 <button
                   onClick={() => onAbrirRelatorio(cand.id)}
@@ -4984,7 +4984,7 @@ function CandidatoDetailSheet({
             </button>
             <button
               onClick={() => onDeclinar(cand.id)}
-              className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-destructive/30 text-destructive hover:bg-destructive/10 text-xs font-medium ml-auto"
+              className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-[hsl(var(--destructive)/0.3)] text-destructive hover:bg-[hsl(var(--destructive)/0.1)] text-xs font-medium ml-auto"
             >
               <ThumbsDown className="h-3.5 w-3.5" /> Registrar declínio
             </button>
@@ -5037,7 +5037,7 @@ function CandidatoDetailSheet({
                 <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">Informações complementares</h3>
                 <div className="space-y-2">
                   {/* Currículo */}
-                  <div className="rounded-md border border-border bg-background/40 px-3 py-2 flex items-center justify-between gap-2">
+                  <div className="rounded-md border border-border bg-[hsl(var(--background)/0.4)] px-3 py-2 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                       <div>
@@ -5066,7 +5066,7 @@ function CandidatoDetailSheet({
                   <DadoLinha icon={<BookOpen className="h-3.5 w-3.5" />} label="Escolaridade" value={dados.escolaridade ?? "—"} />
                   {/* Idiomas */}
                   {dados.idiomas && dados.idiomas.length > 0 && (
-                    <div className="rounded-md border border-border bg-background/40 px-3 py-2">
+                    <div className="rounded-md border border-border bg-[hsl(var(--background)/0.4)] px-3 py-2">
                       <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Idiomas</div>
                       <div className="flex flex-wrap gap-1.5">
                         {dados.idiomas.map((idioma) => (
@@ -5083,13 +5083,13 @@ function CandidatoDetailSheet({
               {/* Bloco: Resumo e experiência */}
               <section>
                 <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">Resumo e experiência</h3>
-                <p className="text-sm text-foreground/90 leading-relaxed mb-3">{dados.resumo}</p>
+                <p className="text-sm text-[hsl(var(--foreground)/0.9)] leading-relaxed mb-3">{dados.resumo}</p>
                 {dados.experiencias.length > 0 && (
                   <ul className="space-y-2">
                     {dados.experiencias.slice(0, 3).map((e, i) => (
-                      <li key={i} className="rounded-md border border-border bg-background/40 px-3 py-2">
+                      <li key={i} className="rounded-md border border-border bg-[hsl(var(--background)/0.4)] px-3 py-2">
                         <div className="text-sm font-medium">{e.cargo} <span className="text-muted-foreground font-normal">— {e.empresa}</span></div>
-                        <div className="text-[11px] text-muted-foreground font-data">{e.periodo}</div>
+                        <div className="text-[11px] text-muted-foreground">{e.periodo}</div>
                       </li>
                     ))}
                   </ul>
@@ -5154,9 +5154,9 @@ function CandidatoDetailSheet({
                 {discValues && (
                   <div className="grid grid-cols-4 gap-2 mt-3">
                     {(["D","I","S","C"] as const).map((fator) => (
-                      <div key={fator} className="rounded-md border border-border bg-background/40 p-2 text-center">
+                      <div key={fator} className="rounded-md border border-border bg-[hsl(var(--background)/0.4)] p-2 text-center">
                         <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{fator}</div>
-                        <div className="text-lg font-bold font-data mt-0.5">{discValues[fator]}</div>
+                        <div className="text-lg font-bold mt-0.5">{discValues[fator]}</div>
                         <div className="text-[10px] text-muted-foreground">%</div>
                       </div>
                     ))}
@@ -5168,17 +5168,17 @@ function CandidatoDetailSheet({
               {dados.discDetalhes?.descricao && (
                 <div className="rounded-lg border border-border p-4">
                   <h4 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2">Descrição do perfil</h4>
-                  <p className="text-sm text-foreground/90 leading-relaxed">{dados.discDetalhes.descricao}</p>
+                  <p className="text-sm text-[hsl(var(--foreground)/0.9)] leading-relaxed">{dados.discDetalhes.descricao}</p>
                 </div>
               )}
 
               {/* Pontos fortes */}
               {dados.discDetalhes?.pontosFortes && (
-                <div className="rounded-lg border border-success/20 bg-success/5 p-4">
+                <div className="rounded-lg border border-[hsl(var(--success)/0.2)] bg-[hsl(var(--success)/0.05)] p-4">
                   <h4 className="text-xs uppercase tracking-wider font-semibold text-success mb-2">Pontos fortes</h4>
                   <ul className="space-y-1">
                     {dados.discDetalhes.pontosFortes.map((p, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-foreground/90">
+                      <li key={i} className="flex items-start gap-2 text-sm text-[hsl(var(--foreground)/0.9)]">
                         <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" />
                         {p}
                       </li>
@@ -5189,11 +5189,11 @@ function CandidatoDetailSheet({
 
               {/* Pontos de atenção */}
               {dados.discDetalhes?.pontosAtencao && (
-                <div className="rounded-lg border border-warning/20 bg-warning/5 p-4">
+                <div className="rounded-lg border border-[hsl(var(--warning)/0.2)] bg-[hsl(var(--warning)/0.05)] p-4">
                   <h4 className="text-xs uppercase tracking-wider font-semibold text-warning mb-2">Pontos de atenção</h4>
                   <ul className="space-y-1">
                     {dados.discDetalhes.pontosAtencao.map((p, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-foreground/90">
+                      <li key={i} className="flex items-start gap-2 text-sm text-[hsl(var(--foreground)/0.9)]">
                         <AlertTriangle className="h-3.5 w-3.5 text-warning shrink-0 mt-0.5" />
                         {p}
                       </li>
@@ -5206,20 +5206,20 @@ function CandidatoDetailSheet({
               {dados.discDetalhes?.estiloMotivacao && (
                 <div className="rounded-lg border border-border p-4">
                   <h4 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2">Estilo de motivação</h4>
-                  <p className="text-sm text-foreground/90 leading-relaxed">{dados.discDetalhes.estiloMotivacao}</p>
+                  <p className="text-sm text-[hsl(var(--foreground)/0.9)] leading-relaxed">{dados.discDetalhes.estiloMotivacao}</p>
                 </div>
               )}
 
               {/* Perguntas sugeridas */}
               {dados.discDetalhes?.perguntasEntrevista && (
-                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                <div className="rounded-lg border border-[hsl(var(--primary)/0.2)] bg-[hsl(var(--primary)/0.05)] p-4">
                   <h4 className="text-xs uppercase tracking-wider font-semibold text-primary mb-3">
                     Perguntas sugeridas para a entrevista com o gestor
                   </h4>
                   <ol className="space-y-2">
                     {dados.discDetalhes.perguntasEntrevista.map((q, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-foreground/90">
-                        <span className="h-5 w-5 rounded-full bg-primary/15 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                      <li key={i} className="flex items-start gap-2 text-sm text-[hsl(var(--foreground)/0.9)]">
+                        <span className="h-5 w-5 rounded-full bg-[hsl(var(--primary)/0.15)] text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
                           {i + 1}
                         </span>
                         {q}
@@ -5236,7 +5236,7 @@ function CandidatoDetailSheet({
           {fichaTab === "processos" && (
             <div className="space-y-5">
             {/* Candidatura atual */}
-            <div className="rounded-lg border border-border bg-background/40 p-3">
+            <div className="rounded-lg border border-border bg-[hsl(var(--background)/0.4)] p-3">
               <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Candidatura atual</div>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
@@ -5245,7 +5245,7 @@ function CandidatoDetailSheet({
                 </div>
                 <div>
                   <div className="text-[10px] text-muted-foreground">Recebido em</div>
-                  <div className="font-medium font-data">28/04/2026</div>
+                  <div className="font-medium">28/04/2026</div>
                 </div>
                 <div>
                   <div className="text-[10px] text-muted-foreground">Consultor</div>
@@ -5273,7 +5273,7 @@ function CandidatoDetailSheet({
               ) : (
                 <ul className="space-y-2">
                   {questsDoCandidato.map((q) => (
-                    <li key={q.id} className="rounded-md border border-border bg-background/40 p-2.5">
+                    <li key={q.id} className="rounded-md border border-border bg-[hsl(var(--background)/0.4)] p-2.5">
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <div className="text-xs font-medium truncate">{q.nome}</div>
@@ -5285,8 +5285,8 @@ function CandidatoDetailSheet({
                         </div>
                         <span className={cn(
                           "px-2 py-0.5 rounded-full text-[10px] font-medium border shrink-0",
-                          q.statusCand === "respondido" && "bg-success/10 text-success border-success/30",
-                          q.statusCand === "pendente" && "bg-warning/10 text-warning border-warning/30",
+                          q.statusCand === "respondido" && "bg-[hsl(var(--success)/0.1)] text-success border-[hsl(var(--success)/0.3)]",
+                          q.statusCand === "pendente" && "bg-[hsl(var(--warning)/0.1)] text-warning border-[hsl(var(--warning)/0.3)]",
                           q.statusCand === "nao_associado" && "bg-secondary text-muted-foreground border-border",
                         )}>
                           {q.statusCand === "respondido" ? "Respondido"
@@ -5300,7 +5300,7 @@ function CandidatoDetailSheet({
                           <input
                             readOnly
                             value={q.resposta.link}
-                            className="flex-1 h-7 px-2 rounded-md border border-border bg-card text-[10px] font-data"
+                            className="flex-1 h-7 px-2 rounded-md border border-border bg-card text-[10px]"
                           />
                           <button
                             onClick={() => { navigator.clipboard?.writeText(q.resposta!.link!); toast.success("Link copiado."); }}
@@ -5323,14 +5323,14 @@ function CandidatoDetailSheet({
                       )}
 
                       {q.statusCand === "pendente" && onSimularResposta && (
-                        <div className="mt-2 flex items-center justify-between gap-2 rounded-md border border-dashed border-warning/40 bg-warning/5 px-2 py-1.5">
+                        <div className="mt-2 flex items-center justify-between gap-2 rounded-md border border-dashed border-[hsl(var(--warning)/0.4)] bg-[hsl(var(--warning)/0.05)] px-2 py-1.5">
                           <span className="text-[10px] text-muted-foreground">
                             <strong className="text-warning">Dev only</strong> · ambiente de teste
                           </span>
                           <button
                             type="button"
                             onClick={() => onSimularResposta(cand.id, q.id)}
-                            className="h-6 px-2 rounded border border-warning/40 bg-card text-[10px] font-medium text-warning hover:bg-warning/10"
+                            className="h-6 px-2 rounded border border-[hsl(var(--warning)/0.4)] bg-card text-[10px] font-medium text-warning hover:bg-[hsl(var(--warning)/0.1)]"
                             title="Gera respostas fake como se o candidato tivesse respondido"
                           >
                             Simular resposta do candidato (teste)
@@ -5367,26 +5367,26 @@ function CandidatoDetailSheet({
                   Parecer do cliente
                 </h3>
                 {parecer ? (
-                  <div className="rounded-lg border border-border bg-background/40 p-3 space-y-2 text-xs">
+                  <div className="rounded-lg border border-border bg-[hsl(var(--background)/0.4)] p-3 space-y-2 text-xs">
                     <div className="flex items-center gap-2 flex-wrap">
                       {!parecer.compareceu ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-muted text-muted-foreground border-border">
                           Não compareceu
                         </span>
                       ) : parecer.decisao === "avancar" ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-success/15 text-success border-success/30">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-[hsl(var(--success)/0.15)] text-success border-[hsl(var(--success)/0.3)]">
                           Avançar
                         </span>
                       ) : parecer.decisao === "standby" ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-warning/15 text-warning border-warning/30">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-[hsl(var(--warning)/0.15)] text-warning border-[hsl(var(--warning)/0.3)]">
                           Stand by
                         </span>
                       ) : parecer.decisao === "reprovar" ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-destructive/15 text-destructive border-destructive/30">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-[hsl(var(--destructive)/0.15)] text-destructive border-[hsl(var(--destructive)/0.3)]">
                           Reprovado
                         </span>
                       ) : null}
-                      <span className="text-[10px] text-muted-foreground font-data">
+                      <span className="text-[10px] text-muted-foreground">
                         {new Date(parecer.criadoEm).toLocaleString("pt-BR")}
                       </span>
                     </div>
@@ -5464,11 +5464,11 @@ function CandidatoDetailSheet({
               return (
                 <ul className="space-y-2">
                   {itens.map((it, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs rounded-md border border-border bg-background/40 px-3 py-2.5">
+                    <li key={i} className="flex items-start gap-2 text-xs rounded-md border border-border bg-[hsl(var(--background)/0.4)] px-3 py-2.5">
                       <span className="mt-0.5 shrink-0">{it.icon}</span>
                       <div className="min-w-0 flex-1">
                         <div className="text-foreground">{it.texto}</div>
-                        <div className="text-[10px] text-muted-foreground font-data mt-0.5">{it.quando || "—"}</div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5">{it.quando || "—"}</div>
                       </div>
                     </li>
                   ))}
@@ -5571,7 +5571,7 @@ function CorrigirQuestionarioInline({
           return (
             <li key={p.id} className="rounded border border-border bg-card p-2">
               <div className="text-[11px] font-medium">{p.ordem}. {p.texto}</div>
-              <div className="text-[10px] text-foreground/70 bg-secondary/40 rounded px-2 py-1 mt-1">
+              <div className="text-[10px] text-[hsl(var(--foreground)/0.7)] bg-[hsl(var(--secondary)/0.4)] rounded px-2 py-1 mt-1">
                 <span className="text-muted-foreground mr-1">Resposta:</span>
                 {respostas[p.id] ?? <em className="text-muted-foreground">— sem resposta —</em>}
               </div>
@@ -5621,7 +5621,7 @@ function CorrigirQuestionarioInline({
 
 function DadoLinha({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-start gap-2 rounded-md border border-border bg-background/40 px-3 py-2">
+    <div className="flex items-start gap-2 rounded-md border border-border bg-[hsl(var(--background)/0.4)] px-3 py-2">
       <span className="text-muted-foreground mt-0.5">{icon}</span>
       <div className="min-w-0 flex-1">
         <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
@@ -5730,7 +5730,7 @@ function RelatorioCandidatoModal({
     }));
 
   return createPortal(
-    <div className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+    <div className="fixed inset-0 z-[60] bg-[hsl(var(--background)/0.8)] backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-5xl max-h-[92vh] flex flex-col animate-scale-in overflow-hidden">
         {/* Header */}
         <header className="px-6 py-4 border-b border-border flex items-center gap-3">
@@ -5740,14 +5740,14 @@ function RelatorioCandidatoModal({
               <span className={cn(
                 "text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border",
                 form.status === "enviado"
-                  ? "bg-success/10 text-success border-success/30"
-                  : "bg-info/10 text-info border-info/30",
+                  ? "bg-[hsl(var(--success)/0.1)] text-success border-[hsl(var(--success)/0.3)]"
+                  : "bg-[hsl(var(--info)/0.1)] text-info border-[hsl(var(--info)/0.3)]",
               )}>
                 {form.status === "enviado" ? "Enviado" : "Rascunho"}
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Versão preparada para envio ao cliente · <span className="font-data">{form.protocolo}</span> · {form.data}
+              Versão preparada para envio ao cliente · <span className="">{form.protocolo}</span> · {form.data}
             </p>
           </div>
           <button
@@ -5816,7 +5816,7 @@ function RelatorioCandidatoModal({
                     (ou usar a simulação na ficha), as perguntas e respostas aparecem aqui.
                   </div>
                 ) : !algumaAvaliacao ? (
-                  <div className="text-xs text-warning rounded-md border border-warning/30 bg-warning/10 px-3 py-2 mb-2">
+                  <div className="text-xs text-warning rounded-md border border-[hsl(var(--warning)/0.3)] bg-[hsl(var(--warning)/0.1)] px-3 py-2 mb-2">
                     Questionário ainda não corrigido. Atribua as notas abaixo — ou
                     corrija na aba <strong>Questionário</strong> da ficha do candidato.
                   </div>
@@ -5829,7 +5829,7 @@ function RelatorioCandidatoModal({
                       return (
                         <li key={q.id} className="rounded-md border border-border p-3">
                           <div className="text-sm font-medium">{q.pergunta}</div>
-                          <div className="text-xs text-foreground/80 bg-secondary/40 rounded px-2 py-1 mt-1.5">
+                          <div className="text-xs text-[hsl(var(--foreground)/0.8)] bg-[hsl(var(--secondary)/0.4)] rounded px-2 py-1 mt-1.5">
                             <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">Resposta:</span>
                             {q.resposta}
                           </div>
@@ -5942,7 +5942,7 @@ function RelatorioCandidatoModal({
           </button>
           <button
             onClick={() => onMarkSent(form)}
-            className="inline-flex items-center gap-1 h-9 px-4 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold"
+            className="inline-flex items-center gap-1 h-9 px-4 rounded-md bg-primary text-primary-foreground hover:bg-[hsl(var(--primary)/0.9)] text-xs font-semibold"
           >
             <Send className="h-3.5 w-3.5" /> Enviar para cliente
           </button>
@@ -5955,7 +5955,7 @@ function RelatorioCandidatoModal({
 
 function SecaoEditor({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border border-border p-4 bg-background/40">
+    <section className="rounded-lg border border-border p-4 bg-[hsl(var(--background)/0.4)]">
       <h4 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">{titulo}</h4>
       <div className="space-y-3">{children}</div>
     </section>
@@ -5969,7 +5969,7 @@ function CampoTexto({ label, value, onChange }: { label: string; value: string; 
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full h-9 px-3 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        className="mt-1 w-full h-9 px-3 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.3)]"
       />
     </label>
   );
@@ -5985,7 +5985,7 @@ function CampoTextarea({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={rows}
-        className="mt-1 w-full px-3 py-2 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y"
+        className="mt-1 w-full px-3 py-2 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.3)] resize-y"
       />
     </label>
   );
@@ -6007,7 +6007,7 @@ function RelatorioPreview({
       <header className="border-b border-border pb-4 mb-5">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-2xl font-semibold">Relatório do Candidato</h2>
-          <span className="text-xs text-muted-foreground font-data">{form.protocolo}</span>
+          <span className="text-xs text-muted-foreground">{form.protocolo}</span>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
           {candidato.nome} · {vagaTitulo} · {empresa} · {form.data}
@@ -6055,7 +6055,7 @@ function RelatorioPreview({
               return (
                 <li key={q.id} className="rounded border border-border p-3">
                   <p className="font-medium">{q.pergunta}</p>
-                  <p className="text-foreground/80 mt-1"><span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">Resposta:</span>{q.resposta}</p>
+                  <p className="text-[hsl(var(--foreground)/0.8)] mt-1"><span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">Resposta:</span>{q.resposta}</p>
                   <p className="text-xs mt-1"><strong>Nota:</strong> {nota}/5 {just && <>· <em>{just}</em></>}</p>
                 </li>
               );
@@ -6072,9 +6072,9 @@ function RelatorioPreview({
         <BlocoPreview titulo="Movimento proposto">
           <span className={cn(
             "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold",
-            form.movimento === "Avançar" && "bg-success/10 text-success border border-success/30",
-            form.movimento === "Stand by" && "bg-warning/10 text-warning border border-warning/30",
-            form.movimento === "Desclassificar" && "bg-destructive/10 text-destructive border border-destructive/30",
+            form.movimento === "Avançar" && "bg-[hsl(var(--success)/0.1)] text-success border border-[hsl(var(--success)/0.3)]",
+            form.movimento === "Stand by" && "bg-[hsl(var(--warning)/0.1)] text-warning border border-[hsl(var(--warning)/0.3)]",
+            form.movimento === "Desclassificar" && "bg-[hsl(var(--destructive)/0.1)] text-destructive border border-[hsl(var(--destructive)/0.3)]",
           )}>
             {form.movimento}
           </span>
@@ -6084,7 +6084,7 @@ function RelatorioPreview({
       <footer className="border-t border-border pt-4 mt-6 text-sm">
         <p className="font-medium">{form.consultorNome}</p>
         <p className="text-muted-foreground text-xs">{form.consultorCargo}</p>
-        <p className="text-[11px] text-muted-foreground font-data mt-2">Azumi Connect · {form.protocolo} · {form.data}</p>
+        <p className="text-[11px] text-muted-foreground mt-2">Azumi Connect · {form.protocolo} · {form.data}</p>
       </footer>
     </article>
   );
@@ -6094,7 +6094,7 @@ function BlocoPreview({ titulo, children }: { titulo: string; children: React.Re
   return (
     <section className="mb-5">
       <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2">{titulo}</h3>
-      <div className="text-sm text-foreground/90 leading-relaxed">{children}</div>
+      <div className="text-sm text-[hsl(var(--foreground)/0.9)] leading-relaxed">{children}</div>
     </section>
   );
 }
@@ -6174,7 +6174,7 @@ function AgendarEntrevistaGestorModal({
               {candidatoNome} · Gestor {gestor.nome} ({gestor.cargo})
             </p>
             <p className="text-[11px] text-muted-foreground mt-1">
-              Janela disponível: <span className="font-data">{janelaResumo(gestor.janela)}</span>
+              Janela disponível: <span className="">{janelaResumo(gestor.janela)}</span>
             </p>
           </div>
           <button onClick={onClose} className="h-8 w-8 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground" aria-label="Fechar">
@@ -6220,7 +6220,7 @@ function SugestaoForm({
   const erroData = valor.data && !diaPermitido(valor.data, janela);
   const erroHora = valor.hora && !horaDentroJanela(valor.hora, janela);
   return (
-    <div className={cn("rounded-xl border p-4", valida ? "border-success/30 bg-success/5" : "border-border bg-background/40")}>
+    <div className={cn("rounded-xl border p-4", valida ? "border-[hsl(var(--success)/0.3)] bg-[hsl(var(--success)/0.05)]" : "border-border bg-[hsl(var(--background)/0.4)]")}>
       <div className="text-xs font-medium mb-3">{titulo}</div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
@@ -6295,12 +6295,12 @@ function AgendamentoGestorPanel({
             const podeSimularConfirmar = ag.status === "aguardando_confirmacao_candidato";
             const isClienteFinal = ag.tipo === "cliente_final";
             return (
-              <li key={ag.id} className={`rounded-lg border p-3 space-y-2 ${isClienteFinal ? "border-primary/40 bg-primary/5" : "border-border bg-background/40"}`}>
+              <li key={ag.id} className={`rounded-lg border p-3 space-y-2 ${isClienteFinal ? "border-[hsl(var(--primary)/0.4)] bg-[hsl(var(--primary)/0.05)]" : "border-border bg-[hsl(var(--background)/0.4)]"}`}>
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium">{ag.candidatoNome}</span>
-                      <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border ${isClienteFinal ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-muted text-muted-foreground"}`}>
+                      <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border ${isClienteFinal ? "border-[hsl(var(--primary)/0.4)] bg-[hsl(var(--primary)/0.1)] text-primary" : "border-border bg-muted text-muted-foreground"}`}>
                         {isClienteFinal ? "Entrevista final com cliente" : "Entrevista com gestor"}
                       </span>
                     </div>
@@ -6319,7 +6319,7 @@ function AgendamentoGestorPanel({
                 <div className="text-xs space-y-1">
                   {ag.sugestoes.map((s, i) => (
                     <div key={i} className="text-muted-foreground">
-                      <span className="font-data">#{i + 1}</span> {formatarSugestao(s)}
+                      <span className="">#{i + 1}</span> {formatarSugestao(s)}
                       {s.localOuLink && <span> · {s.localOuLink}</span>}
                     </div>
                   ))}
@@ -6357,7 +6357,7 @@ function AgendamentoGestorPanel({
                         candidatoConfirmar(ag.id);
                         toast.success("Confirmação do candidato simulada.");
                       }}
-                      className="h-8 px-3 rounded-md border border-success/40 text-success text-xs font-medium hover:bg-success/10"
+                      className="h-8 px-3 rounded-md border border-[hsl(var(--success)/0.4)] text-success text-xs font-medium hover:bg-[hsl(var(--success)/0.1)]"
                       title="Atalho de demo — equivale ao candidato abrir o link"
                     >
                       Simular confirmação do candidato (dev)
@@ -6408,22 +6408,22 @@ function PropostaPanel({ candidatoId, candidatoNome }: { candidatoId: string; ca
     return `${h}h ${m.toString().padStart(2, "0")}m ${s.toString().padStart(2, "0")}s`;
   }
   const statusCls =
-    proposta.status === "aceita" ? "bg-success/15 text-success border-success/30" :
-    proposta.status === "recusada" ? "bg-destructive/15 text-destructive border-destructive/30" :
+    proposta.status === "aceita" ? "bg-[hsl(var(--success)/0.15)] text-success border-[hsl(var(--success)/0.3)]" :
+    proposta.status === "recusada" ? "bg-[hsl(var(--destructive)/0.15)] text-destructive border-[hsl(var(--destructive)/0.3)]" :
     proposta.status === "expirada" || expiradaPorTempo ? "bg-muted text-muted-foreground border-border" :
-    "bg-warning/15 text-warning border-warning/30";
+    "bg-[hsl(var(--warning)/0.15)] text-warning border-[hsl(var(--warning)/0.3)]";
 
   return (
     <section>
       <h3 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-3">
         Proposta (Etapa 6)
       </h3>
-      <div className="rounded-lg border border-border bg-background/40 p-3 space-y-2 text-xs">
+      <div className="rounded-lg border border-border bg-[hsl(var(--background)/0.4)] p-3 space-y-2 text-xs">
         <div className="flex items-center gap-2 flex-wrap">
           <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border", statusCls)}>
             <Send className="h-3 w-3" /> {expiradaPorTempo && proposta.status === "enviada" ? "Expirada (sem resposta)" : statusPropostaLabel(proposta.status)}
           </span>
-          <span className="text-[10px] text-muted-foreground font-data">
+          <span className="text-[10px] text-muted-foreground">
             Enviada em {new Date(proposta.enviadaEm).toLocaleString("pt-BR")}
           </span>
         </div>
@@ -6439,12 +6439,12 @@ function PropostaPanel({ candidatoId, candidatoNome }: { candidatoId: string; ca
           <div className={cn(
             "rounded-md border p-2 text-[11px] inline-flex items-center gap-1.5",
             restantes > 0
-              ? "border-warning/30 bg-warning/10 text-warning"
-              : "border-destructive/30 bg-destructive/10 text-destructive"
+              ? "border-[hsl(var(--warning)/0.3)] bg-[hsl(var(--warning)/0.1)] text-warning"
+              : "border-[hsl(var(--destructive)/0.3)] bg-[hsl(var(--destructive)/0.1)] text-destructive"
           )}>
             <Clock className="h-3 w-3" />
             Prazo: até {new Date(proposta.expiraEm).toLocaleString("pt-BR")} —{" "}
-            <strong className="font-data">{fmtRestante(restantes)}</strong>
+            <strong className="">{fmtRestante(restantes)}</strong>
           </div>
         )}
 
@@ -6472,7 +6472,7 @@ function PropostaPanel({ candidatoId, candidatoNome }: { candidatoId: string; ca
                 recusarProposta(proposta.id, motivo);
                 toast.warning(`${candidatoNome} recusou a proposta.`);
               }}
-              className="h-7 px-2.5 rounded-md border border-destructive/40 text-destructive text-[11px] font-medium inline-flex items-center gap-1 hover:bg-destructive/10"
+              className="h-7 px-2.5 rounded-md border border-[hsl(var(--destructive)/0.4)] text-destructive text-[11px] font-medium inline-flex items-center gap-1 hover:bg-[hsl(var(--destructive)/0.1)]"
             >
               <UserX className="h-3 w-3" /> Simular recusa
             </button>
@@ -6549,10 +6549,10 @@ function ConvidarParaVagaForm({
 
   return (
     <div className="space-y-4 text-sm">
-      <div className="rounded-lg bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">
+      <div className="rounded-lg bg-[hsl(var(--secondary)/0.4)] px-3 py-2 text-xs text-muted-foreground">
         Candidato: <span className="font-medium text-foreground">{candidatoNome}</span>
         <span className="mx-1.5">·</span>
-        ID: <span className="font-data">{candidatoId}</span>
+        ID: <span className="">{candidatoId}</span>
         <span className="mx-1.5">·</span>
         Origem rastreada automaticamente
       </div>
@@ -6581,7 +6581,7 @@ function ConvidarParaVagaForm({
               className={cn(
                 "flex-1 h-8 rounded-md border text-xs font-medium transition-colors",
                 canal === c
-                  ? "border-primary bg-primary/10 text-primary"
+                  ? "border-primary bg-[hsl(var(--primary)/0.1)] text-primary"
                   : "border-border bg-background text-muted-foreground hover:bg-secondary"
               )}
             >
@@ -6613,7 +6613,7 @@ function ConvidarParaVagaForm({
           type="button"
           disabled={!vagaSel || !mensagem.trim()}
           onClick={() => onEnviar(vagaSel, canal, mensagem.trim())}
-          className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+          className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-[hsl(var(--primary)/0.9)] disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
         >
           <UserPlus className="h-4 w-4" /> Enviar convite
         </button>
