@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SlaBar } from "@/components/SlaBar";
-import { KpiCard } from "@/components/KpiCard";
+import { ConnectStatCard } from "@/components/ConnectStatCard";
 import { EmptyState } from "@/components/EmptyState";
 
 import { Button } from "@/components/ui/button";
@@ -371,10 +371,10 @@ export default function ProjetoDetalhe() {
     const horasRest = horasRestantes72h(e.aprovacaoClienteIniciadaEm);
 
     return (
-      <div key={e.id} className="bg-card border border-border rounded-xl p-5 card-hover">
+      <div key={e.id} className="bg-card rounded-xl shadow-[0_1px_4px_rgba(133,146,173,0.2)] p-5 card-hover">
         <div className="flex items-start gap-3 flex-wrap">
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-data text-muted-foreground uppercase tracking-wider">{e.codigo}</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{e.codigo}</div>
             <button
               type="button"
               onClick={() => setPanelOpen({ open: true, entId: e.id })}
@@ -513,7 +513,7 @@ export default function ProjetoDetalhe() {
             <span className="text-xs text-muted-foreground">{e.responsavelNome}</span>
           </div>
           <div className={cn(
-            "text-xs flex items-center gap-1 font-data",
+            "text-xs flex items-center gap-1",
             atrasado ? "text-destructive font-semibold" : "text-muted-foreground"
           )}>
             <CalendarIcon className="h-3.5 w-3.5" />
@@ -550,7 +550,7 @@ export default function ProjetoDetalhe() {
         )}
       >
         <div className="flex items-center justify-between">
-          <div className="text-[10px] font-data text-muted-foreground uppercase">{e.codigo}</div>
+          <div className="text-[10px] text-muted-foreground uppercase">{e.codigo}</div>
           {bloqueado && <Lock className="h-3 w-3 text-muted-foreground" aria-label="Bloqueado" />}
         </div>
         <div className="text-sm font-medium leading-tight mt-0.5 line-clamp-2">{e.nome}</div>
@@ -567,7 +567,7 @@ export default function ProjetoDetalhe() {
             {e.complexidade}
           </span>
           <span className={cn(
-            "text-[10px] font-data",
+            "text-[10px]",
             atrasado ? "text-destructive font-semibold" : "text-muted-foreground"
           )}>
             {format(new Date(e.prazo), "dd/MM", { locale: ptBR })}
@@ -615,11 +615,11 @@ export default function ProjetoDetalhe() {
       />
 
       {/* Cabeçalho — informações do projeto */}
-      <div className="bg-card border border-border rounded-xl p-5 mb-6">
+      <div className="bg-card rounded-xl shadow-[0_1px_4px_rgba(133,146,173,0.2)] p-5 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Código</div>
-            <div className="text-sm font-data font-semibold mt-0.5">PROJ-2026-0001 · {id}</div>
+            <div className="text-sm font-semibold mt-0.5 tabular-nums">PROJ-2026-0001 · {id}</div>
           </div>
           <div>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Consultor responsável</div>
@@ -630,13 +630,13 @@ export default function ProjetoDetalhe() {
           </div>
           <div>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Período</div>
-            <div className="text-sm font-data mt-0.5">01/03/2026 → 30/06/2026</div>
+            <div className="text-sm mt-0.5 tabular-nums">01/03/2026 → 30/06/2026</div>
           </div>
           <div>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Conclusão</div>
             <div className="flex items-center gap-2">
               <Progress value={progresso} className="h-2 flex-1" />
-              <span className="font-data text-sm font-semibold tabular-nums">{progresso}%</span>
+              <span className="text-sm font-semibold tabular-nums">{progresso}%</span>
             </div>
           </div>
         </div>
@@ -660,11 +660,11 @@ export default function ProjetoDetalhe() {
           </div>
         </div>
       )}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KpiCard label="Entregáveis" value={kpis.total} icon={Briefcase} />
-        <KpiCard label="Aprovados" value={kpis.aprovados} icon={CheckCircle2} />
-        <KpiCard label="Em andamento" value={kpis.emAndamento} icon={Clock} />
-        <KpiCard label="Ajuste solicitado" value={kpis.bloqueados} icon={AlertTriangle} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 items-start">
+        <ConnectStatCard variant="stat" icon="solar:document-text-bold-duotone" tone="blue" label="Entregáveis" value={kpis.total} />
+        <ConnectStatCard variant="stat" icon="solar:check-circle-bold-duotone" tone="green" label="Aprovados" value={kpis.aprovados} />
+        <ConnectStatCard variant="stat" icon="solar:clock-circle-bold-duotone" tone="violet" label="Em andamento" value={kpis.emAndamento} />
+        <ConnectStatCard variant="stat" icon="solar:danger-triangle-bold-duotone" tone="amber" label="Ajuste solicitado" value={kpis.bloqueados} />
       </div>
 
       {/* Controles */}
@@ -735,7 +735,7 @@ export default function ProjetoDetalhe() {
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
                     {col.label}
                   </span>
-                  <span className="font-data text-xs text-muted-foreground">{itens.length}</span>
+                  <span className="text-xs text-muted-foreground">{itens.length}</span>
                 </div>
                 {itens.length === 0 ? (
                   <div className="flex items-center justify-center h-24 text-xs text-muted-foreground border border-dashed border-border/60 rounded-md">
@@ -875,7 +875,7 @@ export default function ProjetoDetalhe() {
                 <li key={h.id} className="relative">
                   <span className="absolute -left-[31px] top-1 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
                   <div className="text-sm font-medium">{h.titulo}</div>
-                  <div className="text-[11px] text-muted-foreground font-data mt-0.5">
+                  <div className="text-[11px] text-muted-foreground mt-0.5">
                     {h.autor} · {h.quando}
                   </div>
                   {h.descricao && (
@@ -1667,7 +1667,7 @@ function EntregavelPanelSheet({
             <Clock className="h-3.5 w-3.5" /> Ver horas
           </Button>
           {(entregavel.horasGastas ?? 0) > 0 && (
-            <span className="text-xs text-muted-foreground font-data ml-auto">
+            <span className="text-xs text-muted-foreground ml-auto">
               {entregavel.horasGastas}h registradas
             </span>
           )}
@@ -1713,7 +1713,7 @@ function EntregavelPanelSheet({
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">
               Subtarefas
             </Label>
-            <span className="text-xs text-muted-foreground font-data">
+            <span className="text-xs text-muted-foreground">
               {subtarefas.filter((s) => s.feita).length}/{subtarefas.length}
             </span>
           </div>
@@ -1742,12 +1742,12 @@ function EntregavelPanelSheet({
                     <span className="text-[11px] text-muted-foreground hidden sm:inline">{s.consultorNome}</span>
                   )}
                   {s.prazo && (
-                    <span className="text-[11px] text-muted-foreground font-data flex items-center gap-0.5">
+                    <span className="text-[11px] text-muted-foreground flex items-center gap-0.5">
                       <CalendarIcon className="h-3 w-3" />
                       {format(new Date(s.prazo + "T00:00:00"), "dd/MM", { locale: ptBR })}
                     </span>
                   )}
-                  <span className="text-[11px] text-muted-foreground font-data">
+                  <span className="text-[11px] text-muted-foreground">
                     {s.estimativaH}h
                   </span>
                   {!bloqueado && (
@@ -1907,7 +1907,7 @@ function EntregavelPanelSheet({
             {anexoPendente && (
               <div className="mt-2 flex items-center gap-2 text-xs bg-[hsl(var(--secondary)/0.4)] border border-border rounded-md px-2 py-1.5">
                 <Paperclip className="h-3.5 w-3.5" />
-                <span className="font-data">{anexoPendente}</span>
+                <span className="">{anexoPendente}</span>
                 <button
                   type="button"
                   onClick={() => setAnexoPendente(null)}
@@ -2042,18 +2042,18 @@ function ChatLista({
                     )}
                   >
                     <FileText className="h-3 w-3" />
-                    <span className="font-data">{m.anexo}</span>
+                    <span className="">{m.anexo}</span>
                   </div>
                 )}
                 <div
                   className={cn(
-                    "text-[10px] font-data mt-1 text-right",
+                    "text-[10px] mt-1 text-right",
                     isMe ? "text-primary-foreground/70" : "text-muted-foreground"
                   )}
                 >
                   {m.quando}
                   {m.editadaEm && (
-                    <span className="text-[9px] font-data opacity-60 ml-1">
+                    <span className="text-[9px] opacity-60 ml-1">
                       · editado {m.editadaEm}
                     </span>
                   )}
