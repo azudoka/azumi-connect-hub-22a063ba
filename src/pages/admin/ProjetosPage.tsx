@@ -625,10 +625,8 @@ export default function ProjetosPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left font-semibold px-4 py-4">Código</th>
                       <th className="text-left font-semibold px-4 py-4">Projeto</th>
                       <th className="text-left font-semibold px-4 py-4">Empresa</th>
-                      <th className="text-left font-semibold px-4 py-4">Consultor</th>
                       <th className="text-left font-semibold px-4 py-4">Frente</th>
                       <th className="text-left font-semibold px-4 py-4 w-32">Conclusão</th>
                       <th className="text-left font-semibold px-4 py-4">Prazo</th>
@@ -644,24 +642,21 @@ export default function ProjetosPage() {
                           key={p.id}
                           className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors"
                         >
-                          <td className="px-4 py-3 text-xs text-muted-foreground">
-                            {p.codigo}
-                          </td>
-                          <td className="px-4 py-3 font-medium max-w-[180px] truncate">
-                            {p.titulo}
+                          <td className="p-4">
+                            <div className="flex gap-3 items-center">
+                              <div className="h-[52px] w-[52px] rounded-lg bg-[image:linear-gradient(135deg,hsl(var(--primary)),hsl(var(--primary-glow)))] flex items-center justify-center text-sm font-semibold text-white shrink-0">
+                                {p.consultorIniciais}
+                              </div>
+                              <div className="min-w-0 max-w-56">
+                                <p className="text-sm font-medium truncate">{p.titulo}</p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {p.consultorNome} · {p.codigo}
+                                </p>
+                              </div>
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-sm text-muted-foreground">
                             {p.empresaNome}
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-1.5">
-                              <div className="h-6 w-6 rounded-md bg-[image:linear-gradient(135deg,hsl(var(--primary)),hsl(var(--primary-glow)))] flex items-center justify-center text-[9px] font-semibold text-white shrink-0">
-                                {p.consultorIniciais}
-                              </div>
-                              <span className="text-xs text-muted-foreground truncate">
-                                {p.consultorNome}
-                              </span>
-                            </div>
                           </td>
                           <td className="px-4 py-3">
                             <span className="badge-pill bg-secondary text-secondary-foreground border-border text-[11px]">
