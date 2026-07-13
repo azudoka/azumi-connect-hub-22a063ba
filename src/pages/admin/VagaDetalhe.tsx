@@ -480,7 +480,7 @@ export default function VagaDetalheAdmin() {
           setColunasEstado((prev) => ({
             ...prev,
             ...Object.fromEntries(
-              extrasDoSite
+              extrasSupabase
                 .filter((e) => !(e.id in prev))
                 .map((e) => {
                   const row = rows.find((r) => r.id === e.id);
