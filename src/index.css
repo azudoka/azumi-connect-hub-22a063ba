@@ -374,4 +374,28 @@
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
   }
+
+  /* Rolagem horizontal discreta — usada em áreas tipo kanban, que nunca podem
+     comprimir colunas quando a sidebar empurra o conteúdo. A barra some quando
+     parada e aparece bem fina e suave no hover, ao invés da barra padrão do SO. */
+  .scrollbar-thin-invisible {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  .scrollbar-thin-invisible:hover {
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  .scrollbar-thin-invisible::-webkit-scrollbar {
+    height: 6px;
+  }
+  .scrollbar-thin-invisible::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 999px;
+  }
+  .scrollbar-thin-invisible:hover::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+  }
+  .scrollbar-thin-invisible::-webkit-scrollbar-track {
+    background: transparent;
+  }
 }
