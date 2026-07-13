@@ -644,13 +644,16 @@ export default function ProjetosPage() {
                         >
                           <td className="p-4">
                             <div className="flex gap-3 items-center">
-                              <div className="h-[52px] w-[52px] rounded-lg bg-[image:linear-gradient(135deg,hsl(var(--primary)),hsl(var(--primary-glow)))] flex items-center justify-center text-sm font-semibold text-white shrink-0">
+                              <div
+                                title={p.consultorNome}
+                                className="h-[52px] w-[52px] rounded-lg bg-[image:linear-gradient(135deg,hsl(var(--primary)),hsl(var(--primary-glow)))] flex items-center justify-center text-sm font-semibold text-white shrink-0 cursor-default"
+                              >
                                 {p.consultorIniciais}
                               </div>
                               <div className="min-w-0 max-w-56">
                                 <p className="text-sm font-medium truncate">{p.titulo}</p>
                                 <p className="text-xs text-muted-foreground truncate">
-                                  {p.consultorNome} · {p.codigo}
+                                  {p.codigo}
                                 </p>
                               </div>
                             </div>
