@@ -119,38 +119,31 @@ export default function CandidatarConvitePage() {
     if (!jobId || !cqId) return;
     setEnviando(true);
 
-    let candidatoId: string;
+    // Sempre INSERT — CPF serve só pra pré-preencher dados, cada convite/vaga é uma linha nova
+    const { data: candidatoInserido, error: erroCandidato } = await supabase
+      .from("candidates")
+      .insert({
+        job_id: jobId,
+        nome: c.nome,
+        email: c.email,
+        telefone: c.telefone,
+        cpf: c.cpf || null,
+        escolaridade: c.escolaridade || null,
+        origem: "convite",
+        banco_talentos: false,
+        etapa_azumi: "recebido",
+        lgpd_aceite: c.aceitePrivacidade,
+        lgpd_aceite_at: c.aceitePrivacidade ? new Date().toISOString() : null,
+      })
+      .select("id")
+      .single();
 
-    if (candidatoExistenteId) {
-      // T2 — reaproveitar candidato existente, sem duplicar
-      candidatoId = candidatoExistenteId;
-    } else {
-      // Criar novo candidato
-      const { data: candidatoInserido, error } = await supabase
-        .from("candidates")
-        .insert({
-          job_id: jobId,
-          nome: c.nome,
-          email: c.email,
-          telefone: c.telefone,
-          cpf: c.cpf || null,
-          escolaridade: c.escolaridade || null,
-          origem: "convite",
-          banco_talentos: false,
-          etapa_azumi: "recebido",
-          lgpd_aceite: c.aceitePrivacidade,
-          lgpd_aceite_at: c.aceitePrivacidade ? new Date().toISOString() : null,
-        })
-        .select("id")
-        .single();
-
-      if (error || !candidatoInserido) {
-        console.error("[convite] candidato:", error?.message);
-        setEnviando(false);
-        return;
-      }
-      candidatoId = candidatoInserido.id;
+    if (erroCandidato || !candidatoInserido) {
+      console.error("[convite] candidato:", erroCandidato?.message);
+      setEnviando(false);
+      return;
     }
+    const candidatoId = candidatoInserido.id;
 
     // DISC — múltiplos resultados por pessoa ao longo do tempo é OK
     const entries = (["D", "I", "S", "C"] as const)
