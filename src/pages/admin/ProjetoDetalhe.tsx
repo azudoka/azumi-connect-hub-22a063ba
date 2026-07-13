@@ -35,9 +35,6 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
-} from "@/components/ui/sheet";
-import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Calendar } from "@/components/ui/calendar";
@@ -848,18 +845,18 @@ export default function ProjetoDetalhe() {
         }}
       />
 
-      {/* ─────────── Sheet: Histórico ─────────── */}
-      <Sheet
+      {/* ─────────── Modal: Histórico ─────────── */}
+      <Dialog
         open={historicoOpen.open}
         onOpenChange={(o) => !o && setHistoricoOpen({ open: false, entId: null })}
       >
-        <SheetContent side="right" className="sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>Histórico do entregável</SheetTitle>
-            <SheetDescription>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Histórico do entregável</DialogTitle>
+            <DialogDescription>
               {entregaveis.find((e) => e.id === historicoOpen.entId)?.nome ?? "—"}
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
 
           {(entregaveis.find((e) => e.id === historicoOpen.entId)?.historico ?? []).length === 0 && (
             <div className="text-xs text-muted-foreground text-center py-8 border border-dashed border-border rounded-md mt-6">
@@ -884,8 +881,8 @@ export default function ProjetoDetalhe() {
                 </li>
               ))}
           </ol>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
       {/* ─────────── Modal NPS (sem botão de fechar) ─────────── */}
       <NpsDialog
@@ -1635,17 +1632,17 @@ function EntregavelPanelSheet({
   const msgsCanal = mensagens.filter((m) => m.canal === canalAtivo);
 
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="sm:max-w-xl w-full overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-xl w-full max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
             {entregavel.nome}
             {bloqueado && <Lock className="h-4 w-4 text-muted-foreground" />}
-          </SheetTitle>
-          <SheetDescription>
+          </DialogTitle>
+          <DialogDescription>
             {entregavel.codigo} · {statusLabels[entregavel.status]}
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         {/* Atalho timer/horas */}
         <div className="mt-4 flex items-center gap-2">
@@ -1937,8 +1934,8 @@ function EntregavelPanelSheet({
             <div className="text-muted-foreground mt-1">{entregavel.motivoCancelamento}</div>
           </div>
         )}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
