@@ -535,7 +535,7 @@ export default function HorasPage() {
       />
 
       {/* ───────── 1. Timer Global ───────── */}
-      <section className="bg-card border border-border rounded-xl p-5 mb-6">
+      <section className="bg-card rounded-xl shadow-[0_1px_4px_rgba(133,146,173,0.2)] p-5 mb-6">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div className="flex items-center gap-2">
             <div className="h-9 w-9 rounded-lg bg-[hsl(var(--primary)/0.1)] text-primary flex items-center justify-center">
@@ -673,7 +673,7 @@ export default function HorasPage() {
       </section>
 
       {/* ───────── 2. Lançamento Manual ───────── */}
-      <section className="bg-card border border-border rounded-xl mb-6 overflow-hidden">
+      <section className="bg-card rounded-xl shadow-[0_1px_4px_rgba(133,146,173,0.2)] mb-6 overflow-hidden">
         <Accordion type="single" collapsible value={manualAberto} onValueChange={setManualAberto}>
           <AccordionItem value="manual" className="border-none">
             <AccordionTrigger className="px-5 py-4 hover:no-underline">
@@ -808,7 +808,7 @@ export default function HorasPage() {
       </section>
 
       {/* ───────── 2b. Interações externas ───────── */}
-      <section className="bg-card border border-border rounded-xl mb-6 overflow-hidden">
+      <section className="bg-card rounded-xl shadow-[0_1px_4px_rgba(133,146,173,0.2)] mb-6 overflow-hidden">
         <Accordion type="single" collapsible value={interacaoAberta} onValueChange={setInteracaoAberta}>
           <AccordionItem value="interacao" className="border-none">
             <AccordionTrigger className="px-5 py-4 hover:no-underline">
@@ -944,8 +944,8 @@ export default function HorasPage() {
       </section>
 
       {/* ───────── 3. Extrato de Horas ───────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-        <ConnectStatCard variant="terminal" label="Total no período" value={totalHoras.toFixed(2)} suffix="h" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5 items-start">
+        <ConnectStatCard variant="stat" icon="solar:clock-circle-bold-duotone" tone="blue" label="Total no período" value={`${totalHoras.toFixed(2)}h`} />
         <ConnectStatCard
           className="sm:col-span-2"
           variant="stack"
@@ -967,7 +967,7 @@ export default function HorasPage() {
         />
       </div>
 
-      <section className="bg-card border border-border rounded-xl overflow-hidden">
+      <section className="bg-card rounded-xl shadow-[0_1px_4px_rgba(133,146,173,0.2)] overflow-hidden">
         {/* Filtros */}
         <div className="p-4 border-b border-border flex items-center gap-3 flex-wrap">
           <Filter className="h-4 w-4 text-muted-foreground" />
@@ -1049,16 +1049,16 @@ export default function HorasPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[hsl(var(--secondary)/0.4)] text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
+              <thead>
+                <tr className="border-b border-border">
                   <th className="w-8" />
-                  <th className="text-left font-medium px-4 py-3">Data</th>
-                  <th className="text-left font-medium px-4 py-3">Empresa</th>
-                  <th className="text-left font-medium px-4 py-3">Projeto</th>
-                  <th className="text-left font-medium px-4 py-3">Entregável</th>
-                  <th className="text-right font-medium px-4 py-3">Horas</th>
-                  <th className="text-left font-medium px-4 py-3">Tipo</th>
-                  <th className="text-left font-medium px-4 py-3">Consultor</th>
+                  <th className="text-left font-semibold px-4 py-4">Data</th>
+                  <th className="text-left font-semibold px-4 py-4">Empresa</th>
+                  <th className="text-left font-semibold px-4 py-4">Projeto</th>
+                  <th className="text-left font-semibold px-4 py-4">Entregável</th>
+                  <th className="text-right font-semibold px-4 py-4">Horas</th>
+                  <th className="text-left font-semibold px-4 py-4">Tipo</th>
+                  <th className="text-left font-semibold px-4 py-4">Consultor</th>
                 </tr>
               </thead>
               <tbody>
@@ -1072,8 +1072,8 @@ export default function HorasPage() {
                         key={l.id}
                         onClick={() => hasDetalhe && setExpandido(isOpen ? null : l.id)}
                         className={cn(
-                          "border-t border-border transition-colors",
-                          hasDetalhe ? "cursor-pointer hover:bg-[hsl(var(--secondary)/0.3)]" : ""
+                          "border-b border-border last:border-0 transition-colors",
+                          hasDetalhe ? "cursor-pointer hover:bg-muted/40" : ""
                         )}
                       >
                         <td className="px-2 py-3 text-muted-foreground">
@@ -1152,18 +1152,18 @@ export default function HorasPage() {
               Interações externas registradas
             </h4>
             <table className="w-full text-sm">
-              <thead className="bg-[hsl(var(--secondary)/0.4)] text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="text-left font-medium px-4 py-2">Data</th>
-                  <th className="text-left font-medium px-4 py-2">Canal</th>
-                  <th className="text-left font-medium px-4 py-2">Empresa</th>
-                  <th className="text-left font-medium px-4 py-2">Descrição</th>
-                  <th className="text-right font-medium px-4 py-2">Duração</th>
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left font-semibold px-4 py-2.5">Data</th>
+                  <th className="text-left font-semibold px-4 py-2.5">Canal</th>
+                  <th className="text-left font-semibold px-4 py-2.5">Empresa</th>
+                  <th className="text-left font-semibold px-4 py-2.5">Descrição</th>
+                  <th className="text-right font-semibold px-4 py-2.5">Duração</th>
                 </tr>
               </thead>
               <tbody>
                 {interacoes.map((int) => (
-                  <tr key={int.id} className="border-t border-border hover:bg-[hsl(var(--secondary)/0.2)]">
+                  <tr key={int.id} className="border-b border-border last:border-0 hover:bg-muted/30">
                     <td className="px-4 py-2 text-xs tabular-nums">
                       {format(new Date(int.data), "dd/MM/yy", { locale: ptBR })}
                     </td>
