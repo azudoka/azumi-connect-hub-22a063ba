@@ -17,9 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
-} from "@/components/ui/sheet";
-import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Search, Copy, Check, X, MessageSquare, Plus, Send, Pencil, Trash2, Lock } from "lucide-react";
@@ -761,20 +758,20 @@ function AdminView() {
         </DialogContent>
       </Dialog>
 
-      <Sheet open={novaOpen} onOpenChange={(o) => {
+      <Dialog open={novaOpen} onOpenChange={(o) => {
         setNovaOpen(o);
         if (!o) {
           setNTipo("duvida"); setNTitulo(""); setNUrgencia("media");
           setNDescricao(""); setNEmpresa(""); setNConsultor(""); setNObsInterna("");
         }
       }}>
-        <SheetContent className="sm:max-w-md w-full overflow-y-auto flex flex-col">
-          <SheetHeader>
-            <SheetTitle>Nova solicitação</SheetTitle>
-            <SheetDescription>
+        <DialogContent className="sm:max-w-md w-full max-h-[85vh] overflow-y-auto flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Nova solicitação</DialogTitle>
+            <DialogDescription>
               Registre uma demanda recebida pelo cliente.
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
 
           <div className="flex-1 space-y-4 py-4">
             <div className="space-y-2">
@@ -871,7 +868,7 @@ function AdminView() {
             </div>
           </div>
 
-          <SheetFooter className="border-t pt-4 flex-row gap-2 sm:justify-end">
+          <DialogFooter className="border-t pt-4 flex-row gap-2 sm:justify-end">
             <Button variant="outline" className="rounded-full"
               onClick={() => setNovaOpen(false)}>
               Cancelar
@@ -905,9 +902,9 @@ function AdminView() {
             >
               Criar solicitação
             </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
