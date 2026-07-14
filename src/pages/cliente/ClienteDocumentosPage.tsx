@@ -13,9 +13,6 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
-} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { documentosMock, type DocumentoMock } from "@/data/documentosMock";
@@ -263,11 +260,11 @@ export default function ClienteDocumentosPage() {
       </Dialog>
 
       {/* Chat / Comentários */}
-      <Sheet open={!!chatDoc} onOpenChange={(o) => !o && setChatDoc(null)}>
-        <SheetContent className="w-full sm:max-w-md flex flex-col">
-          <SheetHeader>
-            <SheetTitle className="text-left">Comentários · {chatDoc?.titulo}</SheetTitle>
-          </SheetHeader>
+      <Dialog open={!!chatDoc} onOpenChange={(o) => !o && setChatDoc(null)}>
+        <DialogContent className="w-full sm:max-w-md max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-left">Comentários · {chatDoc?.titulo}</DialogTitle>
+          </DialogHeader>
           <div className="flex-1 overflow-y-auto space-y-3 py-4">
             {chatDoc && getMensagens(chatDoc.id).map((m, i) => (
               <div
@@ -299,8 +296,8 @@ export default function ClienteDocumentosPage() {
               <Send className="h-4 w-4" /> Enviar
             </Button>
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
       {/* Assinatura */}
       <Dialog open={!!assinarDoc} onOpenChange={(o) => !o && setAssinarDoc(null)}>
