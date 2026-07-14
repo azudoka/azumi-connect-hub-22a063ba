@@ -57,45 +57,44 @@ function StatCard({ icon, label, value, deltaValue, positive = true, tone, barPe
   return (
     <div
       onClick={onClick}
-      style={{ background: `${color}1F`, boxShadow: "0 1px 4px hsl(var(--foreground)/0.08)" }}
       className={cn(
-        "relative overflow-hidden rounded-xl p-6 transition-all duration-200 ease-out",
-        onClick && "cursor-pointer hover:-translate-y-1 hover:shadow-lg",
+        "bg-card rounded-2xl shadow-md p-6",
+        onClick && "cursor-pointer hover:-translate-y-1 hover:shadow-lg transition-all duration-200",
         className
       )}
     >
-      {/* Elemento decorativo — preenche o espaço vazio à direita, mesmo truque visual da referência */}
-      <div
-        className="absolute -top-6 -right-6 h-28 w-28 rounded-full pointer-events-none"
-        style={{ background: `${color}14` }}
-      />
-      <div
-        className="relative h-12 w-12 rounded-full flex items-center justify-center mb-4"
-        style={{ background: color }}
-      >
-        <iconify-icon icon={icon} width="22" height="22" style={{ color: "white" }} />
+      <div className="flex items-center gap-3 mb-5">
+        <div
+          className="p-3 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: `${color}18` }}
+        >
+          <iconify-icon icon={icon} width="24" height="24" style={{ color }} />
+        </div>
+        <p className="text-sm font-medium text-muted-foreground leading-snug">{label}</p>
       </div>
-      <div className="relative flex items-center gap-2">
-        <span className="font-display text-lg font-semibold text-foreground tabular-nums">
+      <div className="flex items-end justify-between gap-2">
+        <p className="font-display text-3xl font-bold text-foreground tabular-nums leading-none">
           {value}
-        </span>
+        </p>
         {deltaValue && (
           <span
             className={cn(
-              "text-xs font-semibold px-2.5 py-0.5 rounded-full border",
+              "text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0",
               positive
-                ? "text-success border-[hsl(var(--success)/0.2)]"
-                : "text-destructive border-[hsl(var(--destructive)/0.2)]"
+                ? "text-success bg-[hsl(var(--success)/0.12)]"
+                : "text-destructive bg-[hsl(var(--destructive)/0.12)]"
             )}
           >
             {deltaValue}
           </span>
         )}
       </div>
-      <p className="relative text-sm font-medium text-muted-foreground mt-1">{label}</p>
       {barPercent !== undefined && (
-        <div className="relative h-1 rounded-full mt-3 overflow-hidden" style={{ background: `${color}33` }}>
-          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.max(0, barPercent))}%`, background: color }} />
+        <div className="h-1 rounded-full mt-4 overflow-hidden" style={{ background: `${color}1F` }}>
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${Math.min(100, Math.max(0, barPercent))}%`, background: color }}
+          />
         </div>
       )}
     </div>

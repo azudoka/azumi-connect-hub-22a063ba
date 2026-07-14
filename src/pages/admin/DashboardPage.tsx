@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -10,6 +10,7 @@ import {
   CircleDollarSign,
   Clock,
   FileText,
+  Loader2,
   MoreVertical,
   Plus,
   Send,
@@ -21,6 +22,8 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
+  AreaChart,
+  Area,
   BarChart,
   Bar,
   LineChart,
@@ -181,6 +184,7 @@ const ENTREGAVEIS: EntregavelProx[] = [
 
 import { useAuth } from "@/context/AuthContext";
 import { useValorFinanceiro } from "@/hooks/useValorFinanceiro";
+import { supabase } from "@/integrations/supabase/client";
 import ConsultorDashboard from "./ConsultorDashboard";
 
 export default function DashboardPage() {
@@ -216,6 +220,36 @@ function AdminDashboard() {
     repassado: 6673,
   };
   const pctFaturamento = Math.round((fin.faturado / fin.metaFaturamento) * 1000) / 10;
+
+  // Faturamento real — últimos 6 meses
+  type FatMes = { mes: string; valor: number };
+  const [fatMeses, setFatMeses] = useState<FatMes[] | null>(null);
+  useEffect(() => {
+    const sixAgo = new Date();
+    sixAgo.setMonth(sixAgo.getMonth() - 6);
+    supabase
+      .from("invoices")
+      .select("amount, due_date")
+      .gte("due_date", sixAgo.toISOString().slice(0, 10))
+      .order("due_date")
+      .then(({ data }) => {
+        const buckets = Array.from({ length: 6 }, (_, i) => {
+          const d = new Date();
+          d.setMonth(d.getMonth() - (5 - i));
+          return {
+            key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+            mes: format(d, "MMM/yy", { locale: ptBR }),
+            valor: 0,
+          };
+        });
+        for (const inv of data ?? []) {
+          const m = (inv as { amount: number; due_date: string }).due_date?.slice(0, 7);
+          const b = buckets.find((bk) => bk.key === m);
+          if (b) b.valor += (inv as { amount: number; due_date: string }).amount ?? 0;
+        }
+        setFatMeses(buckets.map(({ mes, valor }) => ({ mes, valor })));
+      });
+  }, []);
   const totalReceber = fin.recebido + fin.pendente || 1;
   const pctRecebido = Math.round((fin.recebido / totalReceber) * 1000) / 10;
   const totalRepasse = fin.repassesPendentes + fin.repassado || 1;
@@ -363,9 +397,64 @@ function AdminDashboard() {
             />
           </div>
 
-          {/* 2. Atividade + Alertas */}
+          {/* 2. Gráfico de faturamento real */}
+          <Card className="rounded-2xl shadow-md border-0 p-6">
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h2 className="font-display text-base font-semibold">Faturamento mensal</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Últimos 6 meses · faturas emitidas</p>
+              </div>
+              {fatMeses && fatMeses.some((m) => m.valor > 0) && (
+                <span className="text-sm font-semibold text-foreground tabular-nums">
+                  {ocultar(formatBRL(fatMeses.reduce((s, m) => s + m.valor, 0)))}
+                </span>
+              )}
+            </div>
+            {fatMeses === null ? (
+              <div className="h-44 flex items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : fatMeses.every((m) => m.valor === 0) ? (
+              <div className="h-44 flex flex-col items-center justify-center text-center gap-2">
+                <TrendingUp className="h-8 w-8 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground">Ainda não há histórico suficiente de faturamento.</p>
+                <p className="text-xs text-muted-foreground/60">Os dados aparecerão aqui conforme faturas forem registradas.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={176}>
+                <AreaChart data={fatMeses} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="fatGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.18} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis dataKey="mes" fontSize={11} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis
+                    fontSize={11} tickLine={false} axisLine={false} width={44}
+                    stroke="hsl(var(--muted-foreground))"
+                    tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)}
+                  />
+                  <Tooltip
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                    formatter={(v: number) => [ocultar(formatBRL(v)), "Faturado"]}
+                  />
+                  <Area
+                    type="monotone" dataKey="valor"
+                    stroke="hsl(var(--primary))" strokeWidth={2.5}
+                    fill="url(#fatGrad)"
+                    dot={{ r: 3, fill: "hsl(var(--primary))" }}
+                    activeDot={{ r: 5 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </Card>
+
+          {/* 3. Atividade + Alertas */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
-            <Card className="lg:col-span-3 p-6 rounded-xl shadow-[0_1px_4px_rgba(133,146,173,0.2)] border-0">
+            <Card className="lg:col-span-3 p-6 rounded-2xl shadow-md border-0">
               <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-6">
                 Últimas atualizações
               </h2>
@@ -407,7 +496,7 @@ function AdminDashboard() {
               )}
             </Card>
 
-            <Card className="lg:col-span-2 p-6 rounded-xl shadow-[0_1px_4px_rgba(133,146,173,0.2)] border-0">
+            <Card className="lg:col-span-2 p-6 rounded-2xl shadow-md border-0">
               <div className="flex items-center gap-2 mb-2">
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Alertas ativos</h2>
                 <span className="badge-pill bg-[hsl(var(--destructive)/0.15)] text-destructive border border-[hsl(var(--destructive)/0.3)] text-xs">
@@ -449,8 +538,8 @@ function AdminDashboard() {
             </Card>
           </div>
 
-          {/* 3. Entregáveis próximos do prazo */}
-          <Card className="overflow-hidden rounded-xl shadow-[0_1px_4px_rgba(133,146,173,0.2)] border-0">
+          {/* 4. Entregáveis próximos do prazo */}
+          <Card className="overflow-hidden rounded-2xl shadow-md border-0">
             <div className="p-5 border-b border-border">
               <h2 className="font-display text-lg font-semibold">
                 Entregáveis com prazo nos próximos 30 dias
@@ -535,7 +624,7 @@ function AdminDashboard() {
             )}
           </Card>
 
-          {/* 4. Resumo financeiro */}
+          {/* 5. Resumo financeiro */}
           <div>
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-display text-lg font-semibold">Resumo financeiro do mês</h2>
