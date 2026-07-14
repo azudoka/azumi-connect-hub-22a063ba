@@ -91,24 +91,28 @@ interface AtividadeRecente {
   quando: string;
   /** Se a atividade tem uma pessoa específica por trás, mostramos o avatar dela em vez do ícone genérico */
   autor?: string;
+  /** Pra onde essa atividade específica leva ao clicar — cada uma tem o destino certo, não um "ver tudo" genérico errado */
+  to: string;
+  /** Referência curta (estilo #PROJ-0001), como no modelo original */
+  ref?: string;
 }
 
 const ATIVIDADES: AtividadeRecente[] = [
-  { id: "a1", icon: "check", texto: 'Ana Beatriz marcou "Diagnóstico inicial" como aprovado pelo cliente', quando: "há 2h", autor: "Ana Beatriz" },
-  { id: "a2", icon: "clock", texto: 'Rafael Moura iniciou timer em "Hunting — Dev Full Stack"', quando: "há 3h", autor: "Rafael Moura" },
-  { id: "a3", icon: "file",  texto: 'Camila Torres lançou 2h manuais em "Estruturação de RH"', quando: "há 5h", autor: "Camila Torres" },
-  { id: "a4", icon: "alert", texto: "Fatura FAT-2026-0001 venceu sem pagamento (Kentaki Foods)", quando: "há 6h" },
-  { id: "a5", icon: "plus",  texto: 'Novo projeto criado: "Implantação de PDP" (Grupo Maverick)', quando: "ontem" },
-  { id: "a6", icon: "send",  texto: "Cronograma CRON-2026-0009 enviado para aprovação do cliente (Tech Plural)", quando: "ontem" },
+  { id: "a1", icon: "check", texto: 'Ana Beatriz marcou "Diagnóstico inicial" como aprovado pelo cliente', quando: "há 2h", autor: "Ana Beatriz", to: "/app/projetos", ref: "#PROJ-2026-0001" },
+  { id: "a2", icon: "clock", texto: 'Rafael Moura iniciou timer em "Hunting — Dev Full Stack"', quando: "há 3h", autor: "Rafael Moura", to: "/app/horas" },
+  { id: "a3", icon: "file",  texto: 'Camila Torres lançou 2h manuais em "Estruturação de RH"', quando: "há 5h", autor: "Camila Torres", to: "/app/horas" },
+  { id: "a4", icon: "alert", texto: "Fatura FAT-2026-0001 venceu sem pagamento (Kentaki Foods)", quando: "há 6h", to: "/app/financeiro", ref: "#FAT-2026-0001" },
+  { id: "a5", icon: "plus",  texto: 'Novo projeto criado: "Implantação de PDP" (Grupo Maverick)', quando: "ontem", to: "/app/projetos", ref: "#PROJ-2026-0005" },
+  { id: "a6", icon: "send",  texto: "Cronograma CRON-2026-0009 enviado para aprovação do cliente (Tech Plural)", quando: "ontem", to: "/app/projetos", ref: "#CRON-2026-0009" },
 ];
 
-const ATIVIDADE_META: Record<AtividadeIcon, { Icon: typeof CheckCircle2; cls: string }> = {
-  check: { Icon: CheckCircle2, cls: "bg-[hsl(var(--success)/0.15)] text-success" },
-  clock: { Icon: Clock,        cls: "bg-[hsl(var(--primary)/0.15)] text-primary" },
-  file:  { Icon: FileText,     cls: "bg-[hsl(var(--info)/0.15)] text-info" },
-  alert: { Icon: AlertTriangle, cls: "bg-[hsl(var(--destructive)/0.15)] text-destructive" },
-  plus:  { Icon: Plus,         cls: "bg-[hsl(var(--success)/0.15)] text-success" },
-  send:  { Icon: Send,         cls: "bg-[hsl(var(--primary)/0.15)] text-primary" },
+const ATIVIDADE_META: Record<AtividadeIcon, { Icon: typeof CheckCircle2; cls: string; dot: string }> = {
+  check: { Icon: CheckCircle2, cls: "bg-[hsl(var(--success)/0.15)] text-success", dot: "bg-success" },
+  clock: { Icon: Clock,        cls: "bg-[hsl(var(--primary)/0.15)] text-primary", dot: "bg-primary" },
+  file:  { Icon: FileText,     cls: "bg-[hsl(var(--info)/0.15)] text-info", dot: "bg-info" },
+  alert: { Icon: AlertTriangle, cls: "bg-[hsl(var(--destructive)/0.15)] text-destructive", dot: "bg-destructive" },
+  plus:  { Icon: Plus,         cls: "bg-[hsl(var(--success)/0.15)] text-success", dot: "bg-success" },
+  send:  { Icon: Send,         cls: "bg-[hsl(var(--primary)/0.15)] text-primary", dot: "bg-primary" },
 };
 
 interface Alerta {
@@ -342,18 +346,9 @@ function AdminDashboard() {
           {/* 2. Atividade + Alertas */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
             <Card className="lg:col-span-3 p-6 rounded-xl shadow-[0_1px_4px_rgba(133,146,173,0.2)] border-0">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                  Últimas atualizações
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => navigate("/app/horas")}
-                  className="text-xs text-primary hover:underline font-medium"
-                >
-                  Ver tudo
-                </button>
-              </div>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-6">
+                Últimas atualizações
+              </h2>
               {ATIVIDADES.length === 0 ? (
                 <EmptyState
                   icon={Clock}
@@ -361,36 +356,30 @@ function AdminDashboard() {
                   description="As últimas atualizações da operação aparecerão aqui."
                 />
               ) : (
-                <ul className="space-y-5">
+                <ul>
                   {ATIVIDADES.map((a, i) => {
                     const meta = ATIVIDADE_META[a.icon];
-                    const Icon = meta.Icon;
-                    const iniciais = a.autor?.split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]).join("").toUpperCase();
-                    const corAvatar = ["#264478", "#6B3FBF", "#12786B", "#B4740E"][
-                      a.autor ? a.autor.charCodeAt(0) % 4 : 0
-                    ];
+                    const ultimo = i === ATIVIDADES.length - 1;
                     return (
-                      <li
-                        key={a.id}
-                        style={{ animationDelay: `${i * 70}ms`, animationFillMode: "backwards" }}
-                        className="flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500"
-                      >
-                        {a.autor ? (
-                          <div
-                            className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 text-xs font-semibold text-white"
-                            style={{ background: corAvatar }}
-                          >
-                            {iniciais}
+                      <li key={a.id}>
+                        <div className="flex gap-4 min-h-[64px]">
+                          <p className="text-xs text-muted-foreground w-10 shrink-0 pt-0.5 tabular-nums">{a.quando}</p>
+                          <div className="flex flex-col items-center shrink-0">
+                            <span className={cn("rounded-full h-3 w-3 shrink-0", meta.dot)} />
+                            {!ultimo && <span className="w-px flex-1 bg-border mt-1" />}
                           </div>
-                        ) : (
-                          <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center shrink-0", meta.cls)}>
-                            <Icon className="h-4 w-4" />
+                          <div className="min-w-0 flex-1 pb-5">
+                            <p className="text-sm leading-snug">{a.texto}</p>
+                            {a.ref && (
+                              <button
+                                onClick={() => navigate(a.to)}
+                                className="text-xs text-primary hover:underline font-medium mt-0.5"
+                              >
+                                {a.ref}
+                              </button>
+                            )}
                           </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium leading-snug">{a.texto}</p>
                         </div>
-                        <span className="shrink-0 text-xs text-muted-foreground">{a.quando}</span>
                       </li>
                     );
                   })}
