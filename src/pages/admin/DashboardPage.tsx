@@ -21,22 +21,8 @@ import {
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import Chart from "react-apexcharts";
+import type { ApexOptions } from "apexcharts";
 
 import { PageHeader } from "@/components/PageHeader";
 import { KpiCard } from "@/components/KpiCard";
@@ -421,34 +407,37 @@ function AdminDashboard() {
                 <p className="text-xs text-muted-foreground/60">Os dados aparecerão aqui conforme faturas forem registradas.</p>
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={176}>
-                <AreaChart data={fatMeses} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="fatGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.18} />
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                  <XAxis dataKey="mes" fontSize={11} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis
-                    fontSize={11} tickLine={false} axisLine={false} width={44}
-                    stroke="hsl(var(--muted-foreground))"
-                    tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)}
-                  />
-                  <Tooltip
-                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                    formatter={(v: number) => [ocultar(formatBRL(v)), "Faturado"]}
-                  />
-                  <Area
-                    type="monotone" dataKey="valor"
-                    stroke="hsl(var(--primary))" strokeWidth={2.5}
-                    fill="url(#fatGrad)"
-                    dot={{ r: 3, fill: "hsl(var(--primary))" }}
-                    activeDot={{ r: 5 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <Chart
+                options={{
+                  chart: { type: "area", toolbar: { show: false }, zoom: { enabled: false } },
+                  colors: ["hsl(var(--primary))"],
+                  fill: { type: "gradient", gradient: { opacityFrom: 0.18, opacityTo: 0.02, shadeIntensity: 0 } },
+                  stroke: { curve: "smooth", width: 2.5 },
+                  dataLabels: { enabled: false },
+                  markers: { size: 3 },
+                  xaxis: {
+                    categories: fatMeses.map((f) => f.mes),
+                    labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" } },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false },
+                  },
+                  yaxis: {
+                    labels: {
+                      style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" },
+                      formatter: (v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v),
+                    },
+                  },
+                  grid: { borderColor: "hsl(var(--border))", strokeDashArray: 3, xaxis: { lines: { show: false } } },
+                  tooltip: {
+                    theme: "light",
+                    y: { formatter: (v: number) => ocultar(formatBRL(v)), title: { formatter: () => "Faturado" } },
+                  },
+                } as ApexOptions}
+                series={[{ name: "Faturamento", data: fatMeses.map((f) => f.valor) }]}
+                type="area"
+                height={176}
+                width="100%"
+              />
             )}
           </Card>
 
@@ -704,22 +693,36 @@ function AdminDashboard() {
                   <div className="text-xs text-muted-foreground">dias em média</div>
                 </div>
               </div>
-              <ResponsiveContainer width="100%" height={130}>
-                <BarChart data={ATRASOS_POR_CONSULTOR} barSize={40}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                  <XAxis dataKey="nome" fontSize={11} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis fontSize={11} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" allowDecimals={false} />
-                  <Tooltip
-                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                    formatter={(v: number) => [`${v} itens`, "Atrasos"]}
-                  />
-                  <Bar dataKey="itens" radius={[4, 4, 0, 0]}>
-                    {ATRASOS_POR_CONSULTOR.map((entry, i) => (
-                      <Cell key={i} fill={entry.cor} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <Chart
+                options={{
+                  chart: { type: "bar", toolbar: { show: false } },
+                  plotOptions: { bar: { borderRadius: 4, columnWidth: "50%", distributed: true } },
+                  colors: ATRASOS_POR_CONSULTOR.map((a) => a.cor),
+                  dataLabels: { enabled: false },
+                  legend: { show: false },
+                  xaxis: {
+                    categories: ATRASOS_POR_CONSULTOR.map((a) => a.nome),
+                    labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" } },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false },
+                  },
+                  yaxis: {
+                    labels: {
+                      style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" },
+                      formatter: (v: number) => String(Math.round(v)),
+                    },
+                  },
+                  grid: { borderColor: "hsl(var(--border))", strokeDashArray: 3, xaxis: { lines: { show: false } } },
+                  tooltip: {
+                    theme: "light",
+                    y: { formatter: (v: number) => `${v} itens`, title: { formatter: () => "Atrasos" } },
+                  },
+                } as ApexOptions}
+                series={[{ name: "Atrasos", data: ATRASOS_POR_CONSULTOR.map((a) => a.itens) }]}
+                type="bar"
+                height={130}
+                width="100%"
+              />
             </Card>
 
             {/* Bloco 2: Engajamento do cliente */}
@@ -734,23 +737,24 @@ function AdminDashboard() {
                 </span>
               </div>
               <div className="flex items-start gap-4 mb-4">
-                <ResponsiveContainer width={100} height={100}>
-                  <PieChart>
-                    <Pie
-                      data={ENGAJAMENTO_PIZZA}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={28}
-                      outerRadius={44}
-                      dataKey="value"
-                      strokeWidth={0}
-                    >
-                      {ENGAJAMENTO_PIZZA.map((entry, i) => (
-                        <Cell key={i} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
+                <div className="shrink-0">
+                  <Chart
+                    options={{
+                      chart: { type: "donut" },
+                      colors: ENGAJAMENTO_PIZZA.map((e) => e.fill),
+                      labels: ENGAJAMENTO_PIZZA.map((e) => e.name),
+                      legend: { show: false },
+                      dataLabels: { enabled: false },
+                      plotOptions: { pie: { donut: { size: "60%" } } },
+                      stroke: { width: 0 },
+                      tooltip: { theme: "light" },
+                    } as ApexOptions}
+                    series={ENGAJAMENTO_PIZZA.map((e) => e.value)}
+                    type="donut"
+                    width={100}
+                    height={100}
+                  />
+                </div>
                 <div className="flex-1 space-y-2 pt-2">
                   {ENGAJAMENTO_PIZZA.map((e, i) => (
                     <div key={i} className="flex items-center gap-2 text-xs">
@@ -815,27 +819,46 @@ function AdminDashboard() {
                 </span>
               ))}
             </div>
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart
-                data={periodoProdutividade === "atual" ? PRODUTIVIDADE_SEMANAS : PRODUTIVIDADE_SEMANAS_MES_ANTERIOR}
-                barGap={4}
-                barCategoryGap="30%"
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                <XAxis dataKey="semana" fontSize={11} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" />
-                <YAxis fontSize={11} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" tickFormatter={(v: number) => `${v}h`} />
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                  formatter={(v: number, name: string) => [
-                    `${v}h`,
-                    name === "ana" ? "Ana B." : name === "camila" ? "Camila T." : "Rafael M.",
+            {(() => {
+              const dadosProd = periodoProdutividade === "atual" ? PRODUTIVIDADE_SEMANAS : PRODUTIVIDADE_SEMANAS_MES_ANTERIOR;
+              return (
+                <Chart
+                  key={periodoProdutividade}
+                  options={{
+                    chart: { type: "bar", toolbar: { show: false } },
+                    plotOptions: { bar: { borderRadius: 5, columnWidth: "70%", borderRadiusApplication: "end" } },
+                    colors: ["hsl(var(--primary))", "hsl(var(--highlight))", "#06B6D4"],
+                    dataLabels: { enabled: false },
+                    legend: { show: false },
+                    xaxis: {
+                      categories: dadosProd.map((s) => s.semana),
+                      labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" } },
+                      axisBorder: { show: false },
+                      axisTicks: { show: false },
+                    },
+                    yaxis: {
+                      labels: {
+                        style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" },
+                        formatter: (v: number) => `${v}h`,
+                      },
+                    },
+                    grid: { borderColor: "hsl(var(--border))", strokeDashArray: 3, xaxis: { lines: { show: false } } },
+                    tooltip: {
+                      theme: "light",
+                      y: { formatter: (v: number) => `${v}h` },
+                    },
+                  } as ApexOptions}
+                  series={[
+                    { name: "Ana B.",    data: dadosProd.map((s) => s.ana) },
+                    { name: "Camila T.", data: dadosProd.map((s) => s.camila) },
+                    { name: "Rafael M.", data: dadosProd.map((s) => s.rafael) },
                   ]}
+                  type="bar"
+                  height={160}
+                  width="100%"
                 />
-                <Bar dataKey="ana"    fill="hsl(var(--primary))" radius={[5, 5, 0, 0]} />
-                <Bar dataKey="camila" fill="hsl(var(--highlight))" radius={[5, 5, 0, 0]} />
-                <Bar dataKey="rafael" fill="#06B6D4" radius={[5, 5, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+              );
+            })()}
           </Card>
 
           {/* LINHA 3: NPS + SLA Vagas */}
@@ -864,25 +887,35 @@ function AdminDashboard() {
                   <div className="text-xs text-muted-foreground mt-1">18 avaliações</div>
                 </div>
               </div>
-              <ResponsiveContainer width="100%" height={120}>
-                <LineChart data={NPS_MESES}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                  <XAxis dataKey="mes" fontSize={11} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis domain={[60, 90]} fontSize={11} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip
-                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                    formatter={(v: number) => [v, "NPS"]}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="nps"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    dot={{ r: 3, fill: "hsl(var(--primary))" }}
-                    activeDot={{ r: 5 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <Chart
+                options={{
+                  chart: { type: "line", toolbar: { show: false }, zoom: { enabled: false } },
+                  colors: ["hsl(var(--primary))"],
+                  stroke: { curve: "smooth", width: 2 },
+                  markers: { size: 3 },
+                  dataLabels: { enabled: false },
+                  xaxis: {
+                    categories: NPS_MESES.map((n) => n.mes),
+                    labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" } },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false },
+                  },
+                  yaxis: {
+                    min: 60,
+                    max: 90,
+                    labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" } },
+                  },
+                  grid: { borderColor: "hsl(var(--border))", strokeDashArray: 3, xaxis: { lines: { show: false } } },
+                  tooltip: {
+                    theme: "light",
+                    y: { formatter: (v: number) => String(v), title: { formatter: () => "NPS" } },
+                  },
+                } as ApexOptions}
+                series={[{ name: "NPS", data: NPS_MESES.map((n) => n.nps) }]}
+                type="line"
+                height={120}
+                width="100%"
+              />
             </Card>
 
             {/* Bloco 5: SLA Vagas */}
