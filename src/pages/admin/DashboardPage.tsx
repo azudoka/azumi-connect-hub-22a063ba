@@ -266,7 +266,7 @@ function AdminDashboard() {
   return (
     <div className="space-y-6">
       {/* ══════════════ HERO — 3 cards ══════════════ */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-stretch">
         {/* Card grande — boas-vindas */}
         <div
           className="sm:col-span-2 relative overflow-hidden rounded-2xl p-6 text-white flex flex-col justify-between min-h-[180px]"
@@ -302,7 +302,30 @@ function AdminDashboard() {
           </div>
         </div>
 
-        {/* Card pequeno 1 — Tarefas do dia (exemplo temporário) */}
+        {/* Card pequeno 1 — Agenda da semana (dado real, mesmo array da tela de Calendário) */}
+        <div className="rounded-2xl border-0 shadow-md bg-card p-5 flex flex-col">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5 mb-3">
+            <iconify-icon icon="solar:calendar-mark-bold-duotone" width="16" height="16" style={{ color: "hsl(var(--primary))" }} />
+            Agenda da semana
+          </h3>
+          {eventos.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Sem compromissos agendados.</p>
+          ) : (
+            <ul className="space-y-2.5 flex-1">
+              {eventos.slice(0, 3).map((ev) => (
+                <li key={ev.id} className="text-xs">
+                  <p className="font-medium text-foreground truncate">{ev.titulo}</p>
+                  <p className="text-muted-foreground mt-0.5">{ev.quando} · {ev.empresa}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link to="/app/calendario" className="text-xs text-primary hover:underline font-medium mt-2">
+            Ver agenda completa →
+          </Link>
+        </div>
+
+        {/* Card pequeno 2 — Tarefas do dia (exemplo temporário) */}
         <div className="rounded-2xl border-0 shadow-md bg-card p-5 flex flex-col">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
@@ -324,29 +347,6 @@ function AdminDashboard() {
               </li>
             ))}
           </ul>
-        </div>
-
-        {/* Card pequeno 2 — Agenda da semana (dado real, mesmo array da tela de Calendário) */}
-        <div className="rounded-2xl border-0 shadow-md bg-card p-5 flex flex-col">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5 mb-3">
-            <iconify-icon icon="solar:calendar-mark-bold-duotone" width="16" height="16" style={{ color: "hsl(var(--primary))" }} />
-            Agenda da semana
-          </h3>
-          {eventos.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Sem compromissos agendados.</p>
-          ) : (
-            <ul className="space-y-2.5 flex-1">
-              {eventos.slice(0, 3).map((ev) => (
-                <li key={ev.id} className="text-xs">
-                  <p className="font-medium text-foreground truncate">{ev.titulo}</p>
-                  <p className="text-muted-foreground mt-0.5">{ev.quando} · {ev.empresa}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-          <Link to="/app/calendario" className="text-xs text-primary hover:underline font-medium mt-2">
-            Ver agenda completa →
-          </Link>
         </div>
       </div>
 
