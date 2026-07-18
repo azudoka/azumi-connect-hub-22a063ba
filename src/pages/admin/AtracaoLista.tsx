@@ -28,6 +28,7 @@ function supabaseToLocal(r: VagaSupabase): VagaLocal {
     candidatosEnviados: 0,
     candidatosContratados: 0,
     consultor: r.consultor ?? "Não atribuído",
+    tipo: r.tipo ?? "",
     modalidade: r.modalidade ?? "—",
     beneficios: r.beneficios ?? [],
     is_avulsa: r.is_avulsa,
@@ -57,6 +58,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   FUNIL_ETAPAS,
   FUNIL_ETAPA_LABEL,
@@ -161,6 +163,12 @@ export default function AtracaoLista() {
   const [nSlaAltaGestao, setNSlaAltaGestao] = useState(false);
   const [nUrgente, setNUrgente] = useState(false);
   const [nSlaTaxa, setNSlaTaxa] = useState("300");
+
+  // Filtros do kanban/lista
+  const [filtrosOpen, setFiltrosOpen] = useState(false);
+  const [filtroStatus, setFiltroStatus] = useState("");
+  const [filtroTipo, setFiltroTipo] = useState("");
+  const [filtroConsultorId, setFiltroConsultorId] = useState("");
   const [avulsaContatoNome, setAvulsaContatoNome] = useState("");
   const [avulsaContatoCargo, setAvulsaContatoCargo] = useState("");
   const [avulsaContatoTelefone, setAvulsaContatoTelefone] = useState("");
@@ -328,10 +336,20 @@ export default function AtracaoLista() {
     [vagas],
   );
 
-  const vagasAtivas = useMemo(
-    () => vagas.filter((v) => v.status !== "standby" && v.status !== "cancelada" && v.status !== "concluida"),
+  const consultoresListados = useMemo(
+    () => Array.from(new Set(vagas.map((v) => (v as any).consultor).filter(Boolean))).sort() as string[],
     [vagas],
   );
+
+  const temFiltrosAtivos = !!(filtroStatus || filtroTipo || filtroConsultorId);
+
+  const vagasAtivas = useMemo(() => {
+    return vagas
+      .filter((v) => v.status !== "standby" && v.status !== "cancelada" && v.status !== "concluida")
+      .filter((v) => !filtroStatus || v.status === filtroStatus)
+      .filter((v) => !filtroTipo || (v as any).tipo === filtroTipo)
+      .filter((v) => !filtroConsultorId || (v as any).consultor === filtroConsultorId);
+  }, [vagas, filtroStatus, filtroTipo, filtroConsultorId]);
   const vagasInativas = useMemo(
     () => vagas.filter((v) => v.status === "standby" || v.status === "cancelada" || v.status === "concluida"),
     [vagas],
@@ -364,9 +382,67 @@ export default function AtracaoLista() {
                 <iconify-icon icon="solar:checklist-bold-duotone" width="14" height="14" /> Lista
               </button>
             </div>
-            <button className="h-9 px-3 rounded-full border border-border hover:bg-secondary text-sm flex items-center gap-1.5">
-              <iconify-icon icon="solar:tuning-2-bold-duotone" width="16" height="16" /> Filtros
-            </button>
+            <Popover open={filtrosOpen} onOpenChange={setFiltrosOpen}>
+              <PopoverTrigger asChild>
+                <button className="h-9 px-3 rounded-full border border-border hover:bg-secondary text-sm flex items-center gap-1.5">
+                  <iconify-icon icon="solar:tuning-2-bold-duotone" width="16" height="16" /> Filtros
+                  {temFiltrosAtivos && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-72 space-y-4 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Filtrar vagas</p>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Status</label>
+                  <select
+                    value={filtroStatus}
+                    onChange={(e) => setFiltroStatus(e.target.value)}
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="">Todos os status</option>
+                    <option value="ativa">Ativa</option>
+                    <option value="standby">Standby</option>
+                    <option value="cancelada">Cancelada</option>
+                    <option value="concluida">Concluída</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Tipo</label>
+                  <select
+                    value={filtroTipo}
+                    onChange={(e) => setFiltroTipo(e.target.value)}
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="">Todos os tipos</option>
+                    <option value="operacional">Operacional</option>
+                    <option value="tatico">Tático</option>
+                    <option value="gestao">Gestão</option>
+                    <option value="hunting">Hunt Executivo</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Consultor responsável</label>
+                  <select
+                    value={filtroConsultorId}
+                    onChange={(e) => setFiltroConsultorId(e.target.value)}
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="">Todos os consultores</option>
+                    {consultoresListados.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                {temFiltrosAtivos && (
+                  <button
+                    type="button"
+                    onClick={() => { setFiltroStatus(""); setFiltroTipo(""); setFiltroConsultorId(""); }}
+                    className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                  >
+                    Limpar filtros
+                  </button>
+                )}
+              </PopoverContent>
+            </Popover>
             <button
               onClick={() => setBancoOpen(true)}
               className="h-9 px-3 rounded-full border border-border hover:bg-secondary text-sm font-medium flex items-center gap-1.5"
@@ -425,7 +501,7 @@ export default function AtracaoLista() {
         />
         <ConnectStatCard
           variant="stack"
-          label="Distribuição por etapa"
+          label="Distribuição de vagas por etapa"
           segments={FUNIL_ETAPAS.map((etapa, i) => ({
             label: FUNIL_ETAPA_LABEL[etapa],
             value: String(vagasAtivas.filter((v) => v.etapaFunil === etapa).length),

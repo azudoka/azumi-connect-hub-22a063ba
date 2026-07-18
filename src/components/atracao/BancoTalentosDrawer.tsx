@@ -135,7 +135,7 @@ export default function BancoTalentosDrawer({ open, onClose }: Props) {
       if (cargoFiltro && t.cargoPretendido !== cargoFiltro) return false;
       return true;
     });
-  }, [busca, perfilFiltro, statusFiltro, cidadeFiltro, cargoFiltro]);
+  }, [talentosView, busca, perfilFiltro, statusFiltro, cidadeFiltro, cargoFiltro]);
 
   if (!open) return null;
 
