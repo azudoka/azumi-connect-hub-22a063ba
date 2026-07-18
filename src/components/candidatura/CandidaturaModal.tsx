@@ -506,13 +506,27 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
 
         {/* Stepper */}
         {step !== "ok" && (
-          <div className="flex items-center gap-3 border-b border-border bg-muted/50 px-6 py-3">
-            <StepItem n={1} label="Identificação" active={step === 0} done={stepNum > 0} />
-            <div className="h-px flex-1 bg-border" />
-            <StepItem n={2} label="Cadastro" active={step === 1} done={stepNum > 1} />
-            <div className="h-px flex-1 bg-border" />
-            <StepItem n={3} label="Perfil DISC" active={step === 2} done={false} />
-          </div>
+          inline ? (
+            <div className="flex items-center gap-3 border-b border-border bg-muted/50 px-6 py-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary font-sans text-xs font-semibold text-primary-foreground shrink-0">
+                {stepNum + 1}
+              </div>
+              <div className="min-w-0">
+                <p className="font-sans text-[11px] text-muted-foreground">Etapa {stepNum + 1} de 3</p>
+                <p className="font-sans text-sm font-semibold text-foreground truncate">
+                  {step === 0 ? "Identificação" : step === 1 ? "Cadastro" : "Perfil DISC"}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 border-b border-border bg-muted/50 px-6 py-3">
+              <StepItem n={1} label="Identificação" active={step === 0} done={stepNum > 0} />
+              <div className="h-px flex-1 bg-border" />
+              <StepItem n={2} label="Cadastro" active={step === 1} done={stepNum > 1} />
+              <div className="h-px flex-1 bg-border" />
+              <StepItem n={3} label="Perfil DISC" active={step === 2} done={false} />
+            </div>
+          )
         )}
 
         {/* Body */}
