@@ -56,6 +56,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   FUNIL_ETAPAS,
   FUNIL_ETAPA_LABEL,
@@ -136,6 +137,7 @@ export default function AtracaoLista() {
   // Estados do form
   const [consultoresVaga, setConsultoresVaga] = useState<{ id: string; full_name: string }[]>([]);
   const [nResponsavelId, setNResponsavelId] = useState("");
+  const [nDiscHabilitado, setNDiscHabilitado] = useState(true);
   const [tipoEmpresa, setTipoEmpresa] = useState<"avulsa" | "cadastrada">("avulsa");
   const [empresasCadastradas, setEmpresasCadastradas] = useState<{ id: string; name: string }[]>([]);
   const [empresaCadastradaId, setEmpresaCadastradaId] = useState("");
@@ -183,6 +185,7 @@ export default function AtracaoLista() {
     setNPosicoes("1"); setNBeneficios([]); setNOutrosBeneficios(""); setNDescricao("");
     setAvulsaContatoNome(""); setAvulsaContatoCargo(""); setAvulsaContatoTelefone(""); setAvulsaContatoEmail("");
     setNResponsavelId("");
+    setNDiscHabilitado(true);
     setPubAberto(false); setPubPublicar(false); setPubConfidencial(false);
     setPubLocal(""); setPubModalidade("presencial"); setPubNivel("pleno");
     setPubTurno("integral"); setPubContrato("clt"); setPubCarga("");
@@ -672,6 +675,15 @@ export default function AtracaoLista() {
               </select>
             </div>
 
+            {/* DISC habilitado */}
+            <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-foreground">Solicitar teste DISC</p>
+                <p className="text-xs text-muted-foreground">O candidato fará o Perfil Comportamental ao se candidatar</p>
+              </div>
+              <Switch checked={nDiscHabilitado} onCheckedChange={setNDiscHabilitado} />
+            </div>
+
             {/* Toggle: Empresa cadastrada vs Cliente avulso */}
             <div className="space-y-3">
               <Label>Tipo de cliente *</Label>
@@ -1053,6 +1065,7 @@ export default function AtracaoLista() {
                     confidencial: pubConfidencial,
                     salario_fixo: !pubACombinar && !!pubSalDe && !pubSalAte,
                     responsavel_id: nResponsavelId || null,
+                    disc_habilitado: nDiscHabilitado,
                   });
                   if (pubPublicar) {
                     await publicarVaga(vagaCriada.id);

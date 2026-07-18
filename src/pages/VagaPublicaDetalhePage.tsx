@@ -95,6 +95,7 @@ type Detalhe = { icon: React.ComponentType<{ className?: string }>; label: strin
 export default function VagaPublicaDetalhePage() {
   const { id } = useParams<{ id: string }>();
   const [vaga, setVaga] = useState<VagaPublica | null | undefined>(undefined);
+  const [vagaDiscHabilitado, setVagaDiscHabilitado] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalBanco, setModalBanco] = useState(false);
 
@@ -124,6 +125,7 @@ export default function VagaPublicaDetalhePage() {
         beneficios: (r.beneficios ?? []).join(","),
         created_at: r.criado_em,
       });
+      setVagaDiscHabilitado(r.disc_habilitado);
     }).catch(() => setVaga(null));
   }, [id]);
 
@@ -258,6 +260,7 @@ export default function VagaPublicaDetalhePage() {
         vagaId={vaga.id}
         vagaTitulo={vaga.titulo}
         vagaSalarioACombinar={!vaga.salario_de}
+        vagaDiscHabilitado={vagaDiscHabilitado}
       />
       <CandidaturaModal
         open={modalBanco}

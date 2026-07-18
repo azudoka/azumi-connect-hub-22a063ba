@@ -20,6 +20,7 @@ interface CandidatoBanco {
   escolaridade: string | null;
   etapa_azumi: string | null;
   linkedin: string | null;
+  foto_url: string | null;
   updated_at: string;
   // embed via FK candidates.job_id → job_solicitations.id (many-to-one → objeto)
   job_solicitations?: { cargo: string } | null;
@@ -61,7 +62,7 @@ function toView(t: CandidatoBanco): TalentoCandidato {
     },
     status: statusDoTalento(t.etapa_azumi),
     ultimaInteracao: t.updated_at,
-    fotoUrl: undefined,
+    fotoUrl: t.foto_url ?? undefined,
     linkedin: t.linkedin ?? undefined,
     historico: [],
     contratoDesejado: "—",
@@ -103,7 +104,7 @@ export default function BancoTalentosDrawer({ open, onClose }: Props) {
     setCarregando(true);
     supabase
       .from("candidates")
-      .select("id, nome, email, telefone, cidade, escolaridade, etapa_azumi, linkedin, updated_at, job_solicitations(cargo), disc_resultado_candidato(score_d, score_i, score_s, score_c, fator_predominante)")
+      .select("id, nome, email, telefone, cidade, escolaridade, etapa_azumi, linkedin, foto_url, updated_at, job_solicitations(cargo), disc_resultado_candidato(score_d, score_i, score_s, score_c, fator_predominante)")
       .eq("banco_talentos", true)
       .order("updated_at", { ascending: false })
       .then(({ data, error }) => {
@@ -219,9 +220,13 @@ export default function BancoTalentosDrawer({ open, onClose }: Props) {
                 >
                   <td className="px-6 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-xs font-semibold text-muted-foreground">
-                        {t.nome.split(" ").map((n) => n[0]).slice(0, 2).join("")}
-                      </div>
+                      {t.fotoUrl ? (
+                        <img src={t.fotoUrl} alt="" className="h-9 w-9 shrink-0 rounded-lg object-cover" />
+                      ) : (
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-xs font-semibold text-muted-foreground">
+                          {t.nome.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                        </div>
+                      )}
                       <div className="min-w-0">
                         <p className="truncate font-medium text-foreground">{t.nome}</p>
                         <p className="truncate text-xs text-muted-foreground">{t.email}</p>
@@ -303,9 +308,13 @@ function DrawerDetalhe({ talento, onClose }: { talento: TalentoCandidato; onClos
 
         <div className="flex-1 overflow-auto p-6 space-y-5">
           <div className="flex items-start gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-secondary text-base font-semibold text-muted-foreground">
-              {talento.nome.split(" ").map((n) => n[0]).slice(0, 2).join("")}
-            </div>
+            {talento.fotoUrl ? (
+              <img src={talento.fotoUrl} alt="" className="h-16 w-16 shrink-0 rounded-lg object-cover" />
+            ) : (
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-secondary text-base font-semibold text-muted-foreground">
+                {talento.nome.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+              </div>
+            )}
             <div className="min-w-0">
               <h2 className="text-xl font-semibold text-foreground">{talento.nome}</h2>
               <p className="text-sm text-muted-foreground">{talento.cargoPretendido}</p>

@@ -17,6 +17,7 @@ interface Props {
   vagaTitulo?: string;
   vagaId?: string;
   vagaSalarioACombinar?: boolean;
+  vagaDiscHabilitado?: boolean;
 }
 
 interface Cadastro {
@@ -34,6 +35,7 @@ interface Cadastro {
   linkedin: string;
   portfolio: string;
   pretensaoSalarial: string;
+  indicadoPor: string;
   origem: string;
   curriculo: File | null;
   mensagem: string;
@@ -81,6 +83,7 @@ const CADASTRO_INIT: Cadastro = {
   linkedin: "",
   portfolio: "",
   pretensaoSalarial: "",
+  indicadoPor: "",
   origem: "",
   curriculo: null,
   mensagem: "",
@@ -101,7 +104,40 @@ const ESCOLARIDADES = [
 
 const ORIGENS = ["LinkedIn", "Instagram", "Indicação", "Google", "Site Azumi", "Outro"];
 
-export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vagaId, vagaSalarioACombinar }: Props) {
+function formatarTelefone(v: string) {
+  const nums = v.replace(/\D/g, "").slice(0, 11);
+  if (nums.length <= 2) return nums;
+  if (nums.length <= 7) return `(${nums.slice(0, 2)}) ${nums.slice(2)}`;
+  return `(${nums.slice(0, 2)}) ${nums.slice(2, 7)}-${nums.slice(7)}`;
+}
+
+function formatarCpf(v: string) {
+  const nums = v.replace(/\D/g, "").slice(0, 11);
+  return nums
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+}
+
+function cpfValido(cpf: string): boolean {
+  const nums = cpf.replace(/\D/g, "");
+  if (nums.length !== 11 || /^(\d)\1{10}$/.test(nums)) return false;
+  let soma = 0;
+  for (let i = 0; i < 9; i++) soma += parseInt(nums[i]) * (10 - i);
+  let resto = (soma * 10) % 11;
+  if (resto === 10) resto = 0;
+  if (resto !== parseInt(nums[9])) return false;
+  soma = 0;
+  for (let i = 0; i < 10; i++) soma += parseInt(nums[i]) * (11 - i);
+  resto = (soma * 10) % 11;
+  if (resto === 10) resto = 0;
+  return resto === parseInt(nums[10]);
+}
+
+const DATA_MIN = "1945-01-01";
+const DATA_MAX = new Date(Date.now() - 14 * 365.25 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vagaId, vagaSalarioACombinar, vagaDiscHabilitado = true }: Props) {
   // step 0 = CPF lookup; 1 = formulário; 2 = DISC; "ok" = sucesso
   const [step, setStep] = useState<0 | 1 | 2 | "ok">(0);
   const [discIntroAceita, setDiscIntroAceita] = useState(false);
@@ -233,12 +269,16 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
     if (!c.nome.trim()) return "Informe seu nome completo.";
     if (!c.email.trim()) return "Informe o email.";
     if (!c.telefone.trim()) return "Informe o telefone.";
+    if (c.telefone.replace(/\D/g, "").length !== 11) return "Telefone inválido, informe DDD + número completo.";
     if (!c.cpf.trim()) return "Informe o CPF.";
+    if (!cpfValido(c.cpf)) return "CPF inválido.";
     if (!c.nascimento) return "Informe a data de nascimento.";
+    if (c.nascimento < DATA_MIN || c.nascimento > DATA_MAX) return "Data de nascimento inválida.";
     if (!c.cidadeEstado.trim()) return "Informe cidade/estado.";
     if (!c.bairro.trim()) return "Informe o bairro.";
     if (!c.escolaridade) return "Selecione a escolaridade.";
     if (!c.origem) return "Informe como ficou sabendo da vaga.";
+    if (c.origem === "Indicação" && !c.indicadoPor.trim()) return "Informe quem indicou.";
     if (!c.curriculo) return "Anexe seu currículo.";
     if (!c.aceitePrivacidade) return "Aceite a política de privacidade.";
     if (modo === "banco") {
@@ -252,6 +292,11 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
     const e = validarStep1();
     if (e) { setErro(e); return; }
     setErro("");
+    // Se DISC desabilitado para esta vaga → ir direto à conclusão sem scores
+    if (!vagaDiscHabilitado) {
+      concluir({ D: 0, I: 0, S: 0, C: 0 }, "D");
+      return;
+    }
     // Se DISC anterior válido e não quer refazer → pular step 2
     if (discValido && querRefazerDisc === false && discAnterior) {
       const scores: DiscScores = { D: discAnterior.score_d, I: discAnterior.score_i, S: discAnterior.score_s, C: discAnterior.score_c };
@@ -322,6 +367,7 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
         etapa_azumi: "recebido",
         foto_url: fotoUrl,
         pretensao_salarial: c.pretensaoSalarial || null,
+        indicado_por: c.indicadoPor || null,
         lgpd_aceite: c.aceitePrivacidade,
         lgpd_aceite_at: c.aceitePrivacidade ? new Date().toISOString() : null,
       };
@@ -338,9 +384,9 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
         throw new Error(error?.message ?? "Não foi possível salvar sua candidatura.");
       }
 
-      // DISC — gravar sempre (mesmo reaproveitando candidato, pula se reutilizando disc anterior sem refazer)
+      // DISC — gravar se habilitado e não estiver reaproveitando resultado anterior
       const reutilizandoDisc = discValido && querRefazerDisc === false && discAnterior;
-      if (!reutilizandoDisc) {
+      if (!reutilizandoDisc && vagaDiscHabilitado) {
         const entries = (["D", "I", "S", "C"] as const)
           .map((k) => ({ k, v: scores[k] }))
           .sort((a, b) => b.v - a.v);
@@ -455,7 +501,7 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
               <Field label="CPF *">
                 <Input
                   value={cpfInicial}
-                  onChange={(v) => { setCpfInicial(v); setCandidatoAnterior(null); setDiscAnterior(null); setQuerAlterarDados(null); setQuerRefazerDisc(null); setErro(""); }}
+                  onChange={(v) => { setCpfInicial(formatarCpf(v)); setCandidatoAnterior(null); setDiscAnterior(null); setQuerAlterarDados(null); setQuerRefazerDisc(null); setErro(""); }}
                   placeholder="000.000.000-00"
                   onKeyDown={(e) => { if (e.key === "Enter") buscarCpf(); }}
                 />
@@ -577,7 +623,7 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
               </Grid2>
               <Grid2>
                 <Field label="Telefone *">
-                  <Input value={c.telefone} onChange={(v) => up("telefone", v)} placeholder="(00) 00000-0000" readOnly={dadosTravados} />
+                  <Input value={c.telefone} onChange={(v) => up("telefone", formatarTelefone(v))} placeholder="(00) 00000-0000" readOnly={dadosTravados} />
                 </Field>
                 <Field label="CPF *">
                   <Input value={c.cpf} onChange={(v) => up("cpf", v)} placeholder="000.000.000-00" readOnly />
@@ -585,7 +631,7 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
               </Grid2>
               <Grid2>
                 <Field label="Data de nascimento *">
-                  <Input type="date" value={c.nascimento} onChange={(v) => up("nascimento", v)} readOnly={dadosTravados} />
+                  <Input type="date" value={c.nascimento} min={DATA_MIN} max={DATA_MAX} onChange={(v) => up("nascimento", v)} readOnly={dadosTravados} />
                 </Field>
                 <Field label="Cidade / Estado *">
                   <Input value={c.cidadeEstado} onChange={(v) => up("cidadeEstado", v)} placeholder="Ex.: Curitiba, PR" readOnly={dadosTravados} />
@@ -689,6 +735,12 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
                   ))}
                 </div>
               </Field>
+
+              {c.origem === "Indicação" && (
+                <Field label="Nome de quem indicou *">
+                  <Input value={c.indicadoPor} onChange={(v) => up("indicadoPor", v)} placeholder="Nome completo" />
+                </Field>
+              )}
 
               <Field label="Currículo *">
                 <label
@@ -845,13 +897,15 @@ function Grid2({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</div>;
 }
 
-function Input({ value, onChange, type = "text", placeholder, readOnly, onKeyDown }: {
+function Input({ value, onChange, type = "text", placeholder, readOnly, onKeyDown, min, max }: {
   value: string;
   onChange: (v: string) => void;
   type?: string;
   placeholder?: string;
   readOnly?: boolean;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  min?: string;
+  max?: string;
 }) {
   return (
     <input
@@ -860,6 +914,8 @@ function Input({ value, onChange, type = "text", placeholder, readOnly, onKeyDow
       placeholder={placeholder}
       readOnly={readOnly}
       onKeyDown={onKeyDown}
+      min={min}
+      max={max}
       onChange={(e) => onChange(e.target.value)}
       className={`w-full rounded-lg border border-border px-3 py-2 font-sans text-sm text-foreground focus:border-primary focus:outline-none ${
         readOnly ? "bg-muted text-muted-foreground cursor-default" : "bg-background"

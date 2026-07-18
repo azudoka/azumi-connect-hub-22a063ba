@@ -37,6 +37,7 @@ export type VagaSupabase = {
   avulsa_solicitante_cargo: string | null;
   avulsa_solicitante_telefone: string | null;
   avulsa_solicitante_email: string | null;
+  disc_habilitado: boolean;
   excluida_em: string | null;    // ← encerrada_em
   motivo_exclusao: string | null;// ← motivo_encerramento
   etapaAtualizadoEm: string | null;
@@ -88,6 +89,7 @@ function jsToVaga(row: any): VagaSupabase {
     sla_dias: row.prazo_entrega_dias ?? null,
     confidencial: row.confidencial ?? false,
     salario_fixo: row.salario_fixo ?? false,
+    disc_habilitado: row.disc_habilitado ?? true,
     is_avulsa: row.is_avulsa ?? true,
     avulsa_solicitante_nome: row.avulsa_solicitante_nome ?? null,
     avulsa_solicitante_cargo: row.avulsa_solicitante_cargo ?? null,
@@ -129,6 +131,7 @@ export type CriarVagaInput = {
   avulsa_solicitante_telefone?: string | null;
   avulsa_solicitante_email?: string | null;
   responsavel_id?: string | null;
+  disc_habilitado?: boolean;
 };
 
 // Converte CriarVagaInput → colunas de job_solicitations
@@ -162,6 +165,7 @@ function inputToJs(input: Partial<CriarVagaInput>): Record<string, unknown> {
   if (input.avulsa_solicitante_telefone !== undefined) out.avulsa_solicitante_telefone = input.avulsa_solicitante_telefone ?? null;
   if (input.avulsa_solicitante_email !== undefined) out.avulsa_solicitante_email = input.avulsa_solicitante_email ?? null;
   if (input.responsavel_id !== undefined) out.responsavel_id = input.responsavel_id ?? null;
+  if (input.disc_habilitado !== undefined) out.disc_habilitado = input.disc_habilitado;
   return out;
 }
 
