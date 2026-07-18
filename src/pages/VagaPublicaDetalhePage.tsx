@@ -20,11 +20,12 @@ function Header() {
   const { escuro, alternar } = useThemeToggle();
   return (
     <header className="sticky top-0 z-30 w-full bg-card border-b border-border">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link to="/vagas">
+      <div className="mx-auto grid max-w-6xl grid-cols-[1fr_auto_1fr] items-center px-6 py-4">
+        <div />
+        <Link to="/vagas" className="justify-self-center">
           <AzumiLogo product="Connect" size={32} hideSubtitle />
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 justify-self-end">
           <Link to="/vagas" className="font-sans text-sm text-muted-foreground hover:text-foreground">
             Vagas
           </Link>
@@ -64,13 +65,31 @@ function Footer() {
             <Instagram className="h-5 w-5" />
           </a>
           <a
-            href="https://www.linkedin.com/company/azumirh"
+            href="https://www.linkedin.com/company/azumirh/"
             target="_blank"
             rel="noreferrer"
             aria-label="LinkedIn da Azumi RH"
             className="text-white/70 transition hover:text-white"
           >
             <Linkedin className="h-5 w-5" />
+          </a>
+          <a
+            href="https://www.facebook.com/azumirhc/"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Facebook da Azumi RH"
+            className="text-white/70 transition hover:text-white"
+          >
+            <Facebook className="h-5 w-5" />
+          </a>
+          <a
+            href="https://www.tiktok.com/@azumirh"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="TikTok da Azumi RH"
+            className="text-white/70 transition hover:text-white"
+          >
+            <iconify-icon icon="simple-icons:tiktok" width="18" height="18" />
           </a>
           <a
             href="https://azumirh.com.br"
@@ -206,6 +225,24 @@ export default function VagaPublicaDetalhePage() {
             className="flex h-8 w-8 items-center justify-center rounded-full bg-[#25D366] text-white hover:brightness-95 transition"
           >
             <MessageCircle className="h-4 w-4" />
+          </a>
+          <a
+            href="https://www.instagram.com/azumirh/"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Azumi RH no Instagram"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-[image:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)] text-white hover:brightness-95 transition"
+          >
+            <Instagram className="h-4 w-4" />
+          </a>
+          <a
+            href="https://www.tiktok.com/@azumirh"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Azumi RH no TikTok"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-black text-white hover:brightness-95 transition"
+          >
+            <iconify-icon icon="simple-icons:tiktok" width="15" height="15" />
           </a>
         </div>
 
