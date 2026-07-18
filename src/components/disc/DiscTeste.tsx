@@ -210,83 +210,34 @@ export default function DiscTeste({ candidateName, onComplete }: Props) {
     return (
       <div className="space-y-5">
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">Seu perfil comportamental</h3>
-          <p className="text-sm text-slate-500">Baseado nas 12 perguntas respondidas.</p>
+          <h3 className="text-lg font-semibold text-foreground">Seu perfil comportamental</h3>
+          <p className="text-sm text-muted-foreground">Baseado nas 12 perguntas respondidas.</p>
         </div>
 
-        <div className="flex items-center gap-5 rounded-xl border border-slate-200 bg-white p-5">
+        <div className="flex items-center gap-5 rounded-xl border border-border bg-card p-5">
           <PerfilIlustracao dim={perfil.dim} size={104} />
           <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Seu perfil</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Seu perfil</p>
             <h2 className="text-2xl font-bold leading-tight" style={{ color: corPerfil }}>
               {perfil.nome}
             </h2>
-            <p className="mt-1 text-sm text-slate-600">{perfil.fraseImpacto}</p>
+            <p className="mt-1 text-sm text-foreground/80">{perfil.fraseImpacto}</p>
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <div className="rounded-xl border border-border bg-card p-5">
           <DiscRadarChart scores={scores} />
         </div>
-
-        <div className="space-y-2.5 rounded-xl border border-slate-200 bg-white p-4">
-          {(["D", "I", "S", "C"] as DiscDim[]).map((d) => (
-            <div key={d} className="flex items-center gap-3">
-              <div className="w-5 text-sm font-bold" style={{ color: COR[d] }}>{d}</div>
-              <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{ width: `${scores[d]}%`, background: COR[d] }}
-                />
-              </div>
-              <div className="w-10 text-right text-xs tabular-nums text-slate-600">{scores[d]}%</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-          <h4 className="text-base font-semibold text-slate-900">{profContent.nome}</h4>
-          <p className="mt-1 text-sm text-slate-600">{profContent.resumo}</p>
-          <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700 mb-2">Pontos fortes</p>
-            <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
-              {profContent.pontosFortes.map((p) => <li key={p}>{p}</li>)}
-            </ul>
-          </div>
-          <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-amber-700 mb-2">Pontos de desenvolvimento</p>
-            <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
-              {profContent.pontosDesenvolvimento.map((p) => <li key={p}>{p}</li>)}
-            </ul>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <h4 className="flex items-center gap-2 text-sm font-semibold" style={{ color: corPerfil }}>
-            <Lightbulb className="h-4 w-4" /> Como funciona melhor
-          </h4>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-            {profContent.comoFuncionaMelhor.map((p) => <li key={p}>{p}</li>)}
-          </ul>
-        </div>
-
-        {profSecContent && (
-          <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Perfil secundário</p>
-            <h4 className="text-sm font-semibold" style={{ color: COR[profSecContent.letra] }}>{profSecContent.nome}</h4>
-            <p className="mt-1 text-sm text-slate-500">{profSecContent.resumo}</p>
-          </div>
-        )}
 
         <button
           type="button"
           onClick={downloadRelatorio}
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
         >
           <Download className="h-4 w-4" /> Baixar relatório DISC
         </button>
 
-        <div className="flex items-start gap-2 rounded-lg border-l-4 border-amber-400 bg-amber-50 p-3 text-xs text-amber-900">
+        <div className="flex items-start gap-2 rounded-lg border-l-4 border-amber-400 bg-[hsl(var(--warning)/0.1)] p-3 text-xs text-foreground/90">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>Este resultado é uma leitura comportamental de triagem. Não é um diagnóstico psicológico.</span>
         </div>
@@ -307,15 +258,15 @@ export default function DiscTeste({ candidateName, onComplete }: Props) {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">Perfil DISC</h3>
-          <p className="text-sm text-slate-500">
+          <h3 className="text-lg font-semibold text-foreground">Perfil DISC</h3>
+          <p className="text-sm text-muted-foreground">
             Para cada conjunto, marque <strong>+ Mais</strong> o que mais combina com você e <strong>− Menos</strong> o que menos combina.
           </p>
         </div>
-        <div className="text-xs font-medium text-slate-600">{completas}/{DISC_QUESTIONS.length}</div>
+        <div className="text-xs font-medium text-muted-foreground">{completas}/{DISC_QUESTIONS.length}</div>
       </div>
 
-      <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
         <div className="h-full rounded-full transition-all" style={{ width: `${progresso}%`, background: BLUE }} />
       </div>
 
@@ -329,10 +280,10 @@ export default function DiscTeste({ candidateName, onComplete }: Props) {
               onClick={() => setIdx(i)}
               className={`h-7 w-7 rounded-md text-xs font-medium border transition ${
                 i === idx
-                  ? "border-slate-900 bg-slate-900 text-white"
+                  ? "border-foreground bg-foreground text-white"
                   : ok
                   ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                  : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted/50"
               }`}
             >
               {i + 1}
@@ -341,8 +292,8 @@ export default function DiscTeste({ candidateName, onComplete }: Props) {
         })}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
-        <p className="mb-4 text-sm font-medium text-slate-700">Pergunta {idx + 1} de {DISC_QUESTIONS.length}</p>
+      <div className="rounded-xl border border-border bg-card p-5">
+        <p className="mb-4 text-sm font-medium text-foreground/80">Pergunta {idx + 1} de {DISC_QUESTIONS.length}</p>
         <div className="space-y-2">
           {q.options.map((opt) => {
             const isMais = ans.mais === opt.dim;
@@ -353,15 +304,15 @@ export default function DiscTeste({ candidateName, onComplete }: Props) {
                 className={`flex items-center gap-3 rounded-lg border p-3 ${
                   isMais ? "border-emerald-300 bg-emerald-50" :
                   isMenos ? "border-rose-300 bg-rose-50" :
-                  "border-slate-200 bg-white"
+                  "border-border bg-card"
                 }`}
               >
-                <span className="flex-1 text-sm text-slate-800">{opt.text}</span>
+                <span className="flex-1 text-sm text-foreground">{opt.text}</span>
                 <button
                   type="button"
                   onClick={() => marcar("mais", opt.dim)}
                   className={`inline-flex h-8 items-center gap-1 rounded-md px-2.5 text-xs font-medium border ${
-                    isMais ? "border-emerald-500 bg-emerald-500 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                    isMais ? "border-emerald-500 bg-emerald-500 text-white" : "border-border text-muted-foreground hover:bg-muted/50"
                   }`}
                 >
                   <Plus className="h-3.5 w-3.5" /> Mais
@@ -370,7 +321,7 @@ export default function DiscTeste({ candidateName, onComplete }: Props) {
                   type="button"
                   onClick={() => marcar("menos", opt.dim)}
                   className={`inline-flex h-8 items-center gap-1 rounded-md px-2.5 text-xs font-medium border ${
-                    isMenos ? "border-rose-500 bg-rose-500 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                    isMenos ? "border-rose-500 bg-rose-500 text-white" : "border-border text-muted-foreground hover:bg-muted/50"
                   }`}
                 >
                   <Minus className="h-3.5 w-3.5" /> Menos
@@ -386,7 +337,7 @@ export default function DiscTeste({ candidateName, onComplete }: Props) {
           type="button"
           onClick={() => setIdx((i) => Math.max(0, i - 1))}
           disabled={idx === 0}
-          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 disabled:opacity-40"
+          className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm text-foreground/80 disabled:opacity-40"
         >
           <ChevronLeft className="h-4 w-4" /> Anterior
         </button>
