@@ -110,7 +110,6 @@ export default function VagaPublicaDetalhePage() {
   const { id } = useParams<{ id: string }>();
   const [vaga, setVaga] = useState<VagaPublica | null | undefined>(undefined);
   const [vagaDiscHabilitado, setVagaDiscHabilitado] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
   const [modalBanco, setModalBanco] = useState(false);
 
   useEffect(() => {
@@ -277,17 +276,18 @@ export default function VagaPublicaDetalhePage() {
             )}
           </div>
 
-          {/* Card de candidatura — fixo na lateral, sempre visível ao rolar */}
+          {/* Formulário de candidatura — embutido de verdade na lateral, mesma lógica do modal */}
           <div className="lg:sticky lg:top-24">
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-elevated">
-              <h2 className="font-display text-lg font-semibold text-foreground mb-1">Candidatar-se para a vaga</h2>
-              <p className="font-sans text-sm text-muted-foreground mb-5">
-                Preencha seus dados e concorra a essa oportunidade.
-              </p>
-              <button onClick={() => setModalOpen(true)} className="btn-primary w-full justify-center">
-                Quero me candidatar →
-              </button>
-            </div>
+            <CandidaturaModal
+              inline
+              open
+              onClose={() => {}}
+              modo="vaga"
+              vagaId={vaga.id}
+              vagaTitulo={vaga.titulo}
+              vagaSalarioACombinar={!vaga.salario_de}
+              vagaDiscHabilitado={vagaDiscHabilitado}
+            />
           </div>
         </div>
 
@@ -308,15 +308,6 @@ export default function VagaPublicaDetalhePage() {
 
       <Footer />
 
-      <CandidaturaModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        modo="vaga"
-        vagaId={vaga.id}
-        vagaTitulo={vaga.titulo}
-        vagaSalarioACombinar={!vaga.salario_de}
-        vagaDiscHabilitado={vagaDiscHabilitado}
-      />
       <CandidaturaModal
         open={modalBanco}
         onClose={() => setModalBanco(false)}
