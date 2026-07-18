@@ -925,7 +925,7 @@ export default function AtracaoLista() {
                     {TIPOS_VAGA.map((t) => (
                       <SelectItem key={t.value} value={t.value}>
                         {t.label}
-                        {t.value === "hunting" && PLANO_ATUAL === "ongoing" &&
+                        {t.value === "hunting" && planoEmpresaSelecionada === "ongoing" &&
                           " (indisponível no plano Ongoing)"}
                       </SelectItem>
                     ))}
