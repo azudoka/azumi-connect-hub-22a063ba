@@ -254,9 +254,14 @@
     @apply h-full;
   }
 
+  html {
+    overscroll-behavior: none;
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: "ss01", "cv11";
+    overscroll-behavior: none;
   }
 
   /* Esconder a barra de rolagem em toda a aplicação, mantendo o scroll funcional. */
