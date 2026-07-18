@@ -144,14 +144,14 @@ export default function VagasPublicasPage() {
         {/* Topbar — uma barra flutuante só, arredondada, com a cor da marca Connect */}
         <div className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6 pt-4 sm:pt-6">
           <div
-            className="flex items-center justify-between gap-2 rounded-full px-3 sm:px-5 py-2 sm:py-2.5 backdrop-blur-md border border-white/10 shadow-elevated"
+            className="flex items-center justify-between gap-2 rounded-full px-3 sm:px-5 py-1 sm:py-1.5 backdrop-blur-md border border-white/10 shadow-elevated"
             style={{ background: "hsl(var(--ocean) / 0.55)" }}
           >
             <Link
               to="/vagas"
-              className="flex items-center rounded-full px-2.5 sm:px-3 py-1.5 transition-colors hover:bg-white/10"
+              className="flex items-center rounded-full px-2.5 sm:px-3 py-1 transition-colors hover:bg-white/10"
             >
-              <AzumiLogo product="Connect" light size={22} hideSubtitle />
+              <AzumiLogo product="Connect" light size={19} hideSubtitle />
             </Link>
             <div className="flex items-center gap-1 sm:gap-3">
               <a
