@@ -145,7 +145,7 @@ export default function VagasPublicasPage() {
         <div className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6 pt-4 sm:pt-6">
           <div
             className="flex items-center justify-between gap-2 rounded-full px-3 sm:px-5 py-1 sm:py-1.5 backdrop-blur-md border border-white/10 shadow-elevated"
-            style={{ background: "hsl(var(--ocean) / 0.55)" }}
+            style={{ background: "hsl(var(--ocean) / 0.9)" }}
           >
             <Link
               to="/vagas"
