@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { MapPin, Search, Lock, Zap, Instagram, Linkedin, Globe, ExternalLink } from "lucide-react";
+import { MapPin, Search, Lock, Zap, Instagram, Linkedin, Globe, ExternalLink, Moon, Sun } from "lucide-react";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 import capaVagas from "@/assets/brand/capa-vagas.png";
 import {
   VAGAS_MOCK,
@@ -75,6 +76,7 @@ function Footer() {
 }
 
 export default function VagasPublicasPage() {
+  const { escuro, alternar } = useThemeToggle();
   const [q, setQ] = useState("");
   const [modalidade, setModalidade] = useState("");
   const [nivel, setNivel] = useState("");
@@ -154,6 +156,13 @@ export default function VagasPublicasPage() {
             >
               <Globe className="h-5 w-5" />
             </a>
+            <button
+              onClick={alternar}
+              title={escuro ? "Modo claro" : "Modo escuro"}
+              className="text-white/80 hover:text-white transition-colors"
+            >
+              {escuro ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </button>
           </div>
         </div>
 

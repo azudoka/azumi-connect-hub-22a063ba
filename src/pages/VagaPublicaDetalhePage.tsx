@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Building2, MapPin, Clock, DollarSign, Briefcase, GraduationCap, Sun, FileText, ArrowLeft, Zap, Lock, Instagram, Linkedin, Globe } from "lucide-react";
+import { Building2, MapPin, Clock, DollarSign, Briefcase, GraduationCap, Sun, Moon, FileText, ArrowLeft, Zap, Lock, Instagram, Linkedin, Globe } from "lucide-react";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 import {
   VAGAS_MOCK,
   NIVEL_LABEL,
@@ -16,20 +17,30 @@ import { AzumiLogo } from "@/components/brand/AzumiLogo";
 import { CategoryTag } from "@/components/CategoryTag";
 
 function Header() {
+  const { escuro, alternar } = useThemeToggle();
   return (
     <header className="sticky top-0 z-30 w-full bg-[hsl(var(--ocean))]">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link to="/vagas">
-          <AzumiLogo light product="Connect" size={20} hideSubtitle />
+          <AzumiLogo light product="Connect" size={36} hideSubtitle />
         </Link>
-        <a
-          href="https://azumirh.com.br"
-          target="_blank"
-          rel="noreferrer"
-          className="font-sans text-sm text-white/80 hover:text-white"
-        >
-          azumirh.com.br
-        </a>
+        <div className="flex items-center gap-4">
+          <a
+            href="https://azumirh.com.br"
+            target="_blank"
+            rel="noreferrer"
+            className="font-sans text-sm text-white/80 hover:text-white"
+          >
+            azumirh.com.br
+          </a>
+          <button
+            onClick={alternar}
+            title={escuro ? "Modo claro" : "Modo escuro"}
+            className="text-white/70 hover:text-white transition-colors"
+          >
+            {escuro ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
     </header>
   );

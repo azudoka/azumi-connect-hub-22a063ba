@@ -94,8 +94,8 @@
     --sidebar-ring: 218 52% 31%;
 
     /* Gradients — Azumi Transformation */
-    --gradient-brand: linear-gradient(90deg, #034C8B 0%, #3B82F6 50%, #8B5CF6 100%);
-    --gradient-brand-bg: linear-gradient(135deg, #034C8B 0%, #3B82F6 50%, #8B5CF6 100%);
+    --gradient-brand: linear-gradient(90deg, #264478 0%, #3D63B8 60%, #7FA8E8 100%);
+    --gradient-brand-bg: linear-gradient(135deg, #264478 0%, #3D63B8 60%, #7FA8E8 100%);
     --gradient-sidebar: linear-gradient(180deg, hsl(220 40% 99%) 0%, hsl(220 35% 97%) 100%);
     --gradient-card-hover: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 35% 98%));
     --gradient-divider: linear-gradient(90deg, hsl(217 92% 42% / 0.35), transparent);
