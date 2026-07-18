@@ -19,16 +19,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Chart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
 
-import { ConnectStatCard } from "@/components/ConnectStatCard";
 import { usePermissao } from "@/config/permissoes";
 import { StatusBadge } from "@/components/StatusBadge";
 import { EmptyState } from "@/components/EmptyState";
 
 import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import type { StatusKey } from "@/data/mock";
+import { eventos } from "@/data/mock";
 
 // =====================================================================
 // Helpers
@@ -131,6 +129,26 @@ function AdminDashboard() {
   );
   const dataCapitalizada = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
 
+  // Relógio ao vivo — horário de Brasília, atualiza a cada segundo
+  const [horaAtual, setHoraAtual] = useState(() =>
+    new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" })
+  );
+  useEffect(() => {
+    const id = setInterval(() => {
+      setHoraAtual(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }));
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Tarefas do dia — EXEMPLO TEMPORÁRIO. A funcionalidade de tarefas ainda não existe
+  // no sistema; isso é só um placeholder visual até essa tela ser construída de verdade.
+  const TAREFAS_DO_DIA_EXEMPLO = [
+    { id: "t1", texto: "Revisar contrato — Kentaki Foods", feito: true },
+    { id: "t2", texto: "Ligar para candidato — Dev Full Stack", feito: false },
+    { id: "t3", texto: "Aprovar cronograma — Studio Mira", feito: false },
+    { id: "t4", texto: "Enviar proposta — Alvo Digital", feito: false },
+  ];
+
   useEffect(() => {
     document.title = "CONNECT - Azumi RH";
     return () => { document.title = "Azumi Connect — HR as a Service"; };
@@ -178,6 +196,22 @@ function AdminDashboard() {
   }, []);
 
   const atrasados = 2;
+
+  // Projetos ativos e horas do mês, quebrados por cliente — pros gráficos novos
+  const PROJETOS_POR_CLIENTE = [
+    { empresa: "Kentaki Foods", ativos: 2 },
+    { empresa: "Tech Plural", ativos: 1 },
+    { empresa: "Studio Mira", ativos: 1 },
+    { empresa: "Grupo Maverick", ativos: 1 },
+    { empresa: "Alvo Digital", ativos: 1 },
+  ];
+  const HORAS_POR_CLIENTE = [
+    { empresa: "Kentaki Foods", horas: 38 },
+    { empresa: "Tech Plural", horas: 27 },
+    { empresa: "Studio Mira", horas: 22 },
+    { empresa: "Grupo Maverick", horas: 16 },
+    { empresa: "Alvo Digital", horas: 12 },
+  ];
 
   // Mock — Operação
   const ATRASOS_POR_CONSULTOR = [
@@ -230,430 +264,148 @@ function AdminDashboard() {
   ];
 
   return (
-    <div>
-      {/* Banner de saudação */}
-      <div className="rounded-xl p-7 text-primary-foreground bg-primary">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="h-14 w-14 rounded-xl bg-card flex items-center justify-center shrink-0">
-            <iconify-icon icon="solar:graph-new-up-bold-duotone" width="26" height="26" style={{ color: "hsl(var(--primary))" }} />
-          </div>
-          <div>
-            <p className="font-display text-xl font-bold leading-tight">
+    <div className="space-y-6">
+      {/* ══════════════ HERO — 3 cards ══════════════ */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch">
+        {/* Card grande — boas-vindas */}
+        <div
+          className="sm:col-span-2 relative overflow-hidden rounded-2xl p-6 text-white flex flex-col justify-between min-h-[180px]"
+          style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))" }}
+        >
+          {/* Espaço pronto pra receber imagem de capa por empresa/cliente no futuro —
+              hoje é gradiente da marca; quando existir upload, essa div recebe
+              backgroundImage dinâmico. */}
+          <div className="relative z-10">
+            <p className="font-display text-2xl font-bold leading-tight">
               {saudacao}, {usuario?.nome?.split(" ")[0] ?? "Ana"} 👋
             </p>
-            <p className="text-sm text-primary-foreground/75 mt-0.5">{dataCapitalizada}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium">
+                <iconify-icon icon="solar:calendar-bold-duotone" width="14" height="14" />
+                {dataCapitalizada}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium tabular-nums">
+                <iconify-icon icon="solar:clock-circle-bold-duotone" width="14" height="14" />
+                {horaAtual}
+              </span>
+            </div>
+          </div>
+          <div className="relative z-10 mt-4 flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3 py-1.5 text-xs">
+              <iconify-icon icon="solar:user-id-bold-duotone" width="14" height="14" />
+              {usuario?.role === "admin" ? "Admin Azumi" : usuario?.role === "consultor" ? "Consultor Azumi" : "Equipe Azumi"}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3 py-1.5 text-xs">
+              <iconify-icon icon="solar:buildings-2-bold-duotone" width="14" height="14" />
+              Azumi RH
+            </span>
           </div>
         </div>
-        <div className="flex items-center gap-6">
-          <div>
-            <p className="text-sm text-primary-foreground/70">Projetos ativos</p>
-            <p className="font-display text-2xl font-bold mt-0.5">6</p>
+
+        {/* Card pequeno 1 — Tarefas do dia (exemplo temporário) */}
+        <div className="rounded-2xl border-0 shadow-md bg-card p-5 flex flex-col">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+              <iconify-icon icon="solar:checklist-bold-duotone" width="16" height="16" style={{ color: "hsl(var(--primary))" }} />
+              Tarefas do dia
+            </h3>
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground/60 font-medium">exemplo</span>
           </div>
-          <div className="h-10 w-px bg-primary-foreground/25" />
-          <div>
-            <p className="text-sm text-primary-foreground/70">Horas no mês</p>
-            <p className="font-display text-2xl font-bold mt-0.5">115h</p>
-          </div>
+          <ul className="space-y-2 flex-1">
+            {TAREFAS_DO_DIA_EXEMPLO.map((t) => (
+              <li key={t.id} className="flex items-center gap-2 text-xs">
+                <span className={cn(
+                  "h-4 w-4 rounded-full border shrink-0 flex items-center justify-center",
+                  t.feito ? "bg-success border-success" : "border-border"
+                )}>
+                  {t.feito && <iconify-icon icon="solar:check-read-bold" width="10" height="10" style={{ color: "white" }} />}
+                </span>
+                <span className={cn("truncate", t.feito && "line-through text-muted-foreground")}>{t.texto}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Card pequeno 2 — Agenda da semana (dado real, mesmo array da tela de Calendário) */}
+        <div className="rounded-2xl border-0 shadow-md bg-card p-5 flex flex-col">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5 mb-3">
+            <iconify-icon icon="solar:calendar-mark-bold-duotone" width="16" height="16" style={{ color: "hsl(var(--primary))" }} />
+            Agenda da semana
+          </h3>
+          {eventos.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Sem compromissos agendados.</p>
+          ) : (
+            <ul className="space-y-2.5 flex-1">
+              {eventos.slice(0, 3).map((ev) => (
+                <li key={ev.id} className="text-xs">
+                  <p className="font-medium text-foreground truncate">{ev.titulo}</p>
+                  <p className="text-muted-foreground mt-0.5">{ev.quando} · {ev.empresa}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link to="/app/calendario" className="text-xs text-primary hover:underline font-medium mt-2">
+            Ver agenda completa →
+          </Link>
         </div>
       </div>
 
-      <Tabs defaultValue="visao-geral" className="w-full mt-6">
-        <TabsList className="mb-6">
-          <TabsTrigger value="visao-geral">Visão geral</TabsTrigger>
-          <TabsTrigger value="operacao">Operação</TabsTrigger>
-        </TabsList>
-
-        {/* ── ABA VISÃO GERAL ── */}
-        <TabsContent value="visao-geral" className="mt-0 space-y-6">
-
-          {/* KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
-            {pode("financeiro.ver_valores") && (
-              <ConnectStatCard
-                variant="stat"
-                icon="solar:dollar-bold-duotone"
-                tone="teal"
-                label="Faturamento do mês"
-                value={`${pctFaturamento}%`}
-                deltaValue={ocultar(formatBRL(fin.faturado))}
-                positive={pctFaturamento >= 80}
-                barPercent={pctFaturamento}
-                onClick={() => navigate("/app/financeiro")}
-              />
-            )}
-            <ConnectStatCard
-              variant="stat"
-              icon="solar:case-round-bold-duotone"
-              tone="blue"
-              label="Projetos ativos"
-              value="6"
-              deltaValue="+1"
-              positive
-              onClick={() => navigate("/app/projetos")}
-            />
-            <ConnectStatCard
-              variant="stat"
-              icon="solar:clock-circle-bold-duotone"
-              tone="violet"
-              label="Horas no mês"
-              value="115h"
-              deltaValue="+17%"
-              positive
-              onClick={() => navigate("/app/horas")}
-            />
-            <ConnectStatCard
-              variant="stat"
-              icon="solar:danger-triangle-bold-duotone"
-              tone={atrasados > 0 ? "red" : "green"}
-              label="Entregáveis em atraso"
-              value={atrasados}
-              onClick={() => navigate("/app/projetos")}
-            />
-          </div>
-
-          {/* Linha 1 — RevenueForecast (8/12) + SLA + Sparkline (4/12) */}
-          <div className="grid grid-cols-12 gap-6">
-
-            {/* RevenueForecast */}
-            <div className="lg:col-span-8 col-span-12">
-              <Card className="rounded-2xl shadow-md border-0 p-6 h-full">
-                <div className="flex items-start justify-between mb-6">
-                  <div>
-                    <h2 className="font-display text-base font-semibold">Faturamento mensal</h2>
-                    <p className="text-xs text-muted-foreground mt-0.5">Faturas emitidas por mês</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {fatMeses && fatMeses.some((m) => m.valor > 0) && (
-                      <span className="text-sm font-semibold text-foreground tabular-nums">
-                        {ocultar(formatBRL(fatMeses.reduce((s, m) => s + m.valor, 0)))}
-                      </span>
-                    )}
-                    <Select defaultValue="6m">
-                      <SelectTrigger className="w-[140px] h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="6m">Últimos 6 meses</SelectItem>
-                        <SelectItem value="3m">Últimos 3 meses</SelectItem>
-                        <SelectItem value="1a">Último ano</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                {fatMeses === null ? (
-                  <div className="h-56 flex items-center justify-center">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                  </div>
-                ) : fatMeses.every((m) => m.valor === 0) ? (
-                  <div className="h-56 flex flex-col items-center justify-center text-center gap-2">
-                    <TrendingUp className="h-8 w-8 text-muted-foreground/30" />
-                    <p className="text-sm text-muted-foreground">Ainda não há histórico suficiente de faturamento.</p>
-                    <p className="text-xs text-muted-foreground/60">Os dados aparecerão aqui conforme faturas forem registradas.</p>
-                  </div>
-                ) : (
-                  <Chart
-                    options={{
-                      chart: { type: "area", toolbar: { show: false }, zoom: { enabled: false } },
-                      colors: ["hsl(var(--primary))"],
-                      fill: { type: "gradient", gradient: { opacityFrom: 0.18, opacityTo: 0.02, shadeIntensity: 0 } },
-                      stroke: { curve: "smooth", width: 2.5 },
-                      dataLabels: { enabled: false },
-                      markers: { size: 3 },
-                      xaxis: {
-                        categories: fatMeses.map((f) => f.mes),
-                        labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" } },
-                        axisBorder: { show: false },
-                        axisTicks: { show: false },
-                      },
-                      yaxis: {
-                        labels: {
-                          style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" },
-                          formatter: (v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v),
-                        },
-                      },
-                      grid: { borderColor: "hsl(var(--border))", strokeDashArray: 3, xaxis: { lines: { show: false } } },
-                      tooltip: {
-                        theme: "light",
-                        y: { formatter: (v: number) => ocultar(formatBRL(v)), title: { formatter: () => "Faturado" } },
-                      },
-                    } as ApexOptions}
-                    series={[{ name: "Faturamento", data: fatMeses.map((f) => f.valor) }]}
-                    type="area"
-                    height={224}
-                    width="100%"
-                  />
-                )}
-              </Card>
-            </div>
-
-            {/* Coluna direita — SLA + Sparkline */}
-            <div className="lg:col-span-4 col-span-12 flex flex-col gap-6">
-
-              {/* SLA das vagas ativas (NewCustomers) */}
-              <Card className="rounded-2xl shadow-md border-0 p-6">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="bg-[hsl(var(--primary)/0.1)] p-3 rounded-xl shrink-0">
-                    <iconify-icon icon="solar:target-bold-duotone" width="22" height="22" style={{ color: "hsl(var(--primary))" }} />
-                  </div>
-                  <p className="text-base font-semibold leading-tight">SLA das vagas ativas</p>
-                </div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm text-muted-foreground">Vagas dentro do prazo</p>
-                  <p className="text-sm font-semibold">{slaVagasPct}%</p>
-                </div>
-                <Progress value={slaVagasPct} className="h-2" />
-                <p className="text-xs text-muted-foreground mt-2.5">
-                  {slaVagasDentro} de {VAGAS_SLA.length} vagas no prazo · {VAGAS_SLA.length - slaVagasDentro} estourada{VAGAS_SLA.length - slaVagasDentro !== 1 ? "s" : ""}
-                </p>
-              </Card>
-
-              {/* Faturamento sparkline (TotalIncome) */}
-              <Card className="rounded-2xl shadow-md border-0 p-6 flex-1">
-                <div className="flex items-start justify-between mb-1">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Faturamento total</p>
-                    <p className="font-display text-2xl font-bold mt-1 tabular-nums">
-                      {fatMeses && fatMeses.some((m) => m.valor > 0)
-                        ? ocultar(formatBRL(fatMeses.reduce((s, m) => s + m.valor, 0)))
-                        : "—"
-                      }
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Últimos 6 meses</p>
-                  </div>
+      {/* ══════════════ Faturamento mensal + SLA de vagas ══════════════ */}
+      <div className="grid grid-cols-12 gap-6">
+        <div className="lg:col-span-8 col-span-12">
+          <Card className="rounded-2xl shadow-md border-0 p-6 h-full">
+            <div className="flex items-start justify-between mb-6 flex-wrap gap-2">
+              <div>
+                <h2 className="font-display text-base font-semibold">Faturamento mensal</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Faturas emitidas por mês</p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                {pode("financeiro.ver_valores") && (
                   <span className={cn(
-                    "text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0 mt-0.5",
-                    pctFaturamento >= 80
-                      ? "text-success bg-[hsl(var(--success)/0.12)]"
-                      : "text-warning bg-[hsl(var(--warning)/0.12)]"
+                    "text-xs font-semibold px-2.5 py-1 rounded-full",
+                    pctFaturamento >= 80 ? "text-success bg-[hsl(var(--success)/0.12)]" : "text-warning bg-[hsl(var(--warning)/0.12)]"
                   )}>
-                    {pctFaturamento}% meta
+                    {pctFaturamento}% da meta do mês
                   </span>
-                </div>
-                {fatMeses === null ? (
-                  <div className="h-16 flex items-center justify-center mt-3">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/50" />
-                  </div>
-                ) : fatMeses.some((m) => m.valor > 0) ? (
-                  <div className="mt-3 -mx-6 -mb-6">
-                    <Chart
-                      options={{
-                        chart: { type: "area", toolbar: { show: false }, sparkline: { enabled: true } },
-                        colors: ["hsl(var(--primary))"],
-                        fill: { type: "gradient", gradient: { opacityFrom: 0.28, opacityTo: 0.02 } },
-                        stroke: { curve: "smooth", width: 2 },
-                        tooltip: {
-                          theme: "light",
-                          y: { formatter: (v: number) => ocultar(formatBRL(v)) },
-                        },
-                      } as ApexOptions}
-                      series={[{ name: "Faturamento", data: fatMeses.map((f) => f.valor) }]}
-                      type="area"
-                      height={72}
-                      width="100%"
-                    />
-                  </div>
-                ) : (
-                  <div className="h-16 flex items-center mt-3">
-                    <p className="text-xs text-muted-foreground/60">Sem histórico ainda</p>
-                  </div>
                 )}
-              </Card>
-            </div>
-          </div>
-
-          {/* Linha 2 — Vagas em destaque (8/12) + Timeline (4/12) */}
-          <div className="grid grid-cols-12 gap-6">
-
-            {/* Vagas em destaque (ProductRevenue) */}
-            <div className="lg:col-span-8 col-span-12">
-              <Card className="overflow-hidden rounded-2xl shadow-md border-0 h-full">
-                <div className="p-5 border-b border-border flex items-center justify-between">
-                  <div>
-                    <h2 className="font-display text-base font-semibold">Vagas em destaque</h2>
-                    <p className="text-xs text-muted-foreground mt-0.5">Vagas ativas · por urgência de SLA (meta 30 dias)</p>
-                  </div>
-                  <Link to="/app/atracao" className="text-xs text-primary hover:underline font-medium shrink-0">
-                    Ver todas →
-                  </Link>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[420px]">
-                    <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3">Vaga</th>
-                        <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3">Empresa</th>
-                        <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3">SLA</th>
-                        <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {VAGAS_SLA.map((v, i) => {
-                        const cor       = v.pct > 100 ? "hsl(var(--destructive))" : v.pct > 60 ? "hsl(var(--warning))" : "hsl(var(--success))";
-                        const textCor   = v.pct > 100 ? "#A32D2D" : v.pct > 60 ? "#854F0B" : "#3B6D11";
-                        const status    = (v.pct > 100 ? "atrasada" : v.pct > 60 ? "analise" : "andamento") as StatusKey;
-                        const statusLbl = v.pct > 100 ? "SLA estourado" : v.pct > 60 ? "Atenção" : "No prazo";
-                        return (
-                          <tr
-                            key={i}
-                            onClick={() => navigate("/app/atracao")}
-                            className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
-                          >
-                            <td className="px-5 py-3.5">
-                              <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 rounded-lg bg-[hsl(var(--primary)/0.1)] flex items-center justify-center shrink-0">
-                                  <iconify-icon icon="solar:case-round-bold-duotone" width="15" height="15" style={{ color: "hsl(var(--primary))" }} />
-                                </div>
-                                <span className="text-sm font-medium">{v.vaga}</span>
-                              </div>
-                            </td>
-                            <td className="px-5 py-3.5 text-sm text-muted-foreground">{v.empresa}</td>
-                            <td className="px-5 py-3.5">
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden min-w-[64px]">
-                                  <div
-                                    className="h-full rounded-full transition-all"
-                                    style={{ width: `${Math.min(100, v.pct)}%`, background: cor }}
-                                  />
-                                </div>
-                                <span className="text-xs font-medium tabular-nums w-7 text-right shrink-0" style={{ color: textCor }}>
-                                  {v.dias}d
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-5 py-3.5">
-                              <StatusBadge status={status}>{statusLbl}</StatusBadge>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            </div>
-
-            {/* Timeline de atividade (DailyActivity) */}
-            <div className="lg:col-span-4 col-span-12">
-              <Card className="p-6 rounded-2xl shadow-md border-0 h-full">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-5">
-                  Últimas atualizações
-                </h2>
-                {ATIVIDADES.length === 0 ? (
-                  <EmptyState
-                    icon={Clock}
-                    title="Sem atividades recentes"
-                    description="As últimas atualizações da operação aparecerão aqui."
-                  />
-                ) : (
-                  <div className="relative pl-5 border-l border-border space-y-5">
-                    {ATIVIDADES.map((a) => {
-                      const meta = ATIVIDADE_META[a.icon];
-                      return (
-                        <div key={a.id} className="relative">
-                          <span className={cn("absolute -left-[21px] h-3 w-3 rounded-full border-2 border-card", meta.dot)} />
-                          <p className="text-xs text-muted-foreground tabular-nums">{a.quando}</p>
-                          <p className="text-sm leading-snug mt-0.5">{a.texto}</p>
-                          {a.ref && (
-                            <button
-                              onClick={() => navigate(a.to)}
-                              className="text-xs text-primary hover:underline font-medium mt-0.5"
-                            >
-                              {a.ref}
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                {fatMeses && fatMeses.some((m) => m.valor > 0) && (
+                  <span className="text-sm font-semibold text-foreground tabular-nums">
+                    {ocultar(formatBRL(fatMeses.reduce((s, m) => s + m.valor, 0)))}
+                  </span>
                 )}
-              </Card>
+                <Select defaultValue="6m">
+                  <SelectTrigger className="w-[140px] h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="6m">Últimos 6 meses</SelectItem>
+                    <SelectItem value="3m">Últimos 3 meses</SelectItem>
+                    <SelectItem value="1a">Último ano</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
-
-          {/* Alertas ativos */}
-          <Card className="p-6 rounded-2xl shadow-md border-0">
-            <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Alertas ativos</h2>
-              <span className="badge-pill bg-[hsl(var(--destructive)/0.15)] text-destructive border border-[hsl(var(--destructive)/0.3)] text-xs">
-                {ALERTAS.length}
-              </span>
-            </div>
-            {ALERTAS.length === 0 ? (
-              <EmptyState
-                icon={CheckCircle2}
-                title="Nenhum alerta"
-                description="Tudo certo por aqui!"
-              />
+            {fatMeses === null ? (
+              <div className="h-56 flex items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : fatMeses.every((m) => m.valor === 0) ? (
+              <div className="h-56 flex flex-col items-center justify-center text-center gap-2">
+                <TrendingUp className="h-8 w-8 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground">Ainda não há histórico suficiente de faturamento.</p>
+                <p className="text-xs text-muted-foreground/60">Os dados aparecerão aqui conforme faturas forem registradas.</p>
+              </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {ALERTAS.map((al) => {
-                  const isCritical = al.severidade === "critical";
-                  return (
-                    <Link
-                      key={al.id}
-                      to={al.to}
-                      className="group flex items-center gap-3 p-3 rounded-xl hover:bg-muted/30 border border-border transition-colors"
-                    >
-                      <div className={cn(
-                        "shrink-0 h-8 w-8 rounded-lg flex items-center justify-center",
-                        isCritical ? "bg-[hsl(var(--destructive)/0.12)]" : "bg-[hsl(var(--warning)/0.12)]"
-                      )}>
-                        <AlertTriangle className={cn("h-4 w-4", isCritical ? "text-destructive" : "text-warning")} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium leading-snug truncate">{al.titulo}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{al.descricao}</p>
-                      </div>
-                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
-
-        </TabsContent>
-
-        {/* ── ABA OPERAÇÃO ── */}
-        <TabsContent value="operacao" className="mt-0 space-y-4">
-
-          {/* LINHA 1: Atrasos + Engajamento */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-            {/* Bloco 1: Tarefas em atraso */}
-            <Card className="p-5 rounded-2xl shadow-md border-0">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-display text-base font-semibold flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-destructive" />
-                  Tarefas em atraso
-                </h2>
-                <span className="badge-pill bg-[hsl(var(--destructive)/0.15)] text-destructive border border-[hsl(var(--destructive)/0.3)] text-xs">
-                  6 entregáveis
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                <div>
-                  <div className="text-2xl font-semibold">6</div>
-                  <div className="text-xs text-muted-foreground">em atraso agora</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-semibold text-warning">22</div>
-                  <div className="text-xs text-muted-foreground">dias — maior atraso</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-semibold">8.5</div>
-                  <div className="text-xs text-muted-foreground">dias em média</div>
-                </div>
-              </div>
               <Chart
                 options={{
-                  chart: { type: "bar", toolbar: { show: false } },
-                  plotOptions: { bar: { borderRadius: 4, columnWidth: "50%", distributed: true } },
-                  colors: ATRASOS_POR_CONSULTOR.map((a) => a.cor),
+                  chart: { type: "area", toolbar: { show: false }, zoom: { enabled: false } },
+                  colors: ["hsl(var(--primary))"],
+                  fill: { type: "gradient", gradient: { opacityFrom: 0.18, opacityTo: 0.02, shadeIntensity: 0 } },
+                  stroke: { curve: "smooth", width: 2.5 },
                   dataLabels: { enabled: false },
-                  legend: { show: false },
+                  markers: { size: 3 },
                   xaxis: {
-                    categories: ATRASOS_POR_CONSULTOR.map((a) => a.nome),
+                    categories: fatMeses.map((f) => f.mes),
                     labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" } },
                     axisBorder: { show: false },
                     axisTicks: { show: false },
@@ -661,280 +413,514 @@ function AdminDashboard() {
                   yaxis: {
                     labels: {
                       style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" },
-                      formatter: (v: number) => String(Math.round(v)),
+                      formatter: (v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v),
                     },
                   },
                   grid: { borderColor: "hsl(var(--border))", strokeDashArray: 3, xaxis: { lines: { show: false } } },
                   tooltip: {
                     theme: "light",
-                    y: { formatter: (v: number) => `${v} itens`, title: { formatter: () => "Atrasos" } },
+                    y: { formatter: (v: number) => ocultar(formatBRL(v)), title: { formatter: () => "Faturado" } },
                   },
                 } as ApexOptions}
-                series={[{ name: "Atrasos", data: ATRASOS_POR_CONSULTOR.map((a) => a.itens) }]}
-                type="bar"
-                height={130}
+                series={[{ name: "Faturamento", data: fatMeses.map((f) => f.valor) }]}
+                type="area"
+                height={224}
                 width="100%"
               />
-            </Card>
-
-            {/* Bloco 2: Engajamento do cliente */}
-            <Card className="p-5 rounded-2xl shadow-md border-0">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-display text-base font-semibold flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  Engajamento do cliente
-                </h2>
-                <span className="badge-pill bg-[hsl(var(--warning)/0.15)] text-warning border border-[hsl(var(--warning)/0.3)] text-xs">
-                  2 SLA crítico
-                </span>
-              </div>
-              <div className="flex items-start gap-4 mb-4">
-                <div className="shrink-0">
-                  <Chart
-                    options={{
-                      chart: { type: "donut" },
-                      colors: ENGAJAMENTO_PIZZA.map((e) => e.fill),
-                      labels: ENGAJAMENTO_PIZZA.map((e) => e.name),
-                      legend: { show: false },
-                      dataLabels: { enabled: false },
-                      plotOptions: { pie: { donut: { size: "60%" } } },
-                      stroke: { width: 0 },
-                      tooltip: { theme: "light" },
-                    } as ApexOptions}
-                    series={ENGAJAMENTO_PIZZA.map((e) => e.value)}
-                    type="donut"
-                    width={100}
-                    height={100}
-                  />
-                </div>
-                <div className="flex-1 space-y-2 pt-2">
-                  {ENGAJAMENTO_PIZZA.map((e, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs">
-                      <span className="h-2 w-2 rounded-full shrink-0" style={{ background: e.fill }} />
-                      <span className="text-muted-foreground flex-1">{e.name}</span>
-                      <span className="font-medium">{e.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-2">
-                SLA aprovação 72h — tempo restante
-              </p>
-              {ENGAJAMENTO_SLA.map((c, i) => (
-                <div key={i} className="flex items-center gap-2 mb-1.5">
-                  <span className="text-xs text-muted-foreground w-24 shrink-0 truncate">
-                    {c.nome.split(" ")[0]}
-                  </span>
-                  <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${Math.min(100, Math.round(((72 - c.slaH) / 72) * 100))}%`,
-                        background: c.slaH < 12 ? "hsl(var(--destructive))" : "hsl(var(--warning))",
-                      }}
-                    />
-                  </div>
-                  <span
-                    className="text-xs font-medium w-16 text-right shrink-0"
-                    style={{ color: c.slaH < 12 ? "#A32D2D" : "#854F0B" }}
-                  >
-                    {c.slaH}h restantes
-                  </span>
-                </div>
-              ))}
-            </Card>
-          </div>
-
-          {/* LINHA 2: Produtividade */}
-          <Card className="p-5 rounded-2xl shadow-md border-0">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display text-base font-semibold">Produtividade dos consultores</h2>
-              <Select value={periodoProdutividade} onValueChange={(v) => setPeriodoProdutividade(v as "atual" | "anterior")}>
-                <SelectTrigger className="w-[160px] h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="atual">Últimas 4 semanas</SelectItem>
-                  <SelectItem value="anterior">Mês anterior</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-4 mb-2">
-              {[
-                { label: "Ana B.",    cor: "hsl(var(--primary))" },
-                { label: "Camila T.", cor: "hsl(var(--highlight))" },
-                { label: "Rafael M.", cor: "#06B6D4" },
-              ].map((c) => (
-                <span key={c.label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="h-2 w-2 rounded-sm inline-block" style={{ background: c.cor }} />
-                  {c.label}
-                </span>
-              ))}
-            </div>
-            {(() => {
-              const dadosProd = periodoProdutividade === "atual" ? PRODUTIVIDADE_SEMANAS : PRODUTIVIDADE_SEMANAS_MES_ANTERIOR;
-              return (
-                <Chart
-                  key={periodoProdutividade}
-                  options={{
-                    chart: { type: "bar", toolbar: { show: false } },
-                    plotOptions: { bar: { borderRadius: 5, columnWidth: "70%", borderRadiusApplication: "end" } },
-                    colors: ["hsl(var(--primary))", "hsl(var(--highlight))", "#06B6D4"],
-                    dataLabels: { enabled: false },
-                    legend: { show: false },
-                    xaxis: {
-                      categories: dadosProd.map((s) => s.semana),
-                      labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" } },
-                      axisBorder: { show: false },
-                      axisTicks: { show: false },
-                    },
-                    yaxis: {
-                      labels: {
-                        style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" },
-                        formatter: (v: number) => `${v}h`,
-                      },
-                    },
-                    grid: { borderColor: "hsl(var(--border))", strokeDashArray: 3, xaxis: { lines: { show: false } } },
-                    tooltip: {
-                      theme: "light",
-                      y: { formatter: (v: number) => `${v}h` },
-                    },
-                  } as ApexOptions}
-                  series={[
-                    { name: "Ana B.",    data: dadosProd.map((s) => s.ana) },
-                    { name: "Camila T.", data: dadosProd.map((s) => s.camila) },
-                    { name: "Rafael M.", data: dadosProd.map((s) => s.rafael) },
-                  ]}
-                  type="bar"
-                  height={160}
-                  width="100%"
-                />
-              );
-            })()}
+            )}
           </Card>
+        </div>
 
-          {/* LINHA 3: NPS + SLA Vagas */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-            {/* Bloco 4: NPS */}
-            <Card className="p-5 rounded-2xl shadow-md border-0">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-display text-base font-semibold flex items-center gap-2">
-                  <Star className="h-4 w-4 text-warning" />
-                  NPS de satisfação
-                </h2>
-                <span className="badge-pill bg-[hsl(var(--primary)/0.15)] text-primary border border-[hsl(var(--primary)/0.3)] text-xs">
-                  +3 vs mês ant.
-                </span>
+        {/* SLA de vagas ativas — consolidado num gráfico só (era Progress + lista de barras duplicada) */}
+        <div className="lg:col-span-4 col-span-12">
+          <Card className="rounded-2xl shadow-md border-0 p-6 h-full flex flex-col">
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="font-display text-base font-semibold flex items-center gap-2">
+                <Target className="h-4 w-4 text-primary" />
+                SLA de vagas ativas
+              </h2>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">% do SLA consumido (meta: 30 dias)</p>
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              <div>
+                <div className="text-xl font-semibold">{VAGAS_SLA.length}</div>
+                <div className="text-[10px] text-muted-foreground">vagas ativas</div>
               </div>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <div className="text-3xl font-semibold text-primary">81</div>
-                  <div className="text-xs text-muted-foreground">NPS médio mai/26</div>
-                  <div className="text-xs text-success mt-1">↑ tendência positiva</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-semibold">4.3</div>
-                  <div className="text-xs text-muted-foreground">estrelas médias</div>
-                  <div className="text-xs text-muted-foreground mt-1">18 avaliações</div>
-                </div>
+              <div>
+                <div className="text-xl font-semibold text-warning">{slaVagasPct}%</div>
+                <div className="text-[10px] text-muted-foreground">dentro do SLA</div>
               </div>
+              <div>
+                <div className="text-xl font-semibold text-destructive">{VAGAS_SLA.length - slaVagasDentro}</div>
+                <div className="text-[10px] text-muted-foreground">estouradas</div>
+              </div>
+            </div>
+            <div className="flex-1">
               <Chart
                 options={{
-                  chart: { type: "line", toolbar: { show: false }, zoom: { enabled: false } },
-                  colors: ["hsl(var(--primary))"],
-                  stroke: { curve: "smooth", width: 2 },
-                  markers: { size: 3 },
-                  dataLabels: { enabled: false },
+                  chart: { type: "bar", toolbar: { show: false } },
+                  plotOptions: { bar: { borderRadius: 4, horizontal: true, barHeight: "55%" } },
+                  colors: VAGAS_SLA.map((v) => v.pct > 100 ? "hsl(var(--destructive))" : v.pct > 60 ? "hsl(var(--warning))" : "hsl(var(--success))"),
+                  dataLabels: {
+                    enabled: true,
+                    formatter: (v: number) => `${v}%`,
+                    style: { fontSize: "10px", colors: ["#fff"] },
+                  },
+                  legend: { show: false },
                   xaxis: {
-                    categories: NPS_MESES.map((n) => n.mes),
-                    labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" } },
+                    categories: VAGAS_SLA.map((v) => v.vaga),
+                    labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "10px" } },
                     axisBorder: { show: false },
                     axisTicks: { show: false },
                   },
-                  yaxis: {
-                    min: 60,
-                    max: 90,
-                    labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" } },
-                  },
-                  grid: { borderColor: "hsl(var(--border))", strokeDashArray: 3, xaxis: { lines: { show: false } } },
+                  yaxis: { labels: { style: { colors: "hsl(var(--foreground))", fontSize: "11px" } } },
+                  grid: { borderColor: "hsl(var(--border))", strokeDashArray: 3, yaxis: { lines: { show: false } } },
                   tooltip: {
                     theme: "light",
-                    y: { formatter: (v: number) => String(v), title: { formatter: () => "NPS" } },
+                    y: { formatter: (v: number, opts) => `${VAGAS_SLA[opts.dataPointIndex].dias} dias · ${v}% do SLA` },
                   },
                 } as ApexOptions}
-                series={[{ name: "NPS", data: NPS_MESES.map((n) => n.nps) }]}
-                type="line"
-                height={120}
+                series={[{ name: "SLA consumido", data: VAGAS_SLA.map((v) => v.pct) }]}
+                type="bar"
+                height={200}
                 width="100%"
               />
-            </Card>
+            </div>
+          </Card>
+        </div>
+      </div>
 
-            {/* Bloco 5: SLA Vagas */}
-            <Card className="p-5 rounded-2xl shadow-md border-0">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-display text-base font-semibold flex items-center gap-2">
-                  <Target className="h-4 w-4 text-primary" />
-                  SLA de vagas ativas
-                </h2>
-                <span className="badge-pill bg-[hsl(var(--destructive)/0.15)] text-destructive border border-[hsl(var(--destructive)/0.3)] text-xs">
-                  2 estouradas
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                <div>
-                  <div className="text-2xl font-semibold">5</div>
-                  <div className="text-xs text-muted-foreground">vagas ativas</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-semibold text-warning">26</div>
-                  <div className="text-xs text-muted-foreground">dias médio</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-semibold text-destructive">2</div>
-                  <div className="text-xs text-muted-foreground">SLA estourado</div>
-                </div>
-              </div>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-3">
-                % do SLA consumido (meta: 30 dias)
-              </p>
-              <div className="space-y-2.5">
-                {VAGAS_SLA.map((v, i) => {
-                  const cor      = v.pct > 100 ? "hsl(var(--destructive))" : v.pct > 60 ? "hsl(var(--warning))" : "hsl(var(--success))";
-                  const textCor  = v.pct > 100 ? "#A32D2D" : v.pct > 60 ? "#854F0B" : "#3B6D11";
-                  return (
-                    <div key={i} className="flex items-center gap-2">
-                      <div className="w-24 shrink-0">
-                        <div className="text-xs text-foreground leading-tight truncate">{v.vaga}</div>
-                        <div className="text-[10px] text-muted-foreground">{v.empresa}</div>
-                      </div>
-                      <div className="flex-1 h-3 bg-secondary rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full flex items-center justify-start pl-1.5"
-                          style={{
-                            width: `${Math.min(100, v.pct)}%`,
-                            background: cor,
-                            minWidth: v.pct > 10 ? "auto" : "20px",
-                          }}
-                        >
-                          {v.pct > 20 && (
-                            <span className="text-[9px] font-medium text-white">{v.pct}%</span>
-                          )}
-                        </div>
-                      </div>
-                      <span className="text-xs font-medium w-8 text-right shrink-0" style={{ color: textCor }}>
-                        {v.dias}d
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
+      {/* ══════════════ Projetos e Horas por cliente ══════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="rounded-2xl shadow-md border-0 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-base font-semibold flex items-center gap-2">
+              <iconify-icon icon="solar:case-round-bold-duotone" width="18" height="18" style={{ color: "hsl(var(--primary))" }} />
+              Projetos ativos por cliente
+            </h2>
+            <span className="text-xs text-muted-foreground">{PROJETOS_POR_CLIENTE.reduce((s, p) => s + p.ativos, 0)} no total</span>
           </div>
+          <Chart
+            options={{
+              chart: { type: "bar", toolbar: { show: false } },
+              plotOptions: { bar: { borderRadius: 5, columnWidth: "50%" } },
+              colors: ["hsl(var(--primary))"],
+              dataLabels: { enabled: false },
+              legend: { show: false },
+              xaxis: {
+                categories: PROJETOS_POR_CLIENTE.map((p) => p.empresa),
+                labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "10px" } },
+                axisBorder: { show: false },
+                axisTicks: { show: false },
+              },
+              yaxis: { labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" }, formatter: (v: number) => String(Math.round(v)) } },
+              grid: { borderColor: "hsl(var(--border))", strokeDashArray: 3, xaxis: { lines: { show: false } } },
+              tooltip: { theme: "light", y: { formatter: (v: number) => `${v} projeto${v === 1 ? "" : "s"}` } },
+            } as ApexOptions}
+            series={[{ name: "Projetos ativos", data: PROJETOS_POR_CLIENTE.map((p) => p.ativos) }]}
+            type="bar"
+            height={200}
+            width="100%"
+            onClick={() => navigate("/app/projetos")}
+          />
+        </Card>
 
-        </TabsContent>
+        <Card className="rounded-2xl shadow-md border-0 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-base font-semibold flex items-center gap-2">
+              <iconify-icon icon="solar:clock-circle-bold-duotone" width="18" height="18" style={{ color: "hsl(var(--primary))" }} />
+              Horas no mês por cliente
+            </h2>
+            <span className="text-xs text-muted-foreground">{HORAS_POR_CLIENTE.reduce((s, h) => s + h.horas, 0)}h no total</span>
+          </div>
+          <Chart
+            options={{
+              chart: { type: "bar", toolbar: { show: false } },
+              plotOptions: { bar: { borderRadius: 5, columnWidth: "50%" } },
+              colors: ["hsl(var(--highlight))"],
+              dataLabels: { enabled: false },
+              legend: { show: false },
+              xaxis: {
+                categories: HORAS_POR_CLIENTE.map((h) => h.empresa),
+                labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "10px" } },
+                axisBorder: { show: false },
+                axisTicks: { show: false },
+              },
+              yaxis: { labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" }, formatter: (v: number) => `${Math.round(v)}h` } },
+              grid: { borderColor: "hsl(var(--border))", strokeDashArray: 3, xaxis: { lines: { show: false } } },
+              tooltip: { theme: "light", y: { formatter: (v: number) => `${v}h` } },
+            } as ApexOptions}
+            series={[{ name: "Horas", data: HORAS_POR_CLIENTE.map((h) => h.horas) }]}
+            type="bar"
+            height={200}
+            width="100%"
+            onClick={() => navigate("/app/horas")}
+          />
+        </Card>
+      </div>
 
-      </Tabs>
+      {/* ══════════════ Tarefas em atraso + Engajamento do cliente ══════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-5 rounded-2xl shadow-md border-0">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-display text-base font-semibold flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              Tarefas em atraso
+            </h2>
+            <span className="badge-pill bg-[hsl(var(--destructive)/0.15)] text-destructive border border-[hsl(var(--destructive)/0.3)] text-xs">
+              6 entregáveis
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div>
+              <div className="text-2xl font-semibold">6</div>
+              <div className="text-xs text-muted-foreground">em atraso agora</div>
+            </div>
+            <div>
+              <div className="text-2xl font-semibold text-warning">22</div>
+              <div className="text-xs text-muted-foreground">dias — maior atraso</div>
+            </div>
+            <div>
+              <div className="text-2xl font-semibold">8.5</div>
+              <div className="text-xs text-muted-foreground">dias em média</div>
+            </div>
+          </div>
+          <Chart
+            options={{
+              chart: { type: "bar", toolbar: { show: false } },
+              plotOptions: { bar: { borderRadius: 4, columnWidth: "50%", distributed: true } },
+              colors: ATRASOS_POR_CONSULTOR.map((a) => a.cor),
+              dataLabels: { enabled: false },
+              legend: { show: false },
+              xaxis: {
+                categories: ATRASOS_POR_CONSULTOR.map((a) => a.nome),
+                labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" } },
+                axisBorder: { show: false },
+                axisTicks: { show: false },
+              },
+              yaxis: {
+                labels: {
+                  style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" },
+                  formatter: (v: number) => String(Math.round(v)),
+                },
+              },
+              grid: { borderColor: "hsl(var(--border))", strokeDashArray: 3, xaxis: { lines: { show: false } } },
+              tooltip: {
+                theme: "light",
+                y: { formatter: (v: number) => `${v} itens`, title: { formatter: () => "Atrasos" } },
+              },
+            } as ApexOptions}
+            series={[{ name: "Atrasos", data: ATRASOS_POR_CONSULTOR.map((a) => a.itens) }]}
+            type="bar"
+            height={130}
+            width="100%"
+          />
+        </Card>
+
+        <Card className="p-5 rounded-2xl shadow-md border-0">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-display text-base font-semibold flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-primary" />
+              Engajamento do cliente
+            </h2>
+            <span className="badge-pill bg-[hsl(var(--warning)/0.15)] text-warning border border-[hsl(var(--warning)/0.3)] text-xs">
+              2 SLA crítico
+            </span>
+          </div>
+          <div className="flex items-start gap-4 mb-4">
+            <div className="shrink-0">
+              <Chart
+                options={{
+                  chart: { type: "donut" },
+                  colors: ENGAJAMENTO_PIZZA.map((e) => e.fill),
+                  labels: ENGAJAMENTO_PIZZA.map((e) => e.name),
+                  legend: { show: false },
+                  dataLabels: { enabled: false },
+                  plotOptions: { pie: { donut: { size: "60%" } } },
+                  stroke: { width: 0 },
+                  tooltip: { theme: "light" },
+                } as ApexOptions}
+                series={ENGAJAMENTO_PIZZA.map((e) => e.value)}
+                type="donut"
+                width={100}
+                height={100}
+              />
+            </div>
+            <div className="flex-1 space-y-2 pt-2">
+              {ENGAJAMENTO_PIZZA.map((e, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  <span className="h-2 w-2 rounded-full shrink-0" style={{ background: e.fill }} />
+                  <span className="text-muted-foreground flex-1">{e.name}</span>
+                  <span className="font-medium">{e.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-2">
+            SLA aprovação 72h — tempo restante
+          </p>
+          {ENGAJAMENTO_SLA.map((c, i) => (
+            <div key={i} className="flex items-center gap-2 mb-1.5">
+              <span className="text-xs text-muted-foreground w-24 shrink-0 truncate">
+                {c.nome.split(" ")[0]}
+              </span>
+              <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${Math.min(100, Math.round(((72 - c.slaH) / 72) * 100))}%`,
+                    background: c.slaH < 12 ? "hsl(var(--destructive))" : "hsl(var(--warning))",
+                  }}
+                />
+              </div>
+              <span
+                className="text-xs font-medium w-16 text-right shrink-0"
+                style={{ color: c.slaH < 12 ? "#A32D2D" : "#854F0B" }}
+              >
+                {c.slaH}h restantes
+              </span>
+            </div>
+          ))}
+        </Card>
+      </div>
+
+      {/* ══════════════ Produtividade dos consultores ══════════════ */}
+      <Card className="p-5 rounded-2xl shadow-md border-0">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-base font-semibold">Produtividade dos consultores</h2>
+          <Select value={periodoProdutividade} onValueChange={(v) => setPeriodoProdutividade(v as "atual" | "anterior")}>
+            <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="atual">Últimas 4 semanas</SelectItem>
+              <SelectItem value="anterior">Mês anterior</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-4 mb-2">
+          {[
+            { label: "Ana B.",    cor: "hsl(var(--primary))" },
+            { label: "Camila T.", cor: "hsl(var(--highlight))" },
+            { label: "Rafael M.", cor: "#06B6D4" },
+          ].map((c) => (
+            <span key={c.label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="h-2 w-2 rounded-sm inline-block" style={{ background: c.cor }} />
+              {c.label}
+            </span>
+          ))}
+        </div>
+        {(() => {
+          const dadosProd = periodoProdutividade === "atual" ? PRODUTIVIDADE_SEMANAS : PRODUTIVIDADE_SEMANAS_MES_ANTERIOR;
+          return (
+            <Chart
+              key={periodoProdutividade}
+              options={{
+                chart: { type: "bar", toolbar: { show: false } },
+                plotOptions: { bar: { borderRadius: 5, columnWidth: "70%", borderRadiusApplication: "end" } },
+                colors: ["hsl(var(--primary))", "hsl(var(--highlight))", "#06B6D4"],
+                dataLabels: { enabled: false },
+                legend: { show: false },
+                xaxis: {
+                  categories: dadosProd.map((s) => s.semana),
+                  labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" } },
+                  axisBorder: { show: false },
+                  axisTicks: { show: false },
+                },
+                yaxis: {
+                  labels: {
+                    style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" },
+                    formatter: (v: number) => `${v}h`,
+                  },
+                },
+                grid: { borderColor: "hsl(var(--border))", strokeDashArray: 3, xaxis: { lines: { show: false } } },
+                tooltip: {
+                  theme: "light",
+                  y: { formatter: (v: number) => `${v}h` },
+                },
+              } as ApexOptions}
+              series={[
+                { name: "Ana B.",    data: dadosProd.map((s) => s.ana) },
+                { name: "Camila T.", data: dadosProd.map((s) => s.camila) },
+                { name: "Rafael M.", data: dadosProd.map((s) => s.rafael) },
+              ]}
+              type="bar"
+              height={160}
+              width="100%"
+            />
+          );
+        })()}
+      </Card>
+
+      {/* ══════════════ NPS + Vagas em destaque (enxuta) ══════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-5 rounded-2xl shadow-md border-0">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-display text-base font-semibold flex items-center gap-2">
+              <Star className="h-4 w-4 text-warning" />
+              NPS de satisfação
+            </h2>
+            <span className="badge-pill bg-[hsl(var(--primary)/0.15)] text-primary border border-[hsl(var(--primary)/0.3)] text-xs">
+              +3 vs mês ant.
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <div className="text-3xl font-semibold text-primary">81</div>
+              <div className="text-xs text-muted-foreground">NPS médio mai/26</div>
+              <div className="text-xs text-success mt-1">↑ tendência positiva</div>
+            </div>
+            <div>
+              <div className="text-3xl font-semibold">4.3</div>
+              <div className="text-xs text-muted-foreground">estrelas médias</div>
+              <div className="text-xs text-muted-foreground mt-1">18 avaliações</div>
+            </div>
+          </div>
+          <Chart
+            options={{
+              chart: { type: "line", toolbar: { show: false }, zoom: { enabled: false } },
+              colors: ["hsl(var(--primary))"],
+              stroke: { curve: "smooth", width: 2 },
+              markers: { size: 3 },
+              dataLabels: { enabled: false },
+              xaxis: {
+                categories: NPS_MESES.map((n) => n.mes),
+                labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" } },
+                axisBorder: { show: false },
+                axisTicks: { show: false },
+              },
+              yaxis: {
+                min: 60,
+                max: 90,
+                labels: { style: { colors: "hsl(var(--muted-foreground))", fontSize: "11px" } },
+              },
+              grid: { borderColor: "hsl(var(--border))", strokeDashArray: 3, xaxis: { lines: { show: false } } },
+              tooltip: {
+                theme: "light",
+                y: { formatter: (v: number) => String(v), title: { formatter: () => "NPS" } },
+              },
+            } as ApexOptions}
+            series={[{ name: "NPS", data: NPS_MESES.map((n) => n.nps) }]}
+            type="line"
+            height={120}
+            width="100%"
+          />
+        </Card>
+
+        {/* Vagas em destaque — versão enxuta, só top 3 por urgência de SLA */}
+        <Card className="overflow-hidden rounded-2xl shadow-md border-0">
+          <div className="p-5 border-b border-border flex items-center justify-between">
+            <div>
+              <h2 className="font-display text-base font-semibold">Vagas em destaque</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Top 3 por urgência de SLA</p>
+            </div>
+            <Link to="/app/atracao" className="text-xs text-primary hover:underline font-medium shrink-0">
+              Ver todas →
+            </Link>
+          </div>
+          <div className="divide-y divide-border">
+            {VAGAS_SLA.slice(0, 3).map((v, i) => {
+              const cor = v.pct > 100 ? "hsl(var(--destructive))" : v.pct > 60 ? "hsl(var(--warning))" : "hsl(var(--success))";
+              const status = (v.pct > 100 ? "atrasada" : v.pct > 60 ? "analise" : "andamento") as StatusKey;
+              const statusLbl = v.pct > 100 ? "SLA estourado" : v.pct > 60 ? "Atenção" : "No prazo";
+              return (
+                <button
+                  key={i}
+                  onClick={() => navigate("/app/atracao")}
+                  className="w-full flex items-center gap-3 px-5 py-3 hover:bg-muted/40 transition-colors text-left"
+                >
+                  <div className="h-8 w-8 rounded-lg bg-[hsl(var(--primary)/0.1)] flex items-center justify-center shrink-0">
+                    <iconify-icon icon="solar:case-round-bold-duotone" width="15" height="15" style={{ color: "hsl(var(--primary))" }} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{v.vaga}</p>
+                    <p className="text-xs text-muted-foreground truncate">{v.empresa}</p>
+                  </div>
+                  <StatusBadge status={status}>{statusLbl}</StatusBadge>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
+
+      {/* ══════════════ Últimas atualizações + Alertas ativos ══════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-6 rounded-2xl shadow-md border-0">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-5">
+            Últimas atualizações
+          </h2>
+          {ATIVIDADES.length === 0 ? (
+            <EmptyState
+              icon={Clock}
+              title="Sem atividades recentes"
+              description="As últimas atualizações da operação aparecerão aqui."
+            />
+          ) : (
+            <div className="relative pl-5 border-l border-border space-y-5">
+              {ATIVIDADES.map((a) => {
+                const meta = ATIVIDADE_META[a.icon];
+                return (
+                  <div key={a.id} className="relative">
+                    <span className={cn("absolute -left-[21px] h-3 w-3 rounded-full border-2 border-card", meta.dot)} />
+                    <p className="text-xs text-muted-foreground tabular-nums">{a.quando}</p>
+                    <p className="text-sm leading-snug mt-0.5">{a.texto}</p>
+                    {a.ref && (
+                      <button
+                        onClick={() => navigate(a.to)}
+                        className="text-xs text-primary hover:underline font-medium mt-0.5"
+                      >
+                        {a.ref}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+
+        <Card className="p-6 rounded-2xl shadow-md border-0">
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Alertas ativos</h2>
+            <span className="badge-pill bg-[hsl(var(--destructive)/0.15)] text-destructive border border-[hsl(var(--destructive)/0.3)] text-xs">
+              {ALERTAS.length}
+            </span>
+          </div>
+          {ALERTAS.length === 0 ? (
+            <EmptyState
+              icon={CheckCircle2}
+              title="Nenhum alerta"
+              description="Tudo certo por aqui!"
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {ALERTAS.map((al) => {
+                const isCritical = al.severidade === "critical";
+                return (
+                  <Link
+                    key={al.id}
+                    to={al.to}
+                    className="group flex items-center gap-3 p-3 rounded-xl hover:bg-muted/30 border border-border transition-colors"
+                  >
+                    <div className={cn(
+                      "shrink-0 h-8 w-8 rounded-lg flex items-center justify-center",
+                      isCritical ? "bg-[hsl(var(--destructive)/0.12)]" : "bg-[hsl(var(--warning)/0.12)]"
+                    )}>
+                      <AlertTriangle className={cn("h-4 w-4", isCritical ? "text-destructive" : "text-warning")} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium leading-snug truncate">{al.titulo}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{al.descricao}</p>
+                    </div>
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }
