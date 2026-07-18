@@ -440,6 +440,7 @@ export default function VagaDetalheAdmin() {
   };
   const [candidaturasSite, setCandidaturasSite] = useState<CandidaturaSite[]>([]);
   const [loadingSite, setLoadingSite] = useState(false);
+  const [historicoVaga, setHistoricoVaga] = useState<{ etapa: string; entrou_em: string }[]>([]);
 
   function recarregarCandidaturas() {
     if (!vaga?.id || vaga.id.startsWith("v-")) return;
@@ -454,6 +455,19 @@ export default function VagaDetalheAdmin() {
         if (!error && data) {
           const rows = data as CandidaturaSite[];
           setCandidaturasSite(rows);
+
+          // Busca histórico de etapas para preencher datas na timeline
+          if (rows.length > 0) {
+            (supabase as any)
+              .from("candidate_etapa_historico")
+              .select("etapa, entrou_em")
+              .in("candidate_id", rows.map((r) => r.id))
+              .order("entrou_em", { ascending: true })
+              .then(({ data: hist }: { data: { etapa: string; entrou_em: string }[] | null }) => {
+                setHistoricoVaga(hist ?? []);
+              });
+          }
+
           const extrasSupabase: CandidatoExtra[] = rows.map((row) => {
             const disc = row.disc_resultado_candidato?.[0];
             const origemDB = (row.origem ?? "site") as "manual" | "convite" | "site";
@@ -530,7 +544,13 @@ export default function VagaDetalheAdmin() {
         ? supabase.from("candidates").update({ banco_talentos: true }).eq("id", id)
         : supabase.from("candidates").update({ banco_talentos: false, etapa_azumi: ETAPA_LABEL_TO_DB[coluna as Coluna] }).eq("id", id);
       update.then(({ error }) => {
-        if (error) console.error("[etapa] falha ao persistir", id, error);
+        if (error) { console.error("[etapa] falha ao persistir", id, error); return; }
+        (supabase as any).from("candidate_etapa_historico").insert({
+          candidate_id: id,
+          etapa: coluna,
+        }).then(({ error: histError }: { error: unknown }) => {
+          if (histError) console.error("[etapa histórico] falha ao registrar", id, histError);
+        });
       });
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1300,13 +1320,21 @@ export default function VagaDetalheAdmin() {
               const dataAbertura = vaga.criado_em
                 ? new Date(vaga.criado_em).toLocaleDateString("pt-BR")
                 : "—";
+
+              function primeiraData(etapas: string[]): string {
+                const hits = historicoVaga.filter((h) => etapas.includes(h.etapa));
+                if (hits.length === 0) return "—";
+                const min = hits.reduce((acc, h) => h.entrou_em < acc ? h.entrou_em : acc, hits[0].entrou_em);
+                return new Date(min).toLocaleDateString("pt-BR");
+              }
+
               const etapasVagaReal = [
-                { nome: "Briefing",         inicio: dataAbertura, fim: "—" },
-                { nome: "Divulgação",       inicio: "—",          fim: "—" },
-                { nome: "Triagem",          inicio: "—",          fim: "—" },
-                { nome: "Quest/Entrevista", inicio: "—",          fim: "—" },
-                { nome: "Perfis enviados",  inicio: "—",          fim: "—" },
-                { nome: "Decisão final",    inicio: "—",          fim: "—" },
+                { nome: "Briefing",         inicio: dataAbertura,                                                                                       fim: "—" },
+                { nome: "Divulgação",       inicio: "—",                                                                                                fim: "—" },
+                { nome: "Triagem",          inicio: primeiraData(["Recebido", "Triagem"]),                                                               fim: "—" },
+                { nome: "Quest/Entrevista", inicio: primeiraData(["Questionário", "Entrevista Azumi", "Teste Técnico", "Entrevista Cliente"]),           fim: "—" },
+                { nome: "Perfis enviados",  inicio: primeiraData(["Proposta"]),                                                                          fim: "—" },
+                { nome: "Decisão final",    inicio: primeiraData(["Contratado", "Reprovado"]),                                                           fim: "—" },
               ].map((e, idx) => ({
                 ...e,
                 status: idx < etapaAtualIdx ? "concluida" : idx === etapaAtualIdx ? "andamento" : "pendente",
