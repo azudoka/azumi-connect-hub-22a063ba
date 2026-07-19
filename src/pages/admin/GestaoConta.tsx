@@ -32,10 +32,10 @@ type Invoice = {
   notes?: string | null;
   created_by?: string | null;
   created_at: string;
-  empresa?: { id: string; nome: string; logo_url: string | null } | null;
+  empresa?: { id: string; name: string; logo_url: string | null } | null;
 };
 
-type Empresa = { id: string; nome: string };
+type Empresa = { id: string; name: string };
 
 const statusInvoice: Record<string, { label: string; cls: string; icon: React.ElementType }> = {
   pago:      { label: "Pago",      cls: "bg-[hsl(var(--success)/0.15)] text-success border-[hsl(var(--success)/0.3)]",            icon: Check },
@@ -99,7 +99,7 @@ export default function GestaoConta() {
     setLoadingInvoices(true);
     const { data, error } = await supabase
       .from("invoices")
-      .select("*, empresa:empresas(id, nome, logo_url)")
+      .select("*, empresa:companies(id, name, logo_url)")
       .order("due_date", { ascending: false });
     if (error) { toast.error("Erro ao carregar faturas."); }
     else { setInvoices((data ?? []) as Invoice[]); }
@@ -109,12 +109,12 @@ export default function GestaoConta() {
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
   useEffect(() => {
-    supabase.from("empresas").select("id, nome").order("nome")
+    supabase.from("companies").select("id, name").order("name")
       .then(({ data }) => { if (data) setEmpresas(data as Empresa[]); });
   }, []);
 
   const filtered = invoices.filter((inv) => {
-    const empNome = (inv.empresa as { nome: string } | null)?.nome ?? "";
+    const empNome = (inv.empresa as { name: string } | null)?.name ?? "";
     if (filtroEmpresa && empNome !== filtroEmpresa) return false;
     if (filtroStatus) {
       const hoje = new Date();
@@ -197,7 +197,7 @@ export default function GestaoConta() {
             >
               <option value="">Todas as empresas</option>
               {[...new Set(
-                invoices.map((i) => (i.empresa as { nome: string } | null)?.nome).filter(Boolean)
+                invoices.map((i) => (i.empresa as { name: string } | null)?.name).filter(Boolean)
               )].map((n) => <option key={n} value={n!}>{n}</option>)}
             </select>
             <select
@@ -263,7 +263,7 @@ export default function GestaoConta() {
                     const isAtrasado = !isPago && !isCancelado && venc < hoje;
                     const displayStatus: string = isAtrasado ? "atrasado" : inv.status;
                     const s = statusInvoice[displayStatus] ?? statusInvoice["pendente"];
-                    const empNome = (inv.empresa as { nome: string } | null)?.nome ?? "—";
+                    const empNome = (inv.empresa as { name: string } | null)?.name ?? "—";
 
                     return (
                       <tr key={inv.id} className="border-t border-border hover:bg-[hsl(var(--secondary)/0.3)]">
@@ -357,7 +357,7 @@ export default function GestaoConta() {
               <div>
                 <h2 className="font-display text-base font-semibold">Detalhes da fatura</h2>
                 <p className="text-xs text-muted-foreground">
-                  {(detalhesInvoice.empresa as { nome: string } | null)?.nome ?? "—"}
+                  {(detalhesInvoice.empresa as { name: string } | null)?.name ?? "—"}
                 </p>
               </div>
               <button
@@ -421,7 +421,7 @@ export default function GestaoConta() {
                   className="w-full h-10 px-3 rounded-lg bg-secondary border border-input focus:border-primary outline-none text-sm"
                 >
                   <option value="">Selecione...</option>
-                  {empresas.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
+                  {empresas.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
                 </select>
               </Field>
               <Field label="Valor (R$) *">
