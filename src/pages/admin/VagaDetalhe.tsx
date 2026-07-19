@@ -5212,7 +5212,7 @@ function CandidatoDetailSheet({
   useScrollLock(open);
   const { id: vagaIdParam } = useParams();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const [fichaTab, setFichaTab] = useState<"dados" | "disc" | "processos">("dados");
+  const [fichaTab, setFichaTab] = useState<"dados" | "disc" | "processos" | "respostas">("dados");
   const [editarCandOpen, setEditarCandOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     nome: candidatoExtra?.nome ?? "",
@@ -5264,6 +5264,27 @@ function CandidatoDetailSheet({
       .eq("candidate_id", candidatoIdParaQuests)
       .then(({ data }) => setQuestsDoCandidatoReal(data ?? []));
   }, [candidatoIdParaQuests, open]);
+
+  const [perguntasRespostas, setPerguntasRespostas] = useState<{ pergunta: string; resposta: string; ordem: number }[]>([]);
+  useEffect(() => {
+    if (!open || !candidatoIdParaQuests || !vagaIdParam) { setPerguntasRespostas([]); return; }
+    (supabase as any)
+      .from("candidate_pergunta_respostas")
+      .select("resposta, vaga_perguntas_customizadas(pergunta, ordem, job_id)")
+      .eq("candidate_id", candidatoIdParaQuests)
+      .then(({ data }: { data: any[] | null }) => {
+        if (!data) { setPerguntasRespostas([]); return; }
+        const filtradas = data
+          .filter((r) => r.vaga_perguntas_customizadas?.job_id === vagaIdParam)
+          .sort((a, b) => (a.vaga_perguntas_customizadas?.ordem ?? 0) - (b.vaga_perguntas_customizadas?.ordem ?? 0))
+          .map((r) => ({
+            pergunta: r.vaga_perguntas_customizadas?.pergunta ?? "—",
+            resposta: r.resposta ?? "",
+            ordem: r.vaga_perguntas_customizadas?.ordem ?? 0,
+          }));
+        setPerguntasRespostas(filtradas);
+      });
+  }, [candidatoIdParaQuests, vagaIdParam, open]);
 
   if (!open) return null;
 
@@ -5486,6 +5507,19 @@ function CandidatoDetailSheet({
                 {t.label}
               </button>
             ))}
+            {perguntasRespostas.length > 0 && (
+              <button
+                onClick={() => setFichaTab("respostas")}
+                className={cn(
+                  "px-4 py-2.5 text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
+                  fichaTab === "respostas"
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Respostas
+              </button>
+            )}
           </div>
         </header>
 
@@ -5961,6 +5995,22 @@ function CandidatoDetailSheet({
             })()}
           </section>
 
+            </div>
+          )}
+
+          {/* ── Aba: Respostas perguntas customizadas ── */}
+          {fichaTab === "respostas" && (
+            <div className="space-y-4">
+              {perguntasRespostas.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma resposta registrada para esta vaga.</p>
+              ) : (
+                perguntasRespostas.map((r, i) => (
+                  <div key={i} className="space-y-1.5">
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{r.pergunta}</p>
+                    <p className="text-sm text-foreground rounded-lg border border-border bg-[hsl(var(--background)/0.4)] px-3 py-2 whitespace-pre-wrap">{r.resposta}</p>
+                  </div>
+                ))
+              )}
             </div>
           )}
         </div>

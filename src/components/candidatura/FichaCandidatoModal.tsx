@@ -35,15 +35,23 @@ interface ProcessoItem {
 
 interface Props {
   candidatoId: string;
+  vagaId?: string;
   onClose: () => void;
   onVincular?: (id: string, nome: string) => void;
   onExcluido?: (id: string) => void;
 }
 
-export default function FichaCandidatoModal({ candidatoId, onClose, onVincular, onExcluido }: Props) {
-  const [tab, setTab] = useState<"dados" | "disc" | "processos">("dados");
+interface RespostaPergunta {
+  pergunta: string;
+  resposta: string;
+  ordem: number;
+}
+
+export default function FichaCandidatoModal({ candidatoId, vagaId, onClose, onVincular, onExcluido }: Props) {
+  const [tab, setTab] = useState<"dados" | "disc" | "processos" | "respostas">("dados");
   const [cand, setCand] = useState<CandData | null>(null);
   const [processos, setProcessos] = useState<ProcessoItem[]>([]);
+  const [respostasList, setRespostasList] = useState<RespostaPergunta[]>([]);
   const [loading, setLoading] = useState(true);
   const [excluirOpen, setExcluirOpen] = useState(false);
 
@@ -86,6 +94,26 @@ export default function FichaCandidatoModal({ candidatoId, onClose, onVincular, 
         }
       });
   }, [candidatoId]);
+
+  useEffect(() => {
+    if (!vagaId) { setRespostasList([]); return; }
+    (supabase as any)
+      .from("candidate_pergunta_respostas")
+      .select("resposta, pergunta_id, vaga_perguntas_customizadas(pergunta, ordem, job_id)")
+      .eq("candidate_id", candidatoId)
+      .then(({ data }: { data: any[] | null }) => {
+        if (!data) { setRespostasList([]); return; }
+        const filtradas = data
+          .filter((r) => r.vaga_perguntas_customizadas?.job_id === vagaId)
+          .sort((a, b) => (a.vaga_perguntas_customizadas?.ordem ?? 0) - (b.vaga_perguntas_customizadas?.ordem ?? 0))
+          .map((r) => ({
+            pergunta: r.vaga_perguntas_customizadas?.pergunta ?? "—",
+            resposta: r.resposta,
+            ordem: r.vaga_perguntas_customizadas?.ordem ?? 0,
+          }));
+        setRespostasList(filtradas);
+      });
+  }, [candidatoId, vagaId]);
 
   async function confirmarExclusao() {
     const { error } = await supabase.from("candidates").delete().eq("id", candidatoId);
@@ -146,6 +174,18 @@ export default function FichaCandidatoModal({ candidatoId, onClose, onVincular, 
               {t === "dados" ? "Dados Gerais" : t === "disc" ? "Perfil DISC" : "Processos"}
             </button>
           ))}
+          {respostasList.length > 0 && (
+            <button
+              onClick={() => setTab("respostas")}
+              className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                tab === "respostas"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Respostas
+            </button>
+          )}
         </div>
 
         {/* Body */}
@@ -257,6 +297,21 @@ export default function FichaCandidatoModal({ candidatoId, onClose, onVincular, 
                 ))}
               </ul>
             )
+          )}
+
+          {!loading && tab === "respostas" && (
+            <div className="space-y-4">
+              {respostasList.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma resposta registrada.</p>
+              ) : (
+                respostasList.map((r, i) => (
+                  <div key={i} className="space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{r.pergunta}</p>
+                    <p className="text-sm text-foreground rounded-lg bg-muted/50 px-3 py-2 whitespace-pre-wrap">{r.resposta}</p>
+                  </div>
+                ))
+              )}
+            </div>
           )}
         </div>
 

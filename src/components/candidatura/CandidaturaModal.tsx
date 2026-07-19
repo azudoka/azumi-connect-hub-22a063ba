@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { X, Upload, Check, ChevronRight, FileText, Loader2, UserCheck, RefreshCw } from "lucide-react";
 import DiscTeste from "@/components/disc/DiscTeste";
@@ -20,10 +20,13 @@ interface Props {
   vagaId?: string;
   vagaSalarioACombinar?: boolean;
   vagaDiscHabilitado?: boolean;
+  vagaPerguntasHabilitado?: boolean;
   /** Quando true, renderiza como painel embutido na página (sem fundo escuro, sem posição fixa,
       sem botão de fechar) em vez de modal flutuante. Mesma lógica por trás, só muda a casca visual. */
   inline?: boolean;
 }
+
+type VagaPergunta = { id: string; pergunta: string; obrigatoria: boolean; ordem: number };
 
 interface Cadastro {
   foto: File | null;
@@ -142,9 +145,9 @@ function cpfValido(cpf: string): boolean {
 const DATA_MIN = "1945-01-01";
 const DATA_MAX = new Date(Date.now() - 14 * 365.25 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vagaId, vagaSalarioACombinar, vagaDiscHabilitado = true, inline = false }: Props) {
-  // step 0 = CPF lookup; 1 = formulário; 2 = DISC; "ok" = sucesso
-  const [step, setStep] = useState<0 | 1 | 2 | "ok">(0);
+export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vagaId, vagaSalarioACombinar, vagaDiscHabilitado = true, vagaPerguntasHabilitado = false, inline = false }: Props) {
+  // step 0 = CPF lookup; 1 = formulário; "perguntas" = perguntas customizadas; 2 = DISC; "ok" = sucesso
+  const [step, setStep] = useState<0 | 1 | "perguntas" | 2 | "ok">(0);
   const [discIntroAceita, setDiscIntroAceita] = useState(false);
   const [semLinkedin, setSemLinkedin] = useState(false);
   const [c, setC] = useState<Cadastro>(CADASTRO_INIT);
@@ -160,6 +163,20 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
   // null = não respondeu ainda; true/false = respondeu
   const [querAlterarDados, setQuerAlterarDados] = useState<boolean | null>(null);
   const [querRefazerDisc, setQuerRefazerDisc] = useState<boolean | null>(null);
+
+  // Perguntas customizadas
+  const [perguntas, setPerguntas] = useState<VagaPergunta[]>([]);
+  const [respostas, setRespostas] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!vagaPerguntasHabilitado || !vagaId) { setPerguntas([]); return; }
+    (supabase as any)
+      .from("vaga_perguntas_customizadas")
+      .select("id, pergunta, obrigatoria, ordem")
+      .eq("job_id", vagaId)
+      .order("ordem")
+      .then(({ data }: { data: VagaPergunta[] | null }) => setPerguntas(data ?? []));
+  }, [vagaId, vagaPerguntasHabilitado]);
 
   if (!inline && !open) return null;
 
@@ -179,6 +196,7 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
     setQuerRefazerDisc(null);
     setDiscIntroAceita(false);
     setSemLinkedin(false);
+    setRespostas({});
     onClose();
   }
 
@@ -297,12 +315,36 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
     const e = validarStep1();
     if (e) { setErro(e); return; }
     setErro("");
+    // Perguntas customizadas — inserir antes do DISC
+    if (vagaPerguntasHabilitado && perguntas.length > 0) {
+      setStep("perguntas");
+      return;
+    }
     // Se DISC desabilitado para esta vaga → ir direto à conclusão sem scores
     if (!vagaDiscHabilitado) {
       concluir({ D: 0, I: 0, S: 0, C: 0 }, "D");
       return;
     }
     // Se DISC anterior válido e não quer refazer → pular step 2
+    if (discValido && querRefazerDisc === false && discAnterior) {
+      const scores: DiscScores = { D: discAnterior.score_d, I: discAnterior.score_i, S: discAnterior.score_s, C: discAnterior.score_c };
+      concluir(scores, discAnterior.fator_predominante as DiscDim);
+    } else {
+      setStep(2);
+    }
+  }
+
+  function avancarPerguntas() {
+    const faltando = perguntas.find((p) => p.obrigatoria && !respostas[p.id]?.trim());
+    if (faltando) {
+      setErro(`Responda a pergunta obrigatória: "${faltando.pergunta}"`);
+      return;
+    }
+    setErro("");
+    if (!vagaDiscHabilitado) {
+      concluir({ D: 0, I: 0, S: 0, C: 0 }, "D");
+      return;
+    }
     if (discValido && querRefazerDisc === false && discAnterior) {
       const scores: DiscScores = { D: discAnterior.score_d, I: discAnterior.score_i, S: discAnterior.score_s, C: discAnterior.score_c };
       concluir(scores, discAnterior.fator_predominante as DiscDim);
@@ -409,6 +451,23 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
         if (discError) console.error("[candidatura] DISC:", discError.message);
       }
 
+      // Perguntas customizadas
+      if (vagaPerguntasHabilitado && candidatoId && Object.keys(respostas).length > 0) {
+        const respostasRows = Object.entries(respostas)
+          .filter(([, v]) => v.trim())
+          .map(([perguntaId, resposta]) => ({
+            candidate_id: candidatoId,
+            pergunta_id: perguntaId,
+            resposta: resposta.trim(),
+          }));
+        if (respostasRows.length > 0) {
+          const { error: rErr } = await (supabase as any)
+            .from("candidate_pergunta_respostas")
+            .insert(respostasRows);
+          if (rErr) console.error("[candidatura] respostas:", rErr.message);
+        }
+      }
+
       const linhas = [
         `<tr><td><strong>Vaga</strong></td><td>${vagaTitulo ?? "Banco de talentos"}</td></tr>`,
         `<tr><td><strong>Modo</strong></td><td>${modo === "banco" ? "Banco de talentos" : "Candidatura"}</td></tr>`,
@@ -460,7 +519,14 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
   }
 
   const dadosTravados = candidatoAnterior !== null && querAlterarDados === false;
-  const stepNum = step === 0 ? 0 : step === 1 ? 1 : step === 2 ? 2 : 3;
+  const temPerguntas = vagaPerguntasHabilitado && perguntas.length > 0;
+  const stepNum =
+    step === 0 ? 0
+    : step === 1 ? 1
+    : step === "perguntas" ? 2
+    : step === 2 ? (temPerguntas ? 3 : 2)
+    : 99;
+  const totalStepsNum = 2 + (temPerguntas ? 1 : 0) + (vagaDiscHabilitado ? 1 : 0);
 
   return (
     <div
@@ -512,9 +578,9 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
                 {stepNum + 1}
               </div>
               <div className="min-w-0">
-                <p className="font-sans text-[11px] text-muted-foreground">Etapa {stepNum + 1} de 3</p>
+                <p className="font-sans text-[11px] text-muted-foreground">Etapa {stepNum + 1} de {totalStepsNum}</p>
                 <p className="font-sans text-sm font-semibold text-foreground truncate">
-                  {step === 0 ? "Identificação" : step === 1 ? "Cadastro" : "Perfil DISC"}
+                  {step === 0 ? "Identificação" : step === 1 ? "Cadastro" : step === "perguntas" ? "Perguntas" : "Perfil DISC"}
                 </p>
               </div>
             </div>
@@ -523,8 +589,18 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
               <StepItem n={1} label="Identificação" active={step === 0} done={stepNum > 0} />
               <div className="h-px flex-1 bg-border" />
               <StepItem n={2} label="Cadastro" active={step === 1} done={stepNum > 1} />
-              <div className="h-px flex-1 bg-border" />
-              <StepItem n={3} label="Perfil DISC" active={step === 2} done={false} />
+              {temPerguntas && (
+                <>
+                  <div className="h-px flex-1 bg-border" />
+                  <StepItem n={3} label="Perguntas" active={step === "perguntas"} done={step === 2} />
+                </>
+              )}
+              {vagaDiscHabilitado && (
+                <>
+                  <div className="h-px flex-1 bg-border" />
+                  <StepItem n={temPerguntas ? 4 : 3} label="Perfil DISC" active={step === 2} done={false} />
+                </>
+              )}
             </div>
           )
         )}
@@ -858,7 +934,43 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
                   ← Voltar
                 </button>
                 <button type="button" onClick={avancar} className="btn-primary">
-                  {discValido && querRefazerDisc === false ? "Enviar candidatura" : <>Próximo <ChevronRight className="h-4 w-4" /></>}
+                  {discValido && querRefazerDisc === false && !temPerguntas ? "Enviar candidatura" : <>Próximo <ChevronRight className="h-4 w-4" /></>}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step perguntas: Perguntas customizadas ── */}
+          {step === "perguntas" && (
+            <div className="mx-auto max-w-2xl space-y-6">
+              <div>
+                <h3 className="font-display text-lg font-semibold text-foreground">Perguntas da vaga</h3>
+                <p className="mt-1 font-sans text-sm text-muted-foreground">
+                  Responda as perguntas abaixo para completar sua candidatura.
+                </p>
+              </div>
+              {perguntas.map((p) => (
+                <div key={p.id} className="space-y-2">
+                  <label className="block font-sans text-sm font-medium text-foreground">
+                    {p.pergunta}
+                    {p.obrigatoria && <span className="text-destructive ml-1">*</span>}
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={respostas[p.id] ?? ""}
+                    onChange={(e) => setRespostas((r) => ({ ...r, [p.id]: e.target.value }))}
+                    placeholder="Sua resposta…"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 font-sans text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none resize-none"
+                  />
+                </div>
+              ))}
+              {erro && <p className="font-sans text-sm text-destructive">{erro}</p>}
+              <div className="flex items-center justify-between pt-2">
+                <button type="button" onClick={() => { setStep(1); setErro(""); }} className="font-sans text-sm text-muted-foreground hover:text-foreground">
+                  ← Voltar
+                </button>
+                <button type="button" onClick={avancarPerguntas} className="btn-primary">
+                  {!vagaDiscHabilitado || (discValido && querRefazerDisc === false) ? "Enviar candidatura" : <>Próximo <ChevronRight className="h-4 w-4" /></>}
                 </button>
               </div>
             </div>

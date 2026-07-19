@@ -5,7 +5,7 @@ import { SlaBar } from "@/components/SlaBar";
 import { vagas as vagasMock, type StatusKey } from "@/data/mock";
 import { criarVaga, publicarVaga, listarVagas, atualizarEtapa, type VagaSupabase } from "@/services/vagasService";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, LayoutGrid, List, Filter, Info, AlertTriangle, Users, ChevronDown, ChevronRight, Megaphone, MoreVertical } from "lucide-react";
+import { Plus, LayoutGrid, List, Filter, Info, AlertTriangle, Users, ChevronDown, ChevronRight, Megaphone, MoreVertical, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from "recharts";
 
@@ -140,6 +140,8 @@ export default function AtracaoLista() {
   const [consultoresVaga, setConsultoresVaga] = useState<{ id: string; full_name: string; avatar_url: string | null; job_title: string | null }[]>([]);
   const [nResponsavelId, setNResponsavelId] = useState("");
   const [nDiscHabilitado, setNDiscHabilitado] = useState(true);
+  const [nPerguntasHabilitado, setNPerguntasHabilitado] = useState(false);
+  const [nPerguntas, setNPerguntas] = useState<{ texto: string; obrigatoria: boolean }[]>([]);
   const [tipoEmpresa, setTipoEmpresa] = useState<"avulsa" | "cadastrada">("avulsa");
   const [empresasCadastradas, setEmpresasCadastradas] = useState<{ id: string; name: string }[]>([]);
   const [empresaCadastradaId, setEmpresaCadastradaId] = useState("");
@@ -229,6 +231,8 @@ export default function AtracaoLista() {
     setAvulsaContatoNome(""); setAvulsaContatoCargo(""); setAvulsaContatoTelefone(""); setAvulsaContatoEmail("");
     setNResponsavelId("");
     setNDiscHabilitado(true);
+    setNPerguntasHabilitado(false);
+    setNPerguntas([]);
     setNSlaRegra(""); setNSlaDias(""); setNSlaAltaGestao(false);
     setNUrgente(false); setNSlaTaxa("300"); setSlaExcecao(null);
     setPubAberto(false); setPubPublicar(false); setPubConfidencial(false);
@@ -867,6 +871,64 @@ export default function AtracaoLista() {
               <Switch checked={nDiscHabilitado} onCheckedChange={setNDiscHabilitado} />
             </div>
 
+            {/* Perguntas customizadas */}
+            <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-foreground">Perguntas customizadas</p>
+                <p className="text-xs text-muted-foreground">O candidato responderá perguntas específicas desta vaga ao se candidatar</p>
+              </div>
+              <Switch checked={nPerguntasHabilitado} onCheckedChange={setNPerguntasHabilitado} />
+            </div>
+
+            {nPerguntasHabilitado && (
+              <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-foreground">Perguntas</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setNPerguntas((p) => [...p, { texto: "", obrigatoria: true }])}
+                    disabled={nPerguntas.length >= 10}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+                  </Button>
+                </div>
+                {nPerguntas.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-2">Nenhuma pergunta. Clique em "Adicionar" para criar.</p>
+                ) : (
+                  nPerguntas.map((q, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <Input
+                        value={q.texto}
+                        onChange={(e) => setNPerguntas((p) => p.map((x, j) => j === i ? { ...x, texto: e.target.value } : x))}
+                        placeholder={`Pergunta ${i + 1}…`}
+                        className="flex-1"
+                      />
+                      <div className="flex items-center gap-2 shrink-0 pt-2">
+                        <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={q.obrigatoria}
+                            onChange={(e) => setNPerguntas((p) => p.map((x, j) => j === i ? { ...x, obrigatoria: e.target.checked } : x))}
+                            className="h-3.5 w-3.5 accent-primary"
+                          />
+                          <span className="text-xs text-muted-foreground">Obrig.</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setNPerguntas((p) => p.filter((_, j) => j !== i))}
+                          className="text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
             {/* Toggle: Empresa cadastrada vs Cliente avulso */}
             <div className="space-y-3">
               <Label>Tipo de cliente *</Label>
@@ -1302,6 +1364,9 @@ export default function AtracaoLista() {
                   .map((s) => s.trim())
                   .filter(Boolean);
                 const beneficiosFinal = [...nBeneficios, ...outrosExtras];
+                const perguntasParaSalvar = nPerguntasHabilitado
+                  ? nPerguntas.filter((q) => q.texto.trim())
+                  : [];
                 setNovaVagaOpen(false);
                 resetNovaVaga();
                 const tid = toast.loading(`Salvando "${titulo}"…`);
@@ -1335,6 +1400,7 @@ export default function AtracaoLista() {
                     salario_fixo: !pubACombinar && !!pubSalDe && !pubSalAte,
                     responsavel_id: nResponsavelId || null,
                     disc_habilitado: nDiscHabilitado,
+                    perguntas_customizadas_habilitado: nPerguntasHabilitado,
                     sla_dias: slaDiasNum,
                     sla_urgente: nUrgente,
                     sla_taxa_urgencia: (nUrgente && !urgenteIsentoTaxa && nSlaTaxa) ? Number(nSlaTaxa) : null,
@@ -1343,6 +1409,17 @@ export default function AtracaoLista() {
                   });
                   if (pubPublicar) {
                     await publicarVaga(vagaCriada.id);
+                  }
+                  if (perguntasParaSalvar.length > 0) {
+                    await (supabase as any)
+                      .from("vaga_perguntas_customizadas")
+                      .insert(perguntasParaSalvar.map((q, i) => ({
+                        job_id: vagaCriada.id,
+                        pergunta: q.texto,
+                        tipo: "text",
+                        obrigatoria: q.obrigatoria,
+                        ordem: i + 1,
+                      })));
                   }
                   toast.success(`Vaga "${titulo}" criada.`, { id: tid,
                     description: pubPublicar ? "Vaga publicada no site." : "Status: Briefing. Complete o preenchimento antes de publicar." });

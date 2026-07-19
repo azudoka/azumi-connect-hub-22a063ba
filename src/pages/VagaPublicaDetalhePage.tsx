@@ -139,6 +139,7 @@ export default function VagaPublicaDetalhePage() {
   const { id } = useParams<{ id: string }>();
   const [vaga, setVaga] = useState<VagaPublica | null | undefined>(undefined);
   const [vagaDiscHabilitado, setVagaDiscHabilitado] = useState(true);
+  const [vagaPerguntasHabilitado, setVagaPerguntasHabilitado] = useState(false);
   const [modalBanco, setModalBanco] = useState(false);
 
   useEffect(() => {
@@ -168,6 +169,7 @@ export default function VagaPublicaDetalhePage() {
         created_at: r.criado_em,
       });
       setVagaDiscHabilitado(r.disc_habilitado);
+      setVagaPerguntasHabilitado(r.perguntas_customizadas_habilitado);
     }).catch(() => setVaga(null));
   }, [id]);
 
@@ -334,6 +336,7 @@ export default function VagaPublicaDetalhePage() {
               vagaTitulo={vaga.titulo}
               vagaSalarioACombinar={!vaga.salario_fixo}
               vagaDiscHabilitado={vagaDiscHabilitado}
+              vagaPerguntasHabilitado={vagaPerguntasHabilitado}
             />
           </div>
         </div>
