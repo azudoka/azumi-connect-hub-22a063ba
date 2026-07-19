@@ -620,6 +620,7 @@ export default function VagaDetalheAdmin() {
   const [editorQuestId, setEditorQuestId] = useState<string | "novo" | null>(null);
   /** Confirmação de exclusão de questionário. */
   const [excluirQuestId, setExcluirQuestId] = useState<string | null>(null);
+  const [excluirQuestBloqueadoId, setExcluirQuestBloqueadoId] = useState<string | null>(null);
   /** Modal de envio de questionário ao mover para coluna Quest. */
   const [enviarQuestParaCand, setEnviarQuestParaCand] = useState<string | null>(null);
   /** Modal "Enviar via WhatsApp" — guarda candidatoId + questionarioId (opcional). */
@@ -801,6 +802,28 @@ export default function VagaDetalheAdmin() {
     );
     setEditorQuestId(null);
     toast.success(`Questionário "${q.nome}" salvo.`);
+  }
+
+  async function forcarExclusaoComCascata() {
+    const id = excluirQuestBloqueadoId!;
+    const { data: perguntas } = await supabase
+      .from("questionnaire_questions")
+      .select("id")
+      .eq("questionnaire_id", id);
+    const perguntaIds = (perguntas ?? []).map((p: any) => p.id);
+    if (perguntaIds.length > 0) {
+      await (supabase as any)
+        .from("candidate_pergunta_respostas")
+        .delete()
+        .in("pergunta_id", perguntaIds);
+    }
+    await supabase.from("candidate_questionnaires").delete().eq("questionnaire_id", id);
+    await supabase.from("questionnaire_questions").delete().eq("questionnaire_id", id);
+    const { error } = await supabase.from("questionnaires").delete().eq("id", id);
+    if (error) { toast.error("Erro ao excluir: " + error.message); return; }
+    setQuestionariosVaga((prev) => prev.filter((x) => x.id !== id));
+    setExcluirQuestBloqueadoId(null);
+    toast.success("Questionário e histórico relacionado excluídos.");
   }
 
   async function recarregarVaga() {
@@ -3059,13 +3082,47 @@ export default function VagaDetalheAdmin() {
                     const idParaExcluir = excluirQuestId!;
                     setExcluirQuestId(null);
                     await supabase.from("questionnaire_questions").delete().eq("questionnaire_id", idParaExcluir);
-                    await supabase.from("questionnaires").delete().eq("id", idParaExcluir);
+                    const { error } = await supabase.from("questionnaires").delete().eq("id", idParaExcluir);
+                    if (error) {
+                      if (error.code === "23503") {
+                        setExcluirQuestBloqueadoId(idParaExcluir);
+                      } else {
+                        toast.error("Erro ao excluir: " + error.message);
+                      }
+                      return;
+                    }
                     setQuestionariosVaga((prev) => prev.filter((x) => x.id !== idParaExcluir));
-                    toast.warning("Questionário excluído.");
+                    toast.success("Questionário excluído.");
                   }}
                   className="h-9 px-4 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium inline-flex items-center gap-1.5"
                 >
                   <Trash2 className="h-3.5 w-3.5" /> Excluir
+                </button>
+              </div>
+            </div>
+          </ModalShell>
+        );
+      })()}
+
+      {/* ── Modal: Exclusão bloqueada por FK (questionário já enviado) ── */}
+      {excluirQuestBloqueadoId && (() => {
+        const q = questionariosVaga.find((x) => x.id === excluirQuestBloqueadoId);
+        return (
+          <ModalShell title="Não foi possível excluir" onClose={() => setExcluirQuestBloqueadoId(null)}>
+            <div className="space-y-4 text-sm">
+              <p className="text-muted-foreground">
+                O questionário <strong>{q?.nome}</strong> já foi enviado a pelo menos um candidato,
+                então não pode ser excluído normalmente — isso preserva o histórico de quem respondeu o quê.
+                Se mesmo assim quiser excluir, isso vai apagar também todos os envios e respostas ligados a ele.
+              </p>
+              <div className="flex justify-end gap-2 pt-1">
+                <button onClick={() => setExcluirQuestBloqueadoId(null)}
+                  className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm">
+                  Cancelar
+                </button>
+                <button onClick={forcarExclusaoComCascata}
+                  className="h-9 px-4 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium inline-flex items-center gap-1.5">
+                  <Trash2 className="h-3.5 w-3.5" /> Excluir mesmo assim (perde o histórico)
                 </button>
               </div>
             </div>
