@@ -1411,15 +1411,18 @@ export default function AtracaoLista() {
                     await publicarVaga(vagaCriada.id);
                   }
                   if (perguntasParaSalvar.length > 0) {
-                    await (supabase as any)
+                    const { error: erroPerguntas } = await (supabase as any)
                       .from("vaga_perguntas_customizadas")
                       .insert(perguntasParaSalvar.map((q, i) => ({
                         job_id: vagaCriada.id,
                         pergunta: q.texto,
-                        tipo: "text",
+                        tipo: "texto",
                         obrigatoria: q.obrigatoria,
                         ordem: i + 1,
                       })));
+                    if (erroPerguntas) {
+                      toast.error("Erro ao salvar perguntas customizadas: " + erroPerguntas.message);
+                    }
                   }
                   toast.success(`Vaga "${titulo}" criada.`, { id: tid,
                     description: pubPublicar ? "Vaga publicada no site." : "Status: Briefing. Complete o preenchimento antes de publicar." });
