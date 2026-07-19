@@ -3752,13 +3752,16 @@ function EditVagaModal({
   const [turno, setTurno] = useState(vaga.turno ?? "");
   const [tipoContrato, setTipoContrato] = useState(vaga.tipo_contrato ?? "");
   const [cargaHoraria, setCargaHoraria] = useState(vaga.carga_horaria ?? "");
-  const [salarioDe, setSalarioDe] = useState(vaga.salario_de != null ? String(vaga.salario_de) : "");
-  const [salarioAte, setSalarioAte] = useState(vaga.salario_ate != null ? String(vaga.salario_ate) : "");
+  const [modoSalario, setModoSalario] = useState<"combinar" | "a_partir" | "fixo">(() => {
+    if (vaga.salario_fixo && vaga.salario_de != null) return "fixo";
+    if (vaga.salario_de != null) return "a_partir";
+    return "combinar";
+  });
+  const [salarioValor, setSalarioValor] = useState(vaga.salario_de != null ? String(vaga.salario_de) : "");
   const [nivelUrgencia, setNivelUrgencia] = useState(vaga.nivel_urgencia ?? "");
   const [temComissao, setTemComissao] = useState(vaga.tem_comissao ?? false);
   const [slaDias, setSlaDias] = useState(String(vaga.sla_dias ?? 30));
   const [confidencial, setConfidencial] = useState(vaga.confidencial ?? false);
-  const [salarioFixo, setSalarioFixo] = useState(vaga.salario_fixo ?? false);
   const [contatoNome, setContatoNome] = useState(vaga.avulsa_solicitante_nome ?? "");
   const [contatoCargo, setContatoCargo] = useState(vaga.avulsa_solicitante_cargo ?? "");
   const [contatoTelefone, setContatoTelefone] = useState(vaga.avulsa_solicitante_telefone ?? "");
@@ -3816,13 +3819,13 @@ function EditVagaModal({
         turno: turno || undefined,
         tipo_contrato: tipoContrato || undefined,
         carga_horaria: cargaHoraria.trim() || undefined,
-        salario_de: salarioDe ? parseFloat(salarioDe) : undefined,
-        salario_ate: salarioAte ? parseFloat(salarioAte) : undefined,
+        salario_de: modoSalario !== "combinar" && salarioValor ? parseFloat(salarioValor) : undefined,
+        salario_ate: modoSalario === "fixo" && salarioValor ? parseFloat(salarioValor) : undefined,
+        salario_fixo: modoSalario === "fixo",
         nivel_urgencia: nivelUrgencia || undefined,
         tem_comissao: temComissao,
         sla_dias: parseInt(slaDias) || 30,
         confidencial,
-        salario_fixo: salarioFixo,
         responsavel_id: responsavelId || null,
         disc_habilitado: discHabilitado,
         perguntas_customizadas_habilitado: perguntasHabilitado,
@@ -4024,22 +4027,29 @@ function EditVagaModal({
           </Field>
         </div>
 
-        <div>
-          <label className="mb-2 flex items-center gap-2 cursor-pointer text-xs">
-            <input type="checkbox" checked={salarioFixo} onChange={(e) => { setSalarioFixo(e.target.checked); if (e.target.checked) setSalarioAte(""); }} className="h-4 w-4 rounded" />
-            Salário fixo (não é faixa "a partir de")
-          </label>
-          <div className={`grid gap-3 ${salarioFixo ? "grid-cols-1" : "grid-cols-2"}`}>
-            <Field label={salarioFixo ? "Salário fixo (R$)" : "Salário de (R$)"}>
-              <input type="number" value={salarioDe} onChange={(e) => setSalarioDe(e.target.value)} placeholder="0" className={inputCls} />
-            </Field>
-            {!salarioFixo && (
-              <Field label="Salário até (R$)">
-                <input type="number" value={salarioAte} onChange={(e) => setSalarioAte(e.target.value)} placeholder="0" className={inputCls} />
-              </Field>
-            )}
+        <Field label="Salário">
+          <div className="flex gap-2 mb-2">
+            {(["combinar", "a_partir", "fixo"] as const).map((modo) => (
+              <button
+                key={modo}
+                type="button"
+                onClick={() => setModoSalario(modo)}
+                className={`flex-1 h-8 rounded-md border text-xs font-medium transition-colors ${modoSalario === modo ? "bg-primary text-primary-foreground border-primary" : "border-border bg-background text-muted-foreground hover:bg-secondary"}`}
+              >
+                {modo === "combinar" ? "A combinar" : modo === "a_partir" ? "A partir de" : "Fixo"}
+              </button>
+            ))}
           </div>
-        </div>
+          {modoSalario !== "combinar" && (
+            <input
+              type="number"
+              value={salarioValor}
+              onChange={(e) => setSalarioValor(e.target.value)}
+              placeholder={modoSalario === "a_partir" ? "Valor mínimo (R$)" : "Valor exato (R$)"}
+              className={inputCls}
+            />
+          )}
+        </Field>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Urgência">

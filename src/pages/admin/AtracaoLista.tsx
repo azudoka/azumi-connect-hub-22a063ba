@@ -186,9 +186,8 @@ export default function AtracaoLista() {
   const [pubTurno, setPubTurno] = useState("integral");
   const [pubContrato, setPubContrato] = useState("clt");
   const [pubCarga, setPubCarga] = useState("");
-  const [pubSalDe, setPubSalDe] = useState("");
-  const [pubSalAte, setPubSalAte] = useState("");
-  const [pubACombinar, setPubACombinar] = useState(false);
+  const [pubModoSalario, setPubModoSalario] = useState<"combinar" | "a_partir" | "fixo">("combinar");
+  const [pubSalarioValor, setPubSalarioValor] = useState("");
   const [pubDescricao, setPubDescricao] = useState("");
 
   // Load client SLA exception when a registered company is selected
@@ -1296,30 +1295,25 @@ export default function AtracaoLista() {
 
                       <div className="space-y-2">
                         <Label>Salário</Label>
-                        <label className="flex items-center gap-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={pubACombinar}
-                            onChange={(e) => setPubACombinar(e.target.checked)}
-                            className="h-4 w-4 rounded"
+                        <div className="flex gap-2">
+                          {(["combinar", "a_partir", "fixo"] as const).map((modo) => (
+                            <button
+                              key={modo}
+                              type="button"
+                              onClick={() => setPubModoSalario(modo)}
+                              className={`flex-1 h-8 rounded-md border text-xs font-medium transition-colors ${pubModoSalario === modo ? "bg-primary text-primary-foreground border-primary" : "border-border bg-background text-muted-foreground hover:bg-secondary"}`}
+                            >
+                              {modo === "combinar" ? "A combinar" : modo === "a_partir" ? "A partir de" : "Fixo"}
+                            </button>
+                          ))}
+                        </div>
+                        {pubModoSalario !== "combinar" && (
+                          <Input
+                            type="number"
+                            value={pubSalarioValor}
+                            onChange={(e) => setPubSalarioValor(e.target.value)}
+                            placeholder={pubModoSalario === "a_partir" ? "Valor mínimo (R$)" : "Valor exato (R$)"}
                           />
-                          A combinar
-                        </label>
-                        {!pubACombinar && (
-                          <div className="grid grid-cols-2 gap-3">
-                            <Input
-                              type="number"
-                              value={pubSalDe}
-                              onChange={(e) => setPubSalDe(e.target.value)}
-                              placeholder="De R$"
-                            />
-                            <Input
-                              type="number"
-                              value={pubSalAte}
-                              onChange={(e) => setPubSalAte(e.target.value)}
-                              placeholder="Até R$"
-                            />
-                          </div>
                         )}
                       </div>
 
@@ -1394,10 +1388,10 @@ export default function AtracaoLista() {
                     turno: pubTurno || undefined,
                     tipo_contrato: pubContrato || undefined,
                     carga_horaria: pubCarga.trim() || undefined,
-                    salario_de: pubACombinar ? undefined : (pubSalDe ? Number(pubSalDe) : undefined),
-                    salario_ate: pubACombinar ? undefined : (pubSalAte ? Number(pubSalAte) : undefined),
+                    salario_de: pubModoSalario !== "combinar" && pubSalarioValor ? Number(pubSalarioValor) : undefined,
+                    salario_ate: pubModoSalario === "fixo" && pubSalarioValor ? Number(pubSalarioValor) : undefined,
                     confidencial: pubConfidencial,
-                    salario_fixo: !pubACombinar && !!pubSalDe && !pubSalAte,
+                    salario_fixo: pubModoSalario === "fixo",
                     responsavel_id: nResponsavelId || null,
                     disc_habilitado: nDiscHabilitado,
                     perguntas_customizadas_habilitado: nPerguntasHabilitado,
