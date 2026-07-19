@@ -15,6 +15,7 @@ import { getVaga } from "@/services/vagasService";
 import CandidaturaModal from "@/components/candidatura/CandidaturaModal";
 import { AzumiLogo } from "@/components/brand/AzumiLogo";
 import { CategoryTag } from "@/components/CategoryTag";
+import { renderDescricaoFormatada } from "@/lib/descricaoFormatada";
 
 function Header() {
   const { escuro, alternar } = useThemeToggle();
@@ -320,7 +321,9 @@ export default function VagaPublicaDetalhePage() {
             {vaga.descricao && (
               <section className="rounded-2xl border border-border bg-card p-6 shadow-card">
                 <h2 className="mb-3 font-display text-lg font-semibold text-foreground">Sobre a vaga</h2>
-                <p className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground/85">{vaga.descricao}</p>
+                <p className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground/85">
+                  {renderDescricaoFormatada(vaga.descricao)}
+                </p>
               </section>
             )}
           </div>
