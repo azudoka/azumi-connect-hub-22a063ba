@@ -303,11 +303,11 @@ export default function Empresas() {
         >
           <div className="flex min-h-full items-start justify-center p-4 py-10 sm:py-16">
             <div
-              className="relative w-full max-w-2xl bg-background rounded-2xl shadow-elevated flex flex-col my-auto"
+              className="relative w-full max-w-2xl bg-background rounded-2xl shadow-elevated flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
             {/* Header */}
-            <div className="sticky top-0 bg-background z-10 flex items-center justify-between px-6 py-4 border-b border-border">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <h2 className="font-display font-semibold text-foreground">Nova empresa</h2>
               <button
                 onClick={() => { setNovaOpen(false); resetModal(); }}
@@ -583,7 +583,7 @@ export default function Empresas() {
             </div>
 
             {/* Footer */}
-            <div className="sticky bottom-0 bg-background border-t border-border px-6 py-4 flex justify-end gap-2">
+            <div className="border-t border-border px-6 py-4 flex justify-end gap-2">
               <Button
                 variant="outline"
                 onClick={() => { setNovaOpen(false); resetModal(); }}
