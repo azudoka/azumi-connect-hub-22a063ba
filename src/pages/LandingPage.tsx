@@ -639,7 +639,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {
-                src: "/fotos/persona-empresa.jpg",
+                src: "/screenshots/quem-utiliza-empresa.png",
                 gradient: "from-[#264478] to-[#3D63B8]",
                 role: "Sua empresa (cliente Azumi)",
                 sub: "Visibilidade total, sem intermediário",
@@ -647,7 +647,7 @@ export default function LandingPage() {
                 delay: 0,
               },
               {
-                src: "/fotos/persona-consultora.jpg",
+                src: "/screenshots/quem-utiliza-consultor.png",
                 gradient: "from-[#3D63B8] to-[#7FA8E8]",
                 role: "Consultoras Azumi",
                 sub: "Onde a operação acontece",
@@ -655,7 +655,7 @@ export default function LandingPage() {
                 delay: 100,
               },
               {
-                src: "/fotos/persona-gestao.jpg",
+                src: "/screenshots/quem-utiliza-lideranca.png",
                 gradient: "from-[#1a3a6b] to-[#264478]",
                 role: "Liderança Azumi",
                 sub: "Qualidade e indicadores consolidados",
