@@ -10,10 +10,15 @@ import {
 } from "lucide-react";
 
 const SCREENSHOTS = [
-  "/screenshots/connect-login.png",
-  "/screenshots/connect-hub-1.png",
-  "/screenshots/connect-hub-2.png",
-  "/screenshots/connect-app-2.png",
+  "/screenshots/tela-01.png",
+  "/screenshots/tela-02.png",
+  "/screenshots/tela-03.png",
+  "/screenshots/tela-04.png",
+  "/screenshots/tela-05.png",
+  "/screenshots/tela-06.png",
+  "/screenshots/tela-07.png",
+  "/screenshots/tela-08.png",
+  "/screenshots/tela-09.png",
 ];
 
 const WA = "5541988350743";
