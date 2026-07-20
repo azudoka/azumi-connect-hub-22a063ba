@@ -72,6 +72,25 @@ import {
 import { toast } from "sonner";
 import { CategoryTag } from "@/components/CategoryTag";
 
+function ConsultorAvatar({ url, iniciais, size = "sm" }: { url?: string | null; iniciais: string; size?: "sm" | "lg" }) {
+  const [broken, setBroken] = useState(false);
+  const sm = size === "sm";
+  if (url && !broken) {
+    return (
+      <img
+        src={url}
+        alt=""
+        className={sm ? "h-5 w-5 rounded-md object-cover shrink-0" : "h-[52px] w-[52px] rounded-lg object-cover shrink-0"}
+        onError={() => setBroken(true)}
+      />
+    );
+  }
+  if (sm) {
+    return <span className="h-5 w-5 rounded-md bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center shrink-0">{iniciais}</span>;
+  }
+  return <div className="h-[52px] w-[52px] rounded-lg bg-[image:linear-gradient(135deg,hsl(var(--primary)),hsl(var(--primary-glow)))] flex items-center justify-center text-sm font-semibold text-white shrink-0">{iniciais}</div>;
+}
+
 // SLA crítico: > 80% de SLA consumido em "perfis_enviados" → badge de alerta no card
 function isSlaCritico(etapa: FunilEtapa, sla: number) {
   return etapa === "perfis_enviados" && sla >= 80;
@@ -682,10 +701,7 @@ export default function AtracaoLista() {
                               </div>
                             )}
                             <div className="mt-3 pt-2 border-t border-border flex items-center gap-1.5">
-                              {v.consultor_avatar_url
-                                ? <img src={v.consultor_avatar_url} alt={v.consultor} className="h-5 w-5 rounded-md object-cover shrink-0" />
-                                : <span className="h-5 w-5 rounded-md bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center shrink-0">{consultorIniciais}</span>
-                              }
+                              <ConsultorAvatar url={v.consultor_avatar_url} iniciais={consultorIniciais} size="sm" />
                               <span className="text-[10px] text-muted-foreground truncate">{v.consultor}</span>
                             </div>
                           </li>
@@ -716,10 +732,11 @@ export default function AtracaoLista() {
                 <tr key={v.id} className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors">
                   <td className="px-4 py-3.5">
                     <Link to={`/app/atracao/${v.id}`} className="flex items-center gap-3 group">
-                      {v.consultor_avatar_url
-                        ? <img src={v.consultor_avatar_url} alt={v.consultor ?? "Azumi"} title={v.consultor ?? "Azumi"} className="h-[52px] w-[52px] rounded-lg object-cover shrink-0" />
-                        : <div title={v.consultor ?? "Azumi"} className="h-[52px] w-[52px] rounded-lg bg-[image:linear-gradient(135deg,hsl(var(--primary)),hsl(var(--primary-glow)))] flex items-center justify-center text-sm font-semibold text-white shrink-0">{v.consultor?.split(" ").map((n) => n[0]).slice(0, 2).join("") ?? "AZ"}</div>
-                      }
+                      <ConsultorAvatar
+                        url={v.consultor_avatar_url}
+                        iniciais={v.consultor?.split(" ").map((n) => n[0]).slice(0, 2).join("") ?? "AZ"}
+                        size="lg"
+                      />
 
                       <div className="min-w-0">
                         <p className="font-medium truncate group-hover:text-primary transition-colors">{v.titulo}</p>
