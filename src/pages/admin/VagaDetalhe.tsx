@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 import { publicarVaga, despublicarVaga, getVaga, atualizarVaga, definirStatusVaga, excluirVaga, criarVaga, type VagaSupabase, type CriarVagaInput } from "@/services/vagasService";
 import { criarLinkCurto } from "@/services/shortLinkService";
-import { emailConviteQuestionario, emailAprovado, emailNaoAprovado, emailSolicitarNps, emailAgendamentoEntrevista, sendEmail } from "@/lib/emailTemplates";
+import { emailConviteQuestionario, emailAprovado, emailNaoAprovado, emailSolicitarNps, emailAgendamentoEntrevista, emailCompletarCadastro, sendEmail } from "@/lib/emailTemplates";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
@@ -3145,11 +3145,13 @@ export default function VagaDetalheAdmin() {
       {novoCandOpen && (
         <ModalShell title="Adicionar candidato" onClose={() => setNovoCandOpen(false)}>
           <NovoCandidatoForm
+            vagaId={vaga.id}
+            vagaTitulo={vaga.titulo}
+            vagaEmpresa={vaga.empresa}
             onCancel={() => setNovoCandOpen(false)}
-            onSave={(c) => {
-              setCandidatosExtras((prev) => [...prev, c]);
+            onSave={() => {
               setNovoCandOpen(false);
-              toast.success(`${c.nome} adicionado à vaga.`);
+              recarregarCandidaturas();
             }}
           />
         </ModalShell>
@@ -4337,16 +4339,66 @@ function EditVagaModal({
 // Formulários internos dos modais
 // ────────────────────────────────────────────────────────────────────
 function NovoCandidatoForm({
+  vagaId,
+  vagaTitulo,
+  vagaEmpresa,
   onCancel,
   onSave,
 }: {
+  vagaId: string;
+  vagaTitulo: string;
+  vagaEmpresa: string;
   onCancel: () => void;
-  onSave: (c: CandidatoExtra) => void;
+  onSave: () => void;
 }) {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
   const [cargo, setCargo] = useState("");
+  const [curriculo, setCurriculo] = useState<File | null>(null);
+  const [salvando, setSalvando] = useState(false);
+
+  async function handleSave() {
+    if (!nome.trim()) return;
+    setSalvando(true);
+    try {
+      const { data: cand, error: errIns } = await (supabase as any)
+        .from("candidates")
+        .insert({ job_id: vagaId, nome: nome.trim(), email: email.trim() || null, telefone: telefone.trim() || null, cargo: cargo.trim() || null, origem: "manual" })
+        .select("id")
+        .single();
+      if (errIns || !cand) throw errIns ?? new Error("Falha ao inserir candidato");
+
+      const token = crypto.randomUUID();
+      const updates: Record<string, string | null> = { token_completar_cadastro: token };
+
+      if (curriculo) {
+        const ext = curriculo.name.split(".").pop();
+        const path = `${vagaId}/${cand.id}.${ext}`;
+        const { error: errUp } = await supabase.storage.from("curriculos").upload(path, curriculo, { upsert: true });
+        if (!errUp) {
+          const { data: pub } = supabase.storage.from("curriculos").getPublicUrl(path);
+          updates.curriculo_url = pub.publicUrl;
+          updates.curriculo_nome = curriculo.name;
+        }
+      }
+
+      await (supabase as any).from("candidates").update(updates).eq("id", cand.id);
+
+      if (email.trim()) {
+        const urlCompleta = `${window.location.origin}/completar-cadastro/${token}`;
+        const link = await criarLinkCurto(urlCompleta, "completar_cadastro");
+        sendEmail(email.trim(), `Complete seu cadastro — ${vagaTitulo}`, emailCompletarCadastro({ nome: nome.trim(), cargoVaga: vagaTitulo, empresa: vagaEmpresa, link }));
+      }
+
+      toast.success(`${nome.trim()} adicionado à vaga.`);
+      onSave();
+    } catch (err) {
+      toast.error("Erro ao adicionar candidato: " + (err instanceof Error ? err.message : "erro desconhecido"));
+    } finally {
+      setSalvando(false);
+    }
+  }
 
   return (
     <div className="space-y-3 text-sm">
@@ -4354,7 +4406,7 @@ function NovoCandidatoForm({
         <input value={nome} onChange={(e) => setNome(e.target.value)} className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm" />
       </Field>
       <Field label="E-mail">
-        <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm" />
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm" placeholder="Para enviar convite (opcional)" />
       </Field>
       <Field label="Telefone">
         <input value={telefone} onChange={(e) => setTelefone(e.target.value)} className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm" />
@@ -4362,14 +4414,22 @@ function NovoCandidatoForm({
       <Field label="Cargo / observação">
         <input value={cargo} onChange={(e) => setCargo(e.target.value)} className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm" />
       </Field>
+      <Field label="Currículo (opcional)">
+        <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setCurriculo(e.target.files?.[0] ?? null)} className="w-full text-sm text-muted-foreground file:mr-3 file:h-8 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:text-sm file:font-medium file:text-foreground hover:file:bg-secondary/80" />
+      </Field>
+      {email.trim() && (
+        <p className="text-[11px] text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+          Um e-mail será enviado para <strong>{email.trim()}</strong> com link para completar o cadastro.
+        </p>
+      )}
       <div className="flex justify-end gap-2 pt-2">
         <button onClick={onCancel} className="h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm">Cancelar</button>
         <button
-          disabled={!nome.trim()}
-          onClick={() => onSave({ id: `cx-${Date.now()}`, nome: nome.trim(), email, telefone, cargo, origem: "manual" })}
+          disabled={!nome.trim() || salvando}
+          onClick={handleSave}
           className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium inline-flex items-center gap-1.5 disabled:opacity-50"
         >
-          <UserPlus className="h-3.5 w-3.5" /> Adicionar
+          {salvando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />} Adicionar
         </button>
       </div>
     </div>

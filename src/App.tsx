@@ -73,6 +73,7 @@ import VagaPublicaDetalhePage from "./pages/VagaPublicaDetalhePage";
 import RedirecionadorPage from "./pages/RedirecionadorPage";
 import QuestionarioRespostaPage from "./pages/QuestionarioRespostaPage";
 import CandidatarConvitePage from "./pages/CandidatarConvitePage";
+import CompletarCadastroPage from "./pages/CompletarCadastroPage";
 import ConvitePage from "./pages/ConvitePage";
 import LandingPage from "./pages/LandingPage";
 
@@ -202,6 +203,7 @@ const AppRoutes = () => (
     <Route path="/l/:codigo" element={<RedirecionadorPage />} />
     <Route path="/questionario-resposta/:token" element={<QuestionarioRespostaPage />} />
     <Route path="/candidatar-convite/:token" element={<CandidatarConvitePage />} />
+    <Route path="/completar-cadastro/:token" element={<CompletarCadastroPage />} />
     <Route path="/convite/:token" element={<ConviteRedirect />} />
     <Route path="/nps/:token" element={<NpsAvulsoPage />} />
 

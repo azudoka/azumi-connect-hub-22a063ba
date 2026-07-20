@@ -186,3 +186,21 @@ export function emailRedefinirSenha(params: { link: string }): string {
       '<p style="font-size:12px;color:#8FA9D6;margin:16px 0 0;">Este link expira em 1 hora por segurança.</p>'
   );
 }
+
+export function emailAtribuicaoVaga(params: { nomeConsultor: string; tituloVaga: string; empresa: string; linkVaga: string }): string {
+  return emailWrapper(
+    `Nova vaga atribuída a você`,
+    paragrafo(
+      `Olá, ${params.nomeConsultor}! Uma nova vaga foi aberta e atribuída a você: <strong>${params.tituloVaga}</strong> em ${params.empresa}. Acesse a plataforma para ver os detalhes e iniciar o processo.`
+    ) + botao(params.linkVaga, "Abrir vaga no Connect")
+  );
+}
+
+export function emailCompletarCadastro(params: { nome: string; cargoVaga: string; empresa: string; link: string }): string {
+  return emailWrapper(
+    "Complete seu cadastro",
+    paragrafo(
+      `Olá${params.nome ? `, ${params.nome}` : ""}! Você foi adicionado(a) ao processo seletivo pra vaga de <strong>${params.cargoVaga}</strong> em ${params.empresa}. Complete seu cadastro para que o time da Azumi RH possa avaliar seu perfil.`
+    ) + botao(params.link, "Completar meu cadastro")
+  );
+}

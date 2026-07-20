@@ -4,6 +4,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { SlaBar } from "@/components/SlaBar";
 import { vagas as vagasMock, type StatusKey } from "@/data/mock";
 import { criarVaga, publicarVaga, listarVagas, atualizarEtapa, type VagaSupabase } from "@/services/vagasService";
+import { sendEmail, emailAtribuicaoVaga } from "@/lib/emailTemplates";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, LayoutGrid, List, Filter, Info, AlertTriangle, Users, ChevronDown, ChevronRight, Megaphone, MoreVertical, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -33,6 +34,8 @@ function supabaseToLocal(r: VagaSupabase): VagaLocal {
     beneficios: r.beneficios ?? [],
     is_avulsa: r.is_avulsa,
     etapaAtualizadoEm: r.etapaAtualizadoEm,
+    responsavel_id: r.responsavel_id ?? null,
+    consultor_avatar_url: r.consultor_avatar_url ?? null,
   } as unknown as VagaLocal;
 }
 import BancoTalentosDrawer from "@/components/atracao/BancoTalentosDrawer";
@@ -83,7 +86,7 @@ const STATUS_ORDEM: Record<string, number> = {
   cancelada: 4,
 };
 
-type VagaLocal = (typeof vagasMock)[number] & { etapaFunil: FunilEtapa; is_avulsa?: boolean; etapaAtualizadoEm?: string | null };
+type VagaLocal = (typeof vagasMock)[number] & { etapaFunil: FunilEtapa; is_avulsa?: boolean; etapaAtualizadoEm?: string | null; responsavel_id?: string | null; consultor_avatar_url?: string | null };
 
 export default function AtracaoLista() {
   const [view, setView] = useState<"kanban" | "list">("kanban");
@@ -103,6 +106,11 @@ export default function AtracaoLista() {
   }
 
   useEffect(() => { recarregarVagas(); }, []);
+
+  useEffect(() => {
+    supabase.from("users_profile").select("id, full_name, avatar_url, job_title, email").in("role", ["azumi_admin", "azumi_consultor"]).order("full_name")
+      .then(({ data }) => setConsultoresVaga((data ?? []).map((d: any) => ({ id: d.id, full_name: d.full_name ?? "—", avatar_url: d.avatar_url ?? null, job_title: d.job_title ?? null, email: d.email ?? null }))));
+  }, []);
 
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<FunilEtapa | null>(null);
@@ -137,7 +145,7 @@ export default function AtracaoLista() {
   ] as const;
 
   // Estados do form
-  const [consultoresVaga, setConsultoresVaga] = useState<{ id: string; full_name: string; avatar_url: string | null; job_title: string | null }[]>([]);
+  const [consultoresVaga, setConsultoresVaga] = useState<{ id: string; full_name: string; avatar_url: string | null; job_title: string | null; email: string | null }[]>([]);
   const [nResponsavelId, setNResponsavelId] = useState("");
   const [nDiscHabilitado, setNDiscHabilitado] = useState(true);
   const [nPerguntasHabilitado, setNPerguntasHabilitado] = useState(false);
@@ -217,8 +225,8 @@ export default function AtracaoLista() {
     if (!novaVagaOpen) return;
     supabase.from("companies").select("id, name").eq("status", "active").order("name")
       .then(({ data }) => setEmpresasCadastradas(data ?? []));
-    supabase.from("users_profile").select("id, full_name, avatar_url, job_title").in("role", ["azumi_admin", "azumi_consultor"]).order("full_name")
-      .then(({ data }) => setConsultoresVaga((data ?? []).map((d) => ({ id: d.id, full_name: d.full_name ?? "—", avatar_url: (d as any).avatar_url ?? null, job_title: (d as any).job_title ?? null }))));
+    supabase.from("users_profile").select("id, full_name, avatar_url, job_title, email").in("role", ["azumi_admin", "azumi_consultor"]).order("full_name")
+      .then(({ data }) => setConsultoresVaga((data ?? []).map((d: any) => ({ id: d.id, full_name: d.full_name ?? "—", avatar_url: d.avatar_url ?? null, job_title: d.job_title ?? null, email: d.email ?? null }))));
     (supabase as any).from("sla_regras").select("id, modulo, nivel, dias_uteis, ordem").order("modulo").order("ordem")
       .then(({ data }: { data: SlaRegra[] | null }) => setSlaRegras(data ?? []));
   }, [novaVagaOpen]);
@@ -666,9 +674,10 @@ export default function AtracaoLista() {
                               </div>
                             )}
                             <div className="mt-3 pt-2 border-t border-border flex items-center gap-1.5">
-                              <span className="h-5 w-5 rounded-md bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center shrink-0">
-                                {consultorIniciais}
-                              </span>
+                              {v.consultor_avatar_url
+                                ? <img src={v.consultor_avatar_url} alt={v.consultor} className="h-5 w-5 rounded-md object-cover shrink-0" />
+                                : <span className="h-5 w-5 rounded-md bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center shrink-0">{consultorIniciais}</span>
+                              }
                               <span className="text-[10px] text-muted-foreground truncate">{v.consultor}</span>
                             </div>
                           </li>
@@ -699,12 +708,11 @@ export default function AtracaoLista() {
                 <tr key={v.id} className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors">
                   <td className="px-4 py-3.5">
                     <Link to={`/app/atracao/${v.id}`} className="flex items-center gap-3 group">
-                      <div
-                        title={v.consultor ?? "Azumi"}
-                        className="h-[52px] w-[52px] rounded-lg bg-[image:linear-gradient(135deg,hsl(var(--primary)),hsl(var(--primary-glow)))] flex items-center justify-center text-sm font-semibold text-white shrink-0"
-                      >
-                        {v.consultor?.split(" ").map((n) => n[0]).slice(0, 2).join("") ?? "AZ"}
-                      </div>
+                      {v.consultor_avatar_url
+                        ? <img src={v.consultor_avatar_url} alt={v.consultor ?? "Azumi"} title={v.consultor ?? "Azumi"} className="h-[52px] w-[52px] rounded-lg object-cover shrink-0" />
+                        : <div title={v.consultor ?? "Azumi"} className="h-[52px] w-[52px] rounded-lg bg-[image:linear-gradient(135deg,hsl(var(--primary)),hsl(var(--primary-glow)))] flex items-center justify-center text-sm font-semibold text-white shrink-0">{v.consultor?.split(" ").map((n) => n[0]).slice(0, 2).join("") ?? "AZ"}</div>
+                      }
+
                       <div className="min-w-0">
                         <p className="font-medium truncate group-hover:text-primary transition-colors">{v.titulo}</p>
                         <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
@@ -1434,6 +1442,13 @@ export default function AtracaoLista() {
                   });
                   if (pubPublicar) {
                     await publicarVaga(vagaCriada.id);
+                  }
+                  if (nResponsavelId) {
+                    const cons = consultoresVaga.find((c) => c.id === nResponsavelId);
+                    if (cons?.email) {
+                      const linkVaga = `${window.location.origin}/app/atracao/${vagaCriada.id}`;
+                      sendEmail(cons.email, `Nova vaga: ${titulo}`, emailAtribuicaoVaga({ nomeConsultor: cons.full_name, tituloVaga: titulo, empresa: nEmpresa.trim() || empresasCadastradas.find((e) => e.id === empresaCadastradaId)?.name ?? "—", linkVaga }));
+                    }
                   }
                   if (perguntasParaSalvar.length > 0) {
                     const { error: erroPerguntas } = await (supabase as any)
