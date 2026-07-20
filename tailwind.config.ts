@@ -151,6 +151,14 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.55" },
         },
+        "infinite-slide": {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
+        "infinite-slide-reverse": {
+          from: { transform: "translateX(-50%)" },
+          to: { transform: "translateX(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -160,6 +168,8 @@ export default {
         "slide-in-right": "slide-in-right 0.35s ease-out both",
         "scale-in": "scale-in 0.25s ease-out both",
         "soft-pulse": "soft-pulse 2s ease-in-out infinite",
+        "infinite-slide": "infinite-slide var(--duration, 40s) linear infinite",
+        "infinite-slide-reverse": "infinite-slide-reverse var(--duration, 40s) linear infinite",
       },
     },
   },

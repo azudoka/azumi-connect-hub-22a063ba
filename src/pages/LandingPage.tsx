@@ -2,11 +2,19 @@ import { Navigate, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { AzumiLogo } from "@/components/brand/AzumiLogo";
 import { NetworkBackground } from "@/components/NetworkBackground";
+import { InfiniteSlider } from "@/components/ui/infinite-slider";
 import {
-  ArrowRight, CheckCircle2, Clock, Users, FileText, Star,
+  ArrowRight, CheckCircle2, Users, FileText, Star,
   BarChart3, Kanban, Brain, Smartphone, Linkedin, TrendingUp,
   ChevronRight, MessageCircle, Instagram, Mail,
 } from "lucide-react";
+
+const SCREENSHOTS = [
+  "/screenshots/connect-login.png",
+  "/screenshots/connect-hub-1.png",
+  "/screenshots/connect-hub-2.png",
+  "/screenshots/connect-app-2.png",
+];
 
 const WA = "5541988350743";
 function waLink(texto: string) {
@@ -115,6 +123,31 @@ export default function LandingPage() {
             <ChevronRight className="h-4 w-4 rotate-90" />
           </div>
         </div>
+      </section>
+
+      {/* ── Carrossel de telas ──────────────────────────────────── */}
+      <section className="py-16 bg-[#080f1a] overflow-hidden">
+        <div className="text-center mb-10 px-6">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#7FA8E8]/60 mb-2">
+            Veja a plataforma em ação
+          </p>
+          <h2 className="text-2xl md:text-3xl font-bold text-white">
+            Telas do Connect
+          </h2>
+        </div>
+        <InfiniteSlider gap={32} duration={38}>
+          {[...SCREENSHOTS, ...SCREENSHOTS].map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt="Azumi Connect — tela da plataforma"
+              className="h-[280px] md:h-[360px] w-auto object-contain shrink-0 rounded-xl drop-shadow-2xl"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+          ))}
+        </InfiniteSlider>
       </section>
 
       {/* ── O que o Connect resolve ─────────────────────────────── */}
