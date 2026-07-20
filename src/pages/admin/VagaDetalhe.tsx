@@ -4367,7 +4367,7 @@ function NovoCandidatoForm({
     try {
       const { data: cand, error: errIns } = await (supabase as any)
         .from("candidates")
-        .insert({ job_id: vagaId, nome: nome.trim(), email: email.trim() || null, telefone: telefone.trim() || null, cargo: cargo.trim() || null, origem: "manual" })
+        .insert({ job_id: vagaId, nome: nome.trim(), email: email.trim() || null, telefone: telefone.trim() || null, observacoes: cargo.trim() || null, origem: "manual" })
         .select("id")
         .single();
       if (errIns || !cand) throw errIns ?? new Error("Falha ao inserir candidato");
