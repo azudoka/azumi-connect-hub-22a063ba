@@ -125,6 +125,7 @@ interface CandidatoExtra {
   mensagem?: string | null;
   cpf?: string | null;
   escolaridade?: string | null;
+  created_at?: string | null;
 }
 
 type TipoPergunta = "texto_livre" | "multipla_escolha" | "escala_1_5";
@@ -503,6 +504,7 @@ export default function VagaDetalheAdmin() {
               mensagem: row.observacoes,
               cpf: row.cpf,
               escolaridade: row.escolaridade,
+              created_at: row.created_at,
             };
           });
           setCandidatosExtras((prev) => [
@@ -5603,6 +5605,7 @@ function CandidatoDetailSheet({
 }) {
   useScrollLock(open);
   const { id: vagaIdParam } = useParams();
+  const navigate = useNavigate();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [fichaTab, setFichaTab] = useState<"dados" | "disc" | "processos" | "respostas">("dados");
   const [editarCandOpen, setEditarCandOpen] = useState(false);
@@ -5677,6 +5680,42 @@ function CandidatoDetailSheet({
         setPerguntasRespostas(filtradas);
       });
   }, [candidatoIdParaQuests, vagaIdParam, open]);
+
+  // Consultor responsável pela vaga
+  const [consultorResponsavelNome, setConsultorResponsavelNome] = useState<string | null>(null);
+  useEffect(() => {
+    if (!open || !vagaIdParam) return;
+    (supabase as any)
+      .from("job_solicitations")
+      .select("responsavel_id")
+      .eq("id", vagaIdParam)
+      .single()
+      .then(({ data }: { data: any }) => {
+        if (!data?.responsavel_id) return;
+        (supabase as any)
+          .from("users_profile")
+          .select("nome")
+          .eq("id", data.responsavel_id)
+          .single()
+          .then(({ data: u }: { data: any }) => {
+            setConsultorResponsavelNome(u?.nome ?? null);
+          });
+      });
+  }, [open, vagaIdParam]);
+
+  // Outras candidaturas do mesmo candidato (mesmo CPF, id diferente)
+  const [outrasCandidaturas, setOutrasCandidaturas] = useState<any[]>([]);
+  useEffect(() => {
+    const cpf = candidatoExtra?.cpf;
+    const candId = candidato?.id ?? candidatoExtra?.id;
+    if (!open || !cpf || !candId) { setOutrasCandidaturas([]); return; }
+    (supabase as any)
+      .from("candidates")
+      .select("id, etapa_azumi, created_at, job_id, job_solicitations(id, cargo)")
+      .eq("cpf", cpf)
+      .neq("id", candId)
+      .then(({ data }: { data: any[] | null }) => setOutrasCandidaturas(data ?? []));
+  }, [open, candidatoExtra?.cpf, candidato?.id, candidatoExtra?.id]);
 
   if (!open) return null;
 
@@ -6186,17 +6225,49 @@ function CandidatoDetailSheet({
                 </div>
                 <div>
                   <div className="text-[10px] text-muted-foreground">Recebido em</div>
-                  <div className="font-medium">28/04/2026</div>
+                  <div className="font-medium">
+                    {candidatoExtra?.created_at
+                      ? new Date(candidatoExtra.created_at).toLocaleDateString("pt-BR")
+                      : "—"}
+                  </div>
                 </div>
                 <div>
                   <div className="text-[10px] text-muted-foreground">Consultor</div>
-                  <div className="font-medium">Ana Beatriz</div>
+                  <div className="font-medium">{consultorResponsavelNome ?? "—"}</div>
                 </div>
                 <div>
                   <div className="text-[10px] text-muted-foreground">Vaga</div>
                   <div className="font-medium truncate">{tituloVaga}</div>
                 </div>
               </div>
+
+              {/* Outras candidaturas do mesmo CPF */}
+              {outrasCandidaturas.length > 0 && (
+                <div className="mt-3">
+                  <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">
+                    Este candidato também participa de outros processos
+                  </label>
+                  <select
+                    defaultValue=""
+                    onChange={(e) => {
+                      const outra = outrasCandidaturas.find((o) => o.id === e.target.value);
+                      if (outra?.job_solicitations?.id) {
+                        navigate(`/app/atracao/${outra.job_solicitations.id}?candidato=${outra.id}`);
+                      }
+                    }}
+                    className="w-full h-8 rounded-md border border-input bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  >
+                    <option value="" disabled>
+                      Ver outra candidatura ({outrasCandidaturas.length})
+                    </option>
+                    {outrasCandidaturas.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.job_solicitations?.cargo ?? "Vaga"} — {ETAPA_DB_TO_LABEL[o.etapa_azumi] ?? o.etapa_azumi ?? "—"}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="rounded-lg border border-border p-3">
