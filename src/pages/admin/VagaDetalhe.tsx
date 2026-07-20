@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 import { publicarVaga, despublicarVaga, getVaga, atualizarVaga, definirStatusVaga, excluirVaga, criarVaga, type VagaSupabase, type CriarVagaInput } from "@/services/vagasService";
 import { criarLinkCurto } from "@/services/shortLinkService";
-import { emailConviteQuestionario, emailAprovado, emailNaoAprovado, emailSolicitarNps, sendEmail } from "@/lib/emailTemplates";
+import { emailConviteQuestionario, emailAprovado, emailNaoAprovado, emailSolicitarNps, emailAgendamentoEntrevista, sendEmail } from "@/lib/emailTemplates";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
@@ -635,6 +635,9 @@ export default function VagaDetalheAdmin() {
   const [convidarBancoOpen, setConvidarBancoOpen] = useState(false);
   const [talentosCompativeis, setTalentosCompativeis] = useState<any[]>([]);
   const [agendarOpen, setAgendarOpen] = useState<string | null>(null);
+  const [tipoEntrevista, setTipoEntrevista] = useState<"presencial" | "remota">("remota");
+  const [horario1, setHorario1] = useState("");
+  const [horario2, setHorario2] = useState("");
   /** Modal específico de Entrevista com Gestor (Etapa 5 — Doc Mestre). */
   const [agendarGestorOpen, setAgendarGestorOpen] = useState<string | null>(null);
   const [fichaCandidatoId, setFichaCandidatoId] = useState<string | null>(null);
@@ -3377,25 +3380,76 @@ export default function VagaDetalheAdmin() {
         );
       })()}
 
-      {/* ── Modal: Agendar entrevista ────────────────────────────── */}
+      {/* ── Modal: Agendar entrevista Azumi — fluxo real ───────── */}
       {agendarOpen && (() => {
         const c = candidatosVaga.find((x) => x.id === agendarOpen);
         return (
-          <ModalShell title="Agendar entrevista Azumi" onClose={() => setAgendarOpen(null)}>
+          <ModalShell title="Agendar entrevista Azumi" onClose={() => { setAgendarOpen(null); setHorario1(""); setHorario2(""); }}>
             <p className="text-xs text-muted-foreground mb-3">
-              Entrevista interna com consultor Azumi. Defina data, horário e modo (remoto/presencial).
+              Entrevista interna com consultor Azumi. Envie duas sugestões de horário — o candidato confirma uma ou sugere outra.
             </p>
-            <AgendarEntrevistaForm
-              candidatoNome={c?.nome ?? "Candidato"}
-              onCancel={() => setAgendarOpen(null)}
-              onSave={(ev) => {
-                if (agendarOpen && c) {
-                  setEventos((prev) => [...prev, { ...ev, id: `ev-${Date.now()}`, candidatoId: c.id, candidatoNome: c.nome }]);
-                  toast.success(`Entrevista Azumi agendada para ${ev.data} ${ev.hora}.`);
-                }
-                setAgendarOpen(null);
-              }}
-            />
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium">Tipo</label>
+                <div className="flex gap-2 mt-1">
+                  <Button variant={tipoEntrevista === "presencial" ? "default" : "outline"} size="sm" onClick={() => setTipoEntrevista("presencial")}>Presencial</Button>
+                  <Button variant={tipoEntrevista === "remota" ? "default" : "outline"} size="sm" onClick={() => setTipoEntrevista("remota")}>Remota</Button>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium">Sugestão de horário 1</label>
+                <Input type="datetime-local" value={horario1} onChange={(e) => setHorario1(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs font-medium">Sugestão de horário 2</label>
+                <Input type="datetime-local" value={horario2} onChange={(e) => setHorario2(e.target.value)} />
+              </div>
+              <Button
+                disabled={!horario1 || !horario2}
+                onClick={async () => {
+                  const { data, error } = await (supabase as any)
+                    .from("entrevista_agendamentos")
+                    .insert({
+                      candidate_id: agendarOpen,
+                      job_id: vaga.id,
+                      tipo: tipoEntrevista,
+                      horario_sugestao_1: new Date(horario1).toISOString(),
+                      horario_sugestao_2: new Date(horario2).toISOString(),
+                      prazo_confirmacao: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                    })
+                    .select("token")
+                    .single();
+                  if (error || !data) { toast.error("Erro ao agendar."); return; }
+
+                  const urlCompleta = `${window.location.origin}/confirmar-entrevista/${data.token}`;
+                  const linkCurto = await criarLinkCurto(urlCompleta, "confirmar_entrevista");
+
+                  if (c?.email) {
+                    sendEmail(c.email, "Sua entrevista foi agendada", emailAgendamentoEntrevista({
+                      nome: c.nome,
+                      cargoVaga: vaga.cargo,
+                      data: new Date(horario1).toLocaleDateString("pt-BR"),
+                      hora: new Date(horario1).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+                      modalidade: tipoEntrevista,
+                      link: linkCurto,
+                    }));
+                  }
+                  if (c?.telefone) {
+                    const msg = encodeURIComponent(
+                      `Olá ${c.nome}! Sua entrevista pro processo de ${vaga.cargo} está sendo agendada. Confirme aqui: ${linkCurto}`
+                    );
+                    window.open(`https://wa.me/55${c.telefone.replace(/\D/g, "")}?text=${msg}`, "_blank");
+                  }
+
+                  toast.success("Sugestões de horário enviadas.");
+                  setAgendarOpen(null);
+                  setHorario1("");
+                  setHorario2("");
+                }}
+              >
+                Enviar sugestões ao candidato
+              </Button>
+            </div>
           </ModalShell>
         );
       })()}
