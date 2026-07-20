@@ -1394,8 +1394,6 @@ export default function AtracaoLista() {
                 const perguntasParaSalvar = nPerguntasHabilitado
                   ? nPerguntas.filter((q) => q.texto.trim())
                   : [];
-                setNovaVagaOpen(false);
-                resetNovaVaga();
                 const tid = toast.loading(`Salvando "${titulo}"…`);
                 try {
                   const slaDiasNum = nSlaAltaGestao
@@ -1453,10 +1451,12 @@ export default function AtracaoLista() {
                   }
                   toast.success(`Vaga "${titulo}" criada.`, { id: tid,
                     description: pubPublicar ? "Vaga publicada no site." : "Status: Briefing. Complete o preenchimento antes de publicar." });
+                  setNovaVagaOpen(false);
+                  resetNovaVaga();
                   recarregarVagas();
                 } catch (err) {
                   console.error("[criarVaga]", err);
-                  toast.error("Falha ao criar vaga. Tente novamente.", { id: tid });
+                  toast.error("Falha ao criar vaga: " + (err instanceof Error ? err.message : "erro desconhecido"), { id: tid, duration: 8000 });
                 }
               }}
             >

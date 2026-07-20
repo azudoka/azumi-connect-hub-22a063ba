@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { publicarVaga, despublicarVaga, getVaga, atualizarVaga, definirStatusVaga, excluirVaga, type VagaSupabase, type CriarVagaInput } from "@/services/vagasService";
+import { publicarVaga, despublicarVaga, getVaga, atualizarVaga, definirStatusVaga, excluirVaga, criarVaga, type VagaSupabase, type CriarVagaInput } from "@/services/vagasService";
 import { criarLinkCurto } from "@/services/shortLinkService";
 import { emailConviteQuestionario, emailAprovado, emailNaoAprovado, emailSolicitarNps, sendEmail } from "@/lib/emailTemplates";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -713,6 +713,8 @@ export default function VagaDetalheAdmin() {
   const [excluirVagaOpen, setExcluirVagaOpen] = useState(false);
   const [excluirJustificativa, setExcluirJustificativa] = useState("");
   const [excluirLoading, setExcluirLoading] = useState(false);
+  const [reativarLoading, setReativarLoading] = useState(false);
+  const [duplicarLoading, setDuplicarLoading] = useState(false);
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const statusMenuRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -1337,6 +1339,32 @@ export default function VagaDetalheAdmin() {
                         </button>
                       );
                     })}
+                  {vagaSupabaseData && vagaSupabaseData.status !== "ativa" && (
+                    <button
+                      type="button"
+                      disabled={reativarLoading}
+                      onClick={async () => {
+                        setReativarLoading(true);
+                        try {
+                          const { error } = await (supabase as any)
+                            .from("job_solicitations")
+                            .update({ status: "em_processo", encerrada_em: null })
+                            .eq("id", vagaSupabaseData.id);
+                          if (error) throw error;
+                          toast.success("Vaga reativada com sucesso.");
+                          setStatusMenuOpen(false);
+                          window.location.reload();
+                        } catch {
+                          toast.error("Falha ao reativar vaga.");
+                        } finally {
+                          setReativarLoading(false);
+                        }
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-xs text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20 transition-colors disabled:opacity-50"
+                    >
+                      <Play className="h-3 w-3 shrink-0" /> {reativarLoading ? "Reativando…" : "Reativar vaga"}
+                    </button>
+                  )}
                   <div className="my-1 border-t border-border" />
                   <button
                     type="button"
@@ -1358,6 +1386,79 @@ export default function VagaDetalheAdmin() {
               className="h-8 w-8 rounded-md border border-border hover:bg-secondary inline-flex items-center justify-center"
             >
               <Pencil className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {vagaSupabaseData && (
+            <button
+              type="button"
+              title="Duplicar vaga"
+              disabled={duplicarLoading}
+              onClick={async () => {
+                setDuplicarLoading(true);
+                const tid = toast.loading("Duplicando vaga…");
+                try {
+                  const nova = await criarVaga({
+                    titulo: `${vagaSupabaseData.titulo} (cópia)`,
+                    is_avulsa: vagaSupabaseData.is_avulsa,
+                    empresa: vagaSupabaseData.empresa,
+                    empresa_id: vagaSupabaseData.empresa_id ?? undefined,
+                    filial: vagaSupabaseData.filial ?? undefined,
+                    tipo: vagaSupabaseData.tipo ?? undefined,
+                    modalidade: vagaSupabaseData.modalidade ?? undefined,
+                    posicoes: vagaSupabaseData.posicoes ?? undefined,
+                    beneficios: vagaSupabaseData.beneficios ?? undefined,
+                    descricao: vagaSupabaseData.descricao ?? undefined,
+                    local_trabalho: vagaSupabaseData.local_trabalho ?? undefined,
+                    nivel: vagaSupabaseData.nivel ?? undefined,
+                    turno: vagaSupabaseData.turno ?? undefined,
+                    tipo_contrato: vagaSupabaseData.tipo_contrato ?? undefined,
+                    carga_horaria: vagaSupabaseData.carga_horaria ?? undefined,
+                    salario_de: vagaSupabaseData.salario_de ?? undefined,
+                    salario_ate: vagaSupabaseData.salario_ate ?? undefined,
+                    confidencial: vagaSupabaseData.confidencial,
+                    salario_fixo: vagaSupabaseData.salario_fixo,
+                    responsavel_id: vagaSupabaseData.responsavel_id ?? undefined,
+                    disc_habilitado: vagaSupabaseData.disc_habilitado,
+                    perguntas_customizadas_habilitado: vagaSupabaseData.perguntas_customizadas_habilitado,
+                    sla_dias: vagaSupabaseData.sla_dias ?? undefined,
+                    sla_urgente: vagaSupabaseData.sla_urgente ?? undefined,
+                    sla_taxa_urgencia: vagaSupabaseData.sla_taxa_urgencia ?? undefined,
+                    sla_nivel: vagaSupabaseData.sla_nivel ?? undefined,
+                    sla_modulo: vagaSupabaseData.sla_modulo ?? undefined,
+                    avulsa_solicitante_nome: vagaSupabaseData.avulsa_solicitante_nome ?? undefined,
+                    avulsa_solicitante_cargo: vagaSupabaseData.avulsa_solicitante_cargo ?? undefined,
+                    avulsa_solicitante_telefone: vagaSupabaseData.avulsa_solicitante_telefone ?? undefined,
+                    avulsa_solicitante_email: vagaSupabaseData.avulsa_solicitante_email ?? undefined,
+                  });
+                  if (vagaSupabaseData.perguntas_customizadas_habilitado) {
+                    const { data: perguntas } = await (supabase as any)
+                      .from("vaga_perguntas_customizadas")
+                      .select("pergunta, tipo, obrigatoria, ordem")
+                      .eq("job_id", vagaSupabaseData.id)
+                      .order("ordem");
+                    if (perguntas && perguntas.length > 0) {
+                      await (supabase as any)
+                        .from("vaga_perguntas_customizadas")
+                        .insert(perguntas.map((q: { pergunta: string; tipo: string; obrigatoria: boolean; ordem: number }) => ({
+                          job_id: nova.id,
+                          pergunta: q.pergunta,
+                          tipo: q.tipo,
+                          obrigatoria: q.obrigatoria,
+                          ordem: q.ordem,
+                        })));
+                    }
+                  }
+                  toast.success("Vaga duplicada com sucesso.", { id: tid });
+                  navigate(`/app/atracao/${nova.id}`);
+                } catch (err) {
+                  toast.error("Falha ao duplicar vaga: " + (err instanceof Error ? err.message : "erro desconhecido"), { id: tid, duration: 8000 });
+                } finally {
+                  setDuplicarLoading(false);
+                }
+              }}
+              className="h-8 w-8 rounded-md border border-border hover:bg-secondary inline-flex items-center justify-center disabled:opacity-50"
+            >
+              {duplicarLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Copy className="h-3.5 w-3.5" />}
             </button>
           )}
           {publicacao !== "publicada" && (
