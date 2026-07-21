@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import {
   CalendarCheck, MapPin, Video, ShieldCheck,
   AlertTriangle, CheckCircle2, Clock, XCircle,
+  ExternalLink,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -35,9 +36,9 @@ type Agendamento = {
 
 type Step =
   | "loading" | "not_found" | "already_done"
-  | "choice"           // candidato escolhe entre as 2 sugestões do consultor
-  | "suggest"          // candidato sugere 1 horário alternativo
-  | "counter"          // consultor fez contra-proposta (última tentativa)
+  | "choice"
+  | "suggest"
+  | "counter"
   | "done_confirm"
   | "done_suggest"
   | "done_counter_confirm"
@@ -50,6 +51,24 @@ function fmtDT(iso: string) {
     weekday: "long", day: "2-digit", month: "long",
     hour: "2-digit", minute: "2-digit",
   });
+}
+
+function calendarLinks(iso: string, titulo: string, descricao: string) {
+  const start = new Date(iso);
+  const end = new Date(start.getTime() + 60 * 60 * 1000); // +1h
+  const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
+  const googleUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(titulo)}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent(descricao)}`;
+  const outlookUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(titulo)}&startdt=${start.toISOString()}&enddt=${end.toISOString()}&body=${encodeURIComponent(descricao)}`;
+  const icsContent = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT",
+    `SUMMARY:${titulo}`,
+    `DTSTART:${fmt(start)}`,
+    `DTEND:${fmt(end)}`,
+    `DESCRIPTION:${descricao}`,
+    "STATUS:CONFIRMED", "END:VEVENT", "END:VCALENDAR",
+  ].join("\r\n");
+  const icsUrl = `data:text/calendar;charset=utf-8,${encodeURIComponent(icsContent)}`;
+  return { googleUrl, outlookUrl, icsUrl };
 }
 
 // ── Page ───────────────────────────────────────────────────────────────
@@ -66,6 +85,7 @@ export default function ConfirmarEntrevistaPage() {
 
   const [step, setStep] = useState<Step>("loading");
   const [ag, setAg] = useState<Agendamento | null>(null);
+  const [horarioConfirmado, setHorarioConfirmado] = useState<string | null>(null);
   const [horarioEscolhido, setHorarioEscolhido] = useState<string | null>(null);
   const [sugHorario, setSugHorario] = useState("");
   const [obs, setObs] = useState("");
@@ -87,7 +107,11 @@ export default function ConfirmarEntrevistaPage() {
         if (error || !data) { setStep("not_found"); return; }
         setAg(data as Agendamento);
         const st: string = data.status;
-        if (st === "confirmado") { setStep("already_done"); return; }
+        if (st === "confirmado") {
+          if (data.horario_confirmado) setHorarioConfirmado(data.horario_confirmado);
+          setStep("already_done");
+          return;
+        }
         if (st === "candidato_sugeriu") { setStep("already_done"); return; }
         if (st === "descontinuado") { setStep("done_descontinuado"); return; }
         if (st === "consultor_contra_proposta") { setStep("counter"); return; }
@@ -95,45 +119,42 @@ export default function ConfirmarEntrevistaPage() {
       });
   }, [agendamentoId]);
 
-  // ── confirmar um dos horários do consultor ──────────────────────────
   async function confirmar() {
-    if (!ag || !horarioEscolhido) return;
+    if (!ag || !horarioEscolhido || !agendamentoId) return;
     setSubmitting(true); setErro(null);
     const { error } = await (supabase as any)
       .from("entrevista_agendamentos")
       .update({ status: "confirmado", horario_confirmado: horarioEscolhido })
-      .eq("id", ag.id);
-    if (error) { setErro("Erro ao confirmar. Tente novamente."); setSubmitting(false); return; }
-
+      .eq("token", agendamentoId);
+    if (error) {
+      console.error("[confirmar entrevista]", error);
+      setErro("Erro ao confirmar. Tente novamente."); setSubmitting(false); return;
+    }
     const nomeCandidato = ag.candidates?.nome ?? "Candidato";
     const cargo = ag.job_solicitations?.cargo ?? "a vaga";
     const resp = ag.job_solicitations?.users_profile;
     const responsavelId = ag.job_solicitations?.responsavel_id;
     const horarioFmt = fmtDT(horarioEscolhido);
     const linkVaga = `${window.location.origin}/app/atracao/${ag.job_id}`;
-
     if (resp?.email) {
       sendEmail(resp.email, `${nomeCandidato} confirmou a entrevista`,
-        emailCandidatoConfirmouEntrevista({ nomeConsultor: resp.full_name, nomeCandidato, cargo, horario: horarioFmt, linkVaga })
-      );
+        emailCandidatoConfirmouEntrevista({ nomeConsultor: resp.full_name, nomeCandidato, cargo, horario: horarioFmt, linkVaga }));
     }
     if (responsavelId) {
       (supabase as any).from("app_notifications").insert({
-        user_id: responsavelId,
-        tipo: "entrevista_confirmada",
+        user_id: responsavelId, tipo: "entrevista_confirmada",
         titulo: "Entrevista confirmada",
         mensagem: `${nomeCandidato} confirmou para ${cargo} — ${horarioFmt}.`,
-        link: `/app/atracao/${ag.job_id}`,
-        lida: false,
+        link: `/app/atracao/${ag.job_id}`, lida: false,
       });
     }
+    setHorarioConfirmado(horarioEscolhido);
     setStep("done_confirm");
     setSubmitting(false);
   }
 
-  // ── candidato sugere 1 horário alternativo ──────────────────────────
   async function sugerirHorario() {
-    if (!ag || !sugHorario) return;
+    if (!ag || !sugHorario || !agendamentoId) return;
     setSubmitting(true); setErro(null);
     const { error } = await (supabase as any)
       .from("entrevista_agendamentos")
@@ -142,109 +163,94 @@ export default function ConfirmarEntrevistaPage() {
         horario_sugerido_pelo_candidato: new Date(sugHorario).toISOString(),
         observacao_candidato: obs.trim() || null,
       })
-      .eq("id", ag.id);
-    if (error) { setErro("Erro ao enviar. Tente novamente."); setSubmitting(false); return; }
-
+      .eq("token", agendamentoId);
+    if (error) {
+      console.error("[sugerir horario]", error);
+      setErro("Erro ao enviar. Tente novamente."); setSubmitting(false); return;
+    }
     const nomeCandidato = ag.candidates?.nome ?? "Candidato";
     const cargo = ag.job_solicitations?.cargo ?? "a vaga";
     const resp = ag.job_solicitations?.users_profile;
     const responsavelId = ag.job_solicitations?.responsavel_id;
     const h1 = fmtDT(new Date(sugHorario).toISOString());
     const linkVaga = `${window.location.origin}/app/atracao/${ag.job_id}`;
-
     if (resp?.email) {
       sendEmail(resp.email, `${nomeCandidato} sugeriu novo horário`,
-        emailCandidatoSugeriuHorarios({
-          nomeConsultor: resp.full_name,
-          nomeCandidato, cargo,
-          horario1: h1, horario2: h1,
-          observacao: obs.trim() || undefined,
-          linkVaga,
-        })
-      );
+        emailCandidatoSugeriuHorarios({ nomeConsultor: resp.full_name, nomeCandidato, cargo, horario1: h1, horario2: h1, observacao: obs.trim() || undefined, linkVaga }));
     }
     if (responsavelId) {
       (supabase as any).from("app_notifications").insert({
-        user_id: responsavelId,
-        tipo: "candidato_sugeriu_horario",
+        user_id: responsavelId, tipo: "candidato_sugeriu_horario",
         titulo: `${nomeCandidato} sugeriu novo horário`,
         mensagem: `Candidato propôs ${h1} para ${cargo}. Revise no painel.`,
-        link: `/app/atracao/${ag.job_id}`,
-        lida: false,
+        link: `/app/atracao/${ag.job_id}`, lida: false,
       });
     }
     setStep("done_suggest");
     setSubmitting(false);
   }
 
-  // ── confirmar contra-proposta do consultor (última tentativa) ───────
   async function confirmarContraProposta() {
-    if (!ag) return;
-    setSubmitting(true); setErro(null);
+    if (!ag || !agendamentoId) return;
     const horario = ag.horario_consultor_contra_proposta!;
+    setSubmitting(true); setErro(null);
     const { error } = await (supabase as any)
       .from("entrevista_agendamentos")
       .update({ status: "confirmado", horario_confirmado: horario })
-      .eq("id", ag.id);
-    if (error) { setErro("Erro ao confirmar. Tente novamente."); setSubmitting(false); return; }
-
+      .eq("token", agendamentoId);
+    if (error) {
+      console.error("[confirmar contra proposta]", error);
+      setErro("Erro ao confirmar. Tente novamente."); setSubmitting(false); return;
+    }
     const nomeCandidato = ag.candidates?.nome ?? "Candidato";
     const cargo = ag.job_solicitations?.cargo ?? "a vaga";
     const resp = ag.job_solicitations?.users_profile;
     const responsavelId = ag.job_solicitations?.responsavel_id;
     const horarioFmt = fmtDT(horario);
     const linkVaga = `${window.location.origin}/app/atracao/${ag.job_id}`;
-
     if (resp?.email) {
       sendEmail(resp.email, `${nomeCandidato} confirmou a entrevista`,
-        emailCandidatoConfirmouEntrevista({ nomeConsultor: resp.full_name, nomeCandidato, cargo, horario: horarioFmt, linkVaga })
-      );
+        emailCandidatoConfirmouEntrevista({ nomeConsultor: resp.full_name, nomeCandidato, cargo, horario: horarioFmt, linkVaga }));
     }
     if (responsavelId) {
       (supabase as any).from("app_notifications").insert({
-        user_id: responsavelId,
-        tipo: "entrevista_confirmada",
+        user_id: responsavelId, tipo: "entrevista_confirmada",
         titulo: "Entrevista confirmada",
         mensagem: `${nomeCandidato} confirmou para ${cargo} — ${horarioFmt}.`,
-        link: `/app/atracao/${ag.job_id}`,
-        lida: false,
+        link: `/app/atracao/${ag.job_id}`, lida: false,
       });
     }
+    setHorarioConfirmado(horario);
     setStep("done_counter_confirm");
     setSubmitting(false);
   }
 
-  // ── recusar contra-proposta → descontinuado ─────────────────────────
   async function recusarContraProposta() {
-    if (!ag) return;
+    if (!ag || !agendamentoId) return;
     setSubmitting(true); setErro(null);
-
-    const [agResult] = await Promise.all([
-      (supabase as any).from("entrevista_agendamentos").update({ status: "descontinuado" }).eq("id", ag.id),
+    const [r1] = await Promise.all([
+      (supabase as any).from("entrevista_agendamentos").update({ status: "descontinuado" }).eq("token", agendamentoId),
       (supabase as any).from("candidates").update({ etapa_azumi: "reprovado" }).eq("id", ag.candidate_id),
     ]);
-
-    if (agResult.error) { setErro("Erro ao registrar. Tente novamente."); setSubmitting(false); return; }
-
+    if (r1.error) {
+      console.error("[recusar contra proposta]", r1.error);
+      setErro("Erro ao registrar. Tente novamente."); setSubmitting(false); return;
+    }
     const nomeCandidato = ag.candidates?.nome ?? "Candidato";
     const cargo = ag.job_solicitations?.cargo ?? "a vaga";
     const resp = ag.job_solicitations?.users_profile;
     const responsavelId = ag.job_solicitations?.responsavel_id;
-
     if (responsavelId) {
       (supabase as any).from("app_notifications").insert({
-        user_id: responsavelId,
-        tipo: "candidato_descontinuado",
+        user_id: responsavelId, tipo: "candidato_descontinuado",
         titulo: `${nomeCandidato} recusou — descontinuado`,
-        mensagem: `${nomeCandidato} não aceitou nenhum horário para ${cargo} e foi descontinuado do processo.`,
-        link: `/app/atracao/${ag.job_id}`,
-        lida: false,
+        mensagem: `${nomeCandidato} não aceitou nenhum horário para ${cargo}.`,
+        link: `/app/atracao/${ag.job_id}`, lida: false,
       });
     }
     if (resp?.email) {
       sendEmail(resp.email, `${nomeCandidato} recusou a última proposta`,
-        `<p>${nomeCandidato} recusou o último horário proposto para a vaga de <strong>${cargo}</strong>. O candidato foi descontinuado automaticamente.</p>`
-      );
+        `<p>${nomeCandidato} recusou o último horário proposto para a vaga de <strong>${cargo}</strong> e foi descontinuado.</p>`);
     }
     setStep("done_descontinuado");
     setSubmitting(false);
@@ -259,7 +265,7 @@ export default function ConfirmarEntrevistaPage() {
   if (step === "not_found") return (
     <Shell><StatusCard icon={<AlertTriangle className="h-7 w-7" />} color="destructive"
       title="Link inválido ou expirado"
-      message="Não localizamos esta entrevista. Verifique o link recebido ou entre em contato com a Azumi." /></Shell>
+      message="Não localizamos esta entrevista. Verifique o link ou entre em contato com a Azumi." /></Shell>
   );
 
   if (step === "already_done") return (
@@ -268,32 +274,61 @@ export default function ConfirmarEntrevistaPage() {
       message="Você já respondeu a este convite. Em breve a Azumi entrará em contato." /></Shell>
   );
 
-  if (step === "done_confirm") return (
-    <Shell><StatusCard icon={<CheckCircle2 className="h-7 w-7" />} color="success"
-      title="Entrevista confirmada!"
-      message="Perfeito! Sua confirmação foi registrada. Boa entrevista!"
-      detail={horarioEscolhido ? fmtDT(horarioEscolhido) : undefined} /></Shell>
-  );
-
-  if (step === "done_counter_confirm") return (
-    <Shell><StatusCard icon={<CheckCircle2 className="h-7 w-7" />} color="success"
-      title="Entrevista confirmada!"
-      message="Ótimo! Confirmação registrada. Aguarde o contato da Azumi com os detalhes da entrevista." /></Shell>
+  if (step === "done_descontinuado") return (
+    <Shell><StatusCard icon={<XCircle className="h-7 w-7" />} color="destructive"
+      title="Processo encerrado"
+      message="Não foi possível encontrar um horário compatível. Você foi descontinuado(a) deste processo. Obrigado pela participação!" /></Shell>
   );
 
   if (step === "done_suggest") return (
     <Shell><StatusCard icon={<Clock className="h-7 w-7" />} color="warning"
       title="Sugestão enviada!"
-      message="Recebemos sua sugestão de horário. O time da Azumi vai analisar e entrar em contato." /></Shell>
+      message="Recebemos sua proposta de horário. O time da Azumi vai analisar e entrar em contato." /></Shell>
   );
 
-  if (step === "done_descontinuado") return (
-    <Shell><StatusCard icon={<XCircle className="h-7 w-7" />} color="destructive"
-      title="Processo encerrado"
-      message="Infelizmente não foi possível encontrar um horário compatível. Você foi descontinuado(a) deste processo seletivo. Obrigado pela participação!" /></Shell>
-  );
+  // Confirmação bem-sucedida — mostra botões de agenda
+  if (step === "done_confirm" || step === "done_counter_confirm") {
+    const horario = horarioConfirmado;
+    const cargo = ag?.job_solicitations?.cargo ?? "Entrevista";
+    const titulo = `Entrevista Azumi — ${cargo}`;
+    const desc = `Entrevista agendada pela Azumi RH para a vaga de ${cargo}.`;
+    const links = horario ? calendarLinks(horario, titulo, desc) : null;
+    return (
+      <Shell>
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-xl text-center">
+          <div className="h-14 w-14 mx-auto rounded-full flex items-center justify-center bg-success/15 text-success">
+            <CheckCircle2 className="h-7 w-7" />
+          </div>
+          <h1 className="font-semibold text-xl mt-3">Entrevista confirmada!</h1>
+          <p className="text-sm text-muted-foreground mt-1">Boa entrevista! Aguarde o contato da Azumi com os detalhes.</p>
+          {horario && (
+            <p className="text-xs text-muted-foreground mt-3 bg-muted rounded-lg px-3 py-2 inline-block">
+              {fmtDT(horario)}
+            </p>
+          )}
+          {links && (
+            <div className="mt-5 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Salvar na agenda:</p>
+              <a href={links.googleUrl} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full h-10 rounded-lg border border-border text-sm font-medium hover:bg-secondary transition-colors">
+                <ExternalLink className="h-3.5 w-3.5" /> Google Agenda
+              </a>
+              <a href={links.outlookUrl} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full h-10 rounded-lg border border-border text-sm font-medium hover:bg-secondary transition-colors">
+                <ExternalLink className="h-3.5 w-3.5" /> Outlook
+              </a>
+              <a href={links.icsUrl} download="entrevista-azumi.ics"
+                className="flex items-center justify-center gap-2 w-full h-10 rounded-lg border border-border text-sm font-medium hover:bg-secondary transition-colors">
+                <ExternalLink className="h-3.5 w-3.5" /> Baixar (.ics / Apple Calendar)
+              </a>
+            </div>
+          )}
+        </div>
+      </Shell>
+    );
+  }
 
-  // ── Tela de contra-proposta do consultor (última tentativa) ──────────
+  // ── Contra-proposta do consultor (última tentativa) ──────────────────
   if (step === "counter" && ag?.horario_consultor_contra_proposta) {
     const nomeFirst = (ag.candidates?.nome ?? "").split(" ")[0] || "Candidato";
     const cargo = ag.job_solicitations?.cargo ?? "a vaga";
@@ -301,12 +336,11 @@ export default function ConfirmarEntrevistaPage() {
       <Shell>
         <div className="bg-card border border-border rounded-2xl p-6 shadow-xl">
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-            <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-            Azumi Connect — Última tentativa de agendamento
+            <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Azumi Connect — Última tentativa
           </div>
           <h1 className="font-semibold text-xl">Olá, {nomeFirst}!</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Nossa equipe recebeu sua sugestão, mas precisou ajustar. Abaixo está nossa <strong>proposta final</strong> para a vaga de <strong>{cargo}</strong>.
+            Nossa equipe recebeu sua sugestão mas precisou ajustar. Abaixo está a <strong>proposta final</strong> para a vaga de <strong>{cargo}</strong>.
           </p>
           <div className="mt-5 rounded-xl border border-warning/40 bg-warning/5 px-4 py-3">
             <div className="flex items-center gap-2 text-sm font-medium text-warning mb-1">
@@ -314,17 +348,13 @@ export default function ConfirmarEntrevistaPage() {
             </div>
             <div className="text-sm ml-6">{fmtDT(ag.horario_consultor_contra_proposta)}</div>
           </div>
-          <div className="mt-4 text-xs text-warning bg-warning/10 border border-warning/30 rounded-lg px-3 py-2">
-            Atenção: se você recusar este horário, será descontinuado(a) do processo seletivo.
+          <div className="mt-3 text-xs text-warning bg-warning/10 border border-warning/30 rounded-lg px-3 py-2">
+            Atenção: recusando este horário você será descontinuado(a) do processo.
           </div>
-
           {ag.tipo === "remota"
-            ? <p className="mt-3 text-xs text-muted-foreground flex items-center gap-1"><Video className="h-3.5 w-3.5" /> Entrevista remota — link enviado por e-mail</p>
-            : <p className="mt-3 text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> Entrevista presencial</p>
-          }
-
+            ? <p className="mt-3 text-xs text-muted-foreground flex items-center gap-1"><Video className="h-3.5 w-3.5" /> Remota — link enviado por e-mail</p>
+            : <p className="mt-3 text-xs text-muted-foreground flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> Presencial</p>}
           {erro && <ErroBanner msg={erro} />}
-
           <div className="mt-5 space-y-2">
             <button type="button" disabled={submitting} onClick={confirmarContraProposta}
               className="w-full h-11 rounded-lg bg-primary text-primary-foreground text-sm font-semibold inline-flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50">
@@ -340,35 +370,32 @@ export default function ConfirmarEntrevistaPage() {
     );
   }
 
-  // ── Tela de sugestão de 1 horário alternativo ────────────────────────
+  // ── Sugestão de 1 horário alternativo ───────────────────────────────
   if (step === "suggest") {
     return (
       <Shell>
         <div className="bg-card border border-border rounded-2xl p-6 shadow-xl">
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-            <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-            Azumi Connect — Sugestão de horário
+            <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Azumi Connect — Sugestão de horário
           </div>
           <h1 className="font-semibold text-xl">Sugira um horário</h1>
           <p className="text-sm text-muted-foreground mt-1 mb-5">
             Informe um horário que funcione para você. Nossa equipe vai analisar e retornar.
           </p>
           <div className="space-y-4">
-            <LabelInput label="Sua proposta de horário *">
+            <LabelInput label="Seu horário proposto *">
               <input type="datetime-local" value={sugHorario} onChange={(e) => setSugHorario(e.target.value)}
                 className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
             </LabelInput>
             <LabelInput label="Observação (opcional)">
               <textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={2}
-                placeholder="Ex: prefiro pela manhã, disponível a partir das 9h..."
+                placeholder="Ex: prefiro manhã, disponível a partir das 9h..."
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
             </LabelInput>
             {erro && <ErroBanner msg={erro} />}
             <div className="flex gap-2 pt-1">
               <button type="button" onClick={() => setStep("choice")}
-                className="flex-1 h-10 rounded-lg border border-border text-sm font-medium hover:bg-secondary">
-                Voltar
-              </button>
+                className="flex-1 h-10 rounded-lg border border-border text-sm font-medium hover:bg-secondary">Voltar</button>
               <button type="button" onClick={sugerirHorario} disabled={!sugHorario || submitting}
                 className="flex-1 h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-50">
                 {submitting ? "Enviando..." : "Enviar sugestão"}
@@ -380,7 +407,7 @@ export default function ConfirmarEntrevistaPage() {
     );
   }
 
-  // ── Tela principal: candidato escolhe entre as 2 sugestões ───────────
+  // ── Escolha entre as 2 opções do consultor ───────────────────────────
   if (!ag) return null;
   const nomeFirst = (ag.candidates?.nome ?? "").split(" ")[0] || "Candidato";
   const cargo = ag.job_solicitations?.cargo ?? "a vaga";
@@ -389,8 +416,7 @@ export default function ConfirmarEntrevistaPage() {
     <Shell>
       <div className="bg-card border border-border rounded-2xl p-6 shadow-xl">
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-          <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-          Azumi Connect — Confirmação de entrevista
+          <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Azumi Connect — Confirmação de entrevista
         </div>
         <h1 className="font-semibold text-xl">Olá, {nomeFirst}!</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -399,17 +425,15 @@ export default function ConfirmarEntrevistaPage() {
         <div className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
           {ag.tipo === "presencial"
             ? <><MapPin className="h-3.5 w-3.5" /> Entrevista presencial</>
-            : <><Video className="h-3.5 w-3.5" /> Entrevista remota — link enviado por e-mail</>}
+            : <><Video className="h-3.5 w-3.5" /> Remota — link enviado por e-mail</>}
         </div>
-
         <div className="mt-5 space-y-3">
           {[ag.horario_sugestao_1, ag.horario_sugestao_2].map((iso, i) => (
             <button key={i} type="button" onClick={() => setHorarioEscolhido(iso)}
               className={`w-full text-left rounded-xl border px-4 py-3 transition-colors ${
                 horarioEscolhido === iso
                   ? "border-primary bg-primary/5 ring-1 ring-primary"
-                  : "border-border hover:border-primary/40 hover:bg-secondary/50"
-              }`}>
+                  : "border-border hover:border-primary/40 hover:bg-secondary/50"}`}>
               <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 <CalendarCheck className={`h-3.5 w-3.5 ${horarioEscolhido === iso ? "text-primary" : ""}`} />
                 Opção {i + 1}
@@ -418,14 +442,11 @@ export default function ConfirmarEntrevistaPage() {
             </button>
           ))}
         </div>
-
         {erro && <ErroBanner msg={erro} />}
-
         <div className="mt-5 space-y-2">
           <button type="button" disabled={!horarioEscolhido || submitting} onClick={confirmar}
             className="w-full h-11 rounded-lg bg-primary text-primary-foreground text-sm font-semibold inline-flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50">
-            <CheckCircle2 className="h-4 w-4" />
-            {submitting ? "Confirmando..." : "Confirmar este horário"}
+            <CheckCircle2 className="h-4 w-4" /> {submitting ? "Confirmando..." : "Confirmar este horário"}
           </button>
           <button type="button" onClick={() => setStep("suggest")}
             className="w-full h-10 rounded-lg border border-border text-sm font-medium hover:bg-secondary">
@@ -447,12 +468,9 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function StatusCard({ icon, color, title, message, detail }: {
-  icon: React.ReactNode;
-  color: "success" | "warning" | "destructive" | "primary";
-  title: string;
-  message: string;
-  detail?: string;
+function StatusCard({ icon, color, title, message }: {
+  icon: React.ReactNode; color: "success" | "warning" | "destructive" | "primary";
+  title: string; message: string;
 }) {
   const cls = { success: "bg-success/15 text-success", warning: "bg-warning/15 text-warning", destructive: "bg-destructive/15 text-destructive", primary: "bg-primary/15 text-primary" }[color];
   return (
@@ -460,18 +478,12 @@ function StatusCard({ icon, color, title, message, detail }: {
       <div className={`h-14 w-14 mx-auto rounded-full flex items-center justify-center ${cls}`}>{icon}</div>
       <h1 className="font-semibold text-xl mt-3">{title}</h1>
       <p className="text-sm text-muted-foreground mt-1">{message}</p>
-      {detail && <p className="text-xs text-muted-foreground mt-3 bg-muted rounded-lg px-3 py-2 inline-block">{detail}</p>}
     </div>
   );
 }
 
 function LabelInput({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="text-xs font-medium block mb-1">{label}</label>
-      {children}
-    </div>
-  );
+  return <div><label className="text-xs font-medium block mb-1">{label}</label>{children}</div>;
 }
 
 function ErroBanner({ msg }: { msg: string }) {

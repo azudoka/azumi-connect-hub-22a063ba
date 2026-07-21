@@ -2372,39 +2372,53 @@ export default function VagaDetalheAdmin() {
 
           <div className="bg-card rounded-xl shadow-[0_1px_4px_rgba(133,146,173,0.2)] p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display font-semibold">Outras entrevistas / eventos</h3>
-              <span className="text-xs text-muted-foreground">{eventos.length} evento(s)</span>
+              <h3 className="font-display font-semibold">Entrevistas Azumi confirmadas</h3>
             </div>
-            {eventos.length === 0 ? (
-              <div className="text-center text-sm text-muted-foreground py-8">
-                Nenhuma entrevista interna agendada. Use o botão{" "}
-                <CalendarPlus className="inline h-3.5 w-3.5" /> nos cards de candidatos em "Entrevista".
-              </div>
-            ) : (
-              <ul className="space-y-2">
-                {eventos.map((ev) => (
-                  <li key={ev.id} className="flex items-center gap-3 border border-border rounded-lg px-3 py-2 bg-[hsl(var(--background)/0.4)]">
-                    <div className="h-9 w-9 rounded-md bg-[hsl(var(--primary)/0.1)] text-primary flex items-center justify-center">
-                      <CalendarDays className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium">{ev.candidatoNome}</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        {ev.tipo} · {ev.data} às {ev.hora} · {ev.local || "—"}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setEventos((p) => p.filter((e) => e.id !== ev.id))}
-                      className="h-7 w-7 rounded-md hover:bg-secondary text-muted-foreground"
-                      aria-label="Remover"
-                    >
-                      <XIcon className="h-3.5 w-3.5 mx-auto" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            {(() => {
+              const confirmados = Object.entries(agendamentosMap)
+                .filter(([, ag]) => ag.status === "confirmado")
+                .map(([candId, ag]) => {
+                  const cand = candidatosExtras.find((c) => c.id === candId);
+                  const horario = ag.horarioCandidato ?? ag.horarioContraProposta ?? ag.horario1;
+                  return { candId, cand, ag, horario };
+                })
+                .filter((x) => x.cand && x.horario)
+                .sort((a, b) => new Date(a.horario!).getTime() - new Date(b.horario!).getTime());
+              if (confirmados.length === 0) {
+                return (
+                  <div className="text-center text-sm text-muted-foreground py-8">
+                    Nenhuma entrevista Azumi confirmada ainda.
+                  </div>
+                );
+              }
+              return (
+                <ul className="space-y-2">
+                  {confirmados.map(({ candId, cand, horario }) => {
+                    const d = new Date(horario!);
+                    return (
+                      <li key={candId} className="flex items-center gap-3 border border-border rounded-lg px-3 py-2.5 bg-[hsl(var(--background)/0.4)]">
+                        <div className="h-9 w-9 rounded-md bg-success/10 text-success flex items-center justify-center shrink-0">
+                          <CalendarCheck2 className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium">{cand?.nome}</div>
+                          <div className="text-[11px] text-muted-foreground">
+                            {d.toLocaleString("pt-BR", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setFichaCandidatoId(candId)}
+                          className="h-7 px-2.5 rounded-md hover:bg-secondary text-[11px] text-muted-foreground border border-border"
+                        >
+                          Ver ficha
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -6259,14 +6273,31 @@ function CandidatoDetailSheet({
                   <CalendarDays className={`h-3.5 w-3.5 ${info.cor}`} />
                   <span className={`text-xs font-medium ${info.cor}`}>{info.label}</span>
                 </div>
-                {st === "confirmado" && agendamento.horario1 && (
-                  <p className="text-xs text-muted-foreground">
-                    Confirmado para:{" "}
-                    <strong className="text-foreground">
-                      {new Date(agendamento.horarioCandidato ?? agendamento.horario1).toLocaleString("pt-BR", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                    </strong>
-                  </p>
-                )}
+                {st === "confirmado" && (() => {
+                  const horarioISO = agendamento.horarioCandidato ?? agendamento.horarioContraProposta ?? agendamento.horario1;
+                  if (!horarioISO) return null;
+                  const start = new Date(horarioISO);
+                  const end = new Date(start.getTime() + 60 * 60 * 1000);
+                  const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
+                  const cargo = vaga?.cargo ?? vaga?.titulo ?? "Entrevista";
+                  const titulo = encodeURIComponent(`Entrevista Azumi — ${cargo}`);
+                  const desc = encodeURIComponent(`Entrevista agendada via Azumi Connect para a vaga de ${cargo}.`);
+                  const googleUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${titulo}&dates=${fmt(start)}/${fmt(end)}&details=${desc}`;
+                  const outlookUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${titulo}&startdt=${start.toISOString()}&enddt=${end.toISOString()}&body=${desc}`;
+                  const icsContent = encodeURIComponent(["BEGIN:VCALENDAR","VERSION:2.0","BEGIN:VEVENT",`SUMMARY:Entrevista Azumi — ${cargo}`,`DTSTART:${fmt(start)}`,`DTEND:${fmt(end)}`,`DESCRIPTION:${decodeURIComponent(desc)}`,"STATUS:CONFIRMED","END:VEVENT","END:VCALENDAR"].join("\r\n"));
+                  return (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">
+                        Confirmado: <strong className="text-foreground">{start.toLocaleString("pt-BR", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</strong>
+                      </p>
+                      <div className="flex gap-1.5 flex-wrap">
+                        <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 h-6 px-2 rounded border border-border text-[10px] hover:bg-secondary">Google</a>
+                        <a href={outlookUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 h-6 px-2 rounded border border-border text-[10px] hover:bg-secondary">Outlook</a>
+                        <a href={`data:text/calendar;charset=utf-8,${icsContent}`} download="entrevista.ics" className="inline-flex items-center gap-1 h-6 px-2 rounded border border-border text-[10px] hover:bg-secondary">iCal</a>
+                      </div>
+                    </div>
+                  );
+                })()}
                 {(st === "aguardando_candidato" || st === "consultor_contra_proposta") && (
                   <p className="text-[11px] text-muted-foreground">
                     Sugestão 1: {new Date(agendamento.horario1).toLocaleString("pt-BR", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
