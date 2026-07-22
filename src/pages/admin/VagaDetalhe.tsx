@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 import { publicarVaga, despublicarVaga, getVaga, atualizarVaga, definirStatusVaga, excluirVaga, criarVaga, type VagaSupabase, type CriarVagaInput } from "@/services/vagasService";
 import { criarLinkCurto } from "@/services/shortLinkService";
-import { emailConviteQuestionario, emailAprovado, emailNaoAprovado, emailSolicitarNps, emailAgendamentoEntrevista, emailConsultorContraProposta, emailCompletarCadastro, emailReagendarEntrevista, emailMudancaProcesso, emailEntrevistaConfirmada, sendEmail } from "@/lib/emailTemplates";
+import { emailConviteQuestionario, emailAprovado, emailNaoAprovado, emailSolicitarNps, emailAgendamentoEntrevista, emailConsultorContraProposta, emailCompletarCadastro, emailReagendarEntrevista, emailMudancaProcesso, emailEntrevistaConfirmada, emailMovimentacaoConsultor, emailMovimentacaoCandidato, emailMovimentacaoCliente, sendEmail } from "@/lib/emailTemplates";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,7 +75,7 @@ import {
   MoreVertical, Eye, StickyNote, ChevronRight, ChevronLeft, ChevronDown, UserX, Play, UserPlus, Link2,
   Copy, FileText, MessageCircle, Download, ListChecks, ThumbsDown, CalendarPlus,
   CalendarDays, CalendarCheck2, Globe, Paperclip, X as XIcon, Plus, Mail, Phone, Briefcase, Circle,
-  Pencil, Trash2, GripVertical, Star, BookOpen, PauseCircle, ShieldOff, Ban, Brain,
+  Pencil, Trash2, GripVertical, Star, BookOpen, PauseCircle, ShieldOff, Ban, Brain, Settings,
 } from "lucide-react";
 
 const DISC_CONFIG = {
@@ -301,6 +301,14 @@ export default function VagaDetalheAdmin() {
       .then((r) => setVagaSupabaseData(r))
       .catch(() => {})
       .finally(() => setLoadingVaga(false));
+    // Carregar config de etapas desta vaga
+    (supabase as any)
+      .from("vaga_etapas_config")
+      .select("etapa_nome, visivel, ordem, is_customizada")
+      .eq("job_id", id)
+      .then(({ data }: { data: EtapaConfig[] | null }) => {
+        if (data) setEtapasConfigDB(data);
+      });
   }, [id]);
 
   const vaga = vagaMock ?? (vagaSupabaseData ? supabaseToVagaMock(vagaSupabaseData) : null);
@@ -323,6 +331,13 @@ export default function VagaDetalheAdmin() {
   // Limite global de 6 candidatos em "Entrevista Cliente"
   const [limiteGlobalEsgotado, setLimiteGlobalEsgotado] = useState(false);
 
+  // Etapas configuradas por vaga
+  type EtapaConfig = { etapa_nome: string; visivel: boolean; ordem: number; is_customizada: boolean };
+  const [etapasConfigDB, setEtapasConfigDB] = useState<EtapaConfig[]>([]);
+  const [configurarEtapasOpen, setConfigurarEtapasOpen] = useState(false);
+  const [novaEtapaNome, setNovaEtapaNome] = useState("");
+  const [adicionandoEtapa, setAdicionandoEtapa] = useState(false);
+
   const colunas = [
     "Recebido",
     "Triagem",
@@ -335,7 +350,7 @@ export default function VagaDetalheAdmin() {
     "Reprovado",
     "Banco de Talentos",
   ] as const;
-  type Coluna = typeof colunas[number];
+  type Coluna = string;
 
   const ETAPA_LABEL_TO_DB: Record<Coluna, string | null> = {
     "Recebido": "recebido",
@@ -360,6 +375,19 @@ export default function VagaDetalheAdmin() {
     contratado: "Contratado",
     reprovado: "Reprovado",
   };
+
+  // Colunas visíveis (etapas padrão visíveis + customizadas) para este job
+  const colunasVisiveis = useMemo(() => {
+    const standard = (colunas as readonly string[]).filter((col) => {
+      const cfg = etapasConfigDB.find((c) => c.etapa_nome === col && !c.is_customizada);
+      return cfg ? cfg.visivel : true;
+    });
+    const custom = etapasConfigDB
+      .filter((c) => c.is_customizada && c.visivel)
+      .sort((a, b) => a.ordem - b.ordem)
+      .map((c) => c.etapa_nome);
+    return [...standard, ...custom];
+  }, [etapasConfigDB]);
 
   // Posições da vaga (Doc Mestre — Etapa 6: bloquear contratações além do total).
   const posicoesVaga: number = (vaga as unknown as { posicoes?: number } | null)?.posicoes ?? 1;
@@ -877,6 +905,127 @@ export default function VagaDetalheAdmin() {
     if (r) setVagaSupabaseData(r);
   }
 
+  async function moverCandidatoComAutomacao(candidatoId: string, etapaAnterior: string, etapaNova: string) {
+    if (!vagaSupabaseData) return;
+    const vd = vagaSupabaseData;
+    const cand = candidatosVaga.find((c) => c.id === candidatoId);
+    if (!cand) return;
+
+    const ETAPAS_SEM_NOTIF_CANDIDATO = ["Reprovado", "Banco de Talentos"];
+    const candidatoNotificado = !!cand.email && !ETAPAS_SEM_NOTIF_CANDIDATO.includes(etapaNova);
+
+    try {
+      // Notificar consultor responsável
+      if (vd.responsavel_id) {
+        const { data: consultor } = await supabase
+          .from("users_profile")
+          .select("email, nome")
+          .eq("id", vd.responsavel_id)
+          .maybeSingle();
+        if ((consultor as any)?.email) {
+          sendEmail(
+            (consultor as any).email,
+            `Movimentação: ${cand.nome}`,
+            emailMovimentacaoConsultor({
+              nomeConsultor: (consultor as any).nome ?? "Consultor",
+              nomeCandidato: cand.nome,
+              cargoVaga: vd.titulo,
+              etapaAnterior,
+              etapaNova,
+            })
+          );
+        }
+      }
+
+      // Notificar candidato
+      if (candidatoNotificado) {
+        sendEmail(
+          cand.email!,
+          `Atualização sobre sua candidatura — ${vd.titulo}`,
+          emailMovimentacaoCandidato({ nome: cand.nome.split(" ")[0], cargoVaga: vd.titulo, etapaNova })
+        );
+      }
+
+      // Notificar cliente
+      if (vd.is_avulsa && vd.avulsa_solicitante_email) {
+        sendEmail(
+          vd.avulsa_solicitante_email,
+          `Atualização: ${cand.nome}`,
+          emailMovimentacaoCliente({
+            nomeContato: vd.avulsa_solicitante_nome ?? "Cliente",
+            nomeCandidato: cand.nome,
+            cargoVaga: vd.titulo,
+            etapaNova,
+          })
+        );
+      } else if (!vd.is_avulsa && vd.empresa_id) {
+        await (supabase as any).from("app_notifications").insert({
+          company_id: vd.empresa_id,
+          tipo: "movimentacao_candidato",
+          titulo: `${cand.nome} avançou de etapa`,
+          mensagem: `${cand.nome} está agora em "${etapaNova}" no processo de ${vd.titulo}.`,
+          lida: false,
+        });
+      }
+
+      // Log de movimentação
+      await (supabase as any).from("etapa_movimento_log").insert({
+        candidate_id: candidatoId,
+        job_id: vd.id,
+        etapa_anterior: etapaAnterior,
+        etapa_nova: etapaNova,
+        consultor_notificado: !!vd.responsavel_id,
+        candidato_notificado: candidatoNotificado,
+        cliente_notificado: !!(vd.avulsa_solicitante_email || vd.empresa_id),
+      });
+    } catch (e) {
+      console.error("[automacao movimentacao]", e);
+    }
+  }
+
+  async function toggleEtapaVisivel(etapaNome: string, visivel: boolean) {
+    if (!vagaSupabaseData) return;
+    if (!visivel) {
+      const qtt = candidatosVaga.filter(
+        (c) => colunasEstado[c.id] === etapaNome && !desclassificados.has(c.id)
+      ).length;
+      if (qtt > 0) {
+        toast.error(`Essa etapa tem ${qtt} candidato(s) — mova-os antes de ocultar.`);
+        return;
+      }
+    }
+    const ordemPadrao = (colunas as readonly string[]).indexOf(etapaNome);
+    await (supabase as any).from("vaga_etapas_config").upsert(
+      { job_id: vagaSupabaseData.id, etapa_nome: etapaNome, visivel, is_customizada: false, ordem: ordemPadrao >= 0 ? ordemPadrao : 99 },
+      { onConflict: "job_id,etapa_nome" }
+    );
+    setEtapasConfigDB((prev) => {
+      const next = prev.filter((c) => c.etapa_nome !== etapaNome);
+      return [...next, { etapa_nome: etapaNome, visivel, ordem: ordemPadrao >= 0 ? ordemPadrao : 99, is_customizada: false }];
+    });
+  }
+
+  async function adicionarEtapaCustomizada() {
+    const nome = novaEtapaNome.trim();
+    if (!nome || !vagaSupabaseData) return;
+    if (colunasVisiveis.includes(nome) || etapasConfigDB.some((c) => c.etapa_nome === nome)) {
+      toast.error("Já existe uma etapa com esse nome.");
+      return;
+    }
+    setAdicionandoEtapa(true);
+    const ordem = 1000 + etapasConfigDB.filter((c) => c.is_customizada).length;
+    const { error } = await (supabase as any).from("vaga_etapas_config").upsert(
+      { job_id: vagaSupabaseData.id, etapa_nome: nome, visivel: true, is_customizada: true, ordem },
+      { onConflict: "job_id,etapa_nome" }
+    );
+    setAdicionandoEtapa(false);
+    if (!error) {
+      setEtapasConfigDB((prev) => [...prev, { etapa_nome: nome, visivel: true, ordem, is_customizada: true }]);
+      setNovaEtapaNome("");
+      toast.success(`Etapa "${nome}" adicionada.`);
+    }
+  }
+
   function moverCandidato(candId: string, coluna: Coluna) {
     const cand = candidatosVaga.find((c) => c.id === candId);
     const anterior = colunasEstado[candId];
@@ -901,6 +1050,7 @@ export default function VagaDetalheAdmin() {
           canal: "interno" as const,
         },
       ]);
+      moverCandidatoComAutomacao(candId, anterior, coluna);
     }
   }
 
@@ -1174,12 +1324,12 @@ export default function VagaDetalheAdmin() {
     const cand = candidatosVaga.find((c) => c.id === candId);
     if (!cand) return;
     const atual = colunasEstado[candId];
-    const idx = colunas.indexOf(atual);
-    if (idx < 0 || idx >= colunas.length - 1) {
+    const idx = colunasVisiveis.indexOf(atual);
+    if (idx < 0 || idx >= colunasVisiveis.length - 1) {
       toast.info(`${cand.nome} já está na última etapa.`);
       return;
     }
-    const proxima = colunas[idx + 1];
+    const proxima = colunasVisiveis[idx + 1];
     if (tentarMover(candId, proxima)) return;
     setColunasEstado((prev) => ({ ...prev, [candId]: proxima }));
     toast.info(`${cand.nome} avançado para ${proxima}.`);
@@ -1245,8 +1395,8 @@ export default function VagaDetalheAdmin() {
     setDraggingId(null);
     setDragOverCol(null);
     if (colunaAtual === coluna) return;
-    const indexAtual = colunas.indexOf(colunaAtual);
-    const indexNova = colunas.indexOf(coluna);
+    const indexAtual = colunasVisiveis.indexOf(colunaAtual);
+    const indexNova = colunasVisiveis.indexOf(coluna);
     // Backward move must be intercepted BEFORE tentarMoverSemAlerta (which always returns true)
     if (indexNova >= 0 && indexAtual >= 0 && indexNova < indexAtual) {
       setVoltaEtapaOpen({ candId: id, de: colunaAtual, para: coluna });
@@ -1733,6 +1883,12 @@ export default function VagaDetalheAdmin() {
             >
               <Users className="h-3.5 w-3.5" /> Convidar do Banco de Talentos
             </button>
+            <button
+              onClick={() => setConfigurarEtapasOpen(true)}
+              className="h-8 px-3 rounded-lg border border-border text-xs flex items-center gap-1.5 hover:bg-secondary"
+            >
+              <Settings className="h-3.5 w-3.5" /> Configurar etapas
+            </button>
             {/* "Criar questionário" foi movido para a aba Questionários */}
             <span className="text-xs text-muted-foreground ml-auto inline-flex items-center gap-2">
               <span className={cn(
@@ -1790,13 +1946,13 @@ export default function VagaDetalheAdmin() {
 
           <div className="-mx-2 overflow-x-auto pb-3 kanban-scroll">
             <div className="flex gap-3 px-2 min-w-max">
-              {colunas.map((col) => {
+              {colunasVisiveis.map((col) => {
                 const candidatosNaColuna = candidatosVaga.filter(
                   (c) => colunasEstado[c.id] === col && !desclassificados.has(c.id)
                 );
                 const isOver = dragOverCol === col;
                 const corCol = (["#264478", "#6B3FBF", "#12786B", "#B4740E", "#1E8A4C", "#5B6B85"] as const)[
-                  colunas.indexOf(col) % 6
+                  colunasVisiveis.indexOf(col) % 6
                 ];
                 return (
                   <div
@@ -1919,9 +2075,9 @@ export default function VagaDetalheAdmin() {
                                   <DropdownMenuItem onClick={() => {
                                     setMenuAbertoId(null);
                                     const atual = colunasEstado[c.id];
-                                    const idx = colunas.indexOf(atual);
+                                    const idx = colunasVisiveis.indexOf(atual);
                                     if (idx <= 0) { toast.info(`${c.nome} já está na primeira etapa.`); return; }
-                                    const anterior = colunas[idx - 1];
+                                    const anterior = colunasVisiveis[idx - 1];
                                     setColunasEstado((prev) => ({ ...prev, [c.id]: anterior }));
                                     toast.info(`${c.nome} retornado para ${anterior}.`);
                                   }}>
@@ -4098,6 +4254,80 @@ export default function VagaDetalheAdmin() {
               className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Confirmar retrocesso
+            </button>
+          </div>
+        </ModalShell>
+      )}
+
+      {/* ── Modal: Configurar etapas ────────────────────────────── */}
+      {configurarEtapasOpen && (
+        <ModalShell title="Configurar etapas desta vaga" onClose={() => setConfigurarEtapasOpen(false)}>
+          <p className="text-xs text-muted-foreground mb-4">
+            Oculte etapas que não se aplicam a esse processo, ou adicione etapas extras.
+            Etapas ocultas não aparecem no Kanban, mas os dados de candidatos que já passaram por elas ficam preservados.
+          </p>
+
+          <div className="border border-border rounded-lg overflow-hidden mb-4">
+            {(colunas as readonly string[]).map((etapa, i) => {
+              const cfg = etapasConfigDB.find((c) => c.etapa_nome === etapa && !c.is_customizada);
+              const visivel = cfg ? cfg.visivel : true;
+              const naCand = candidatosVaga.filter(
+                (c) => colunasEstado[c.id] === etapa && !desclassificados.has(c.id)
+              ).length;
+              return (
+                <div
+                  key={etapa}
+                  className={`flex items-center justify-between px-4 py-2.5 ${i < (colunas as readonly string[]).length - 1 ? "border-b border-border" : ""}`}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={`text-sm truncate ${visivel ? "text-foreground" : "text-muted-foreground line-through"}`}>{etapa}</span>
+                    {naCand > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 shrink-0">{naCand}</span>
+                    )}
+                  </div>
+                  <Switch
+                    checked={visivel}
+                    onCheckedChange={(v) => toggleEtapaVisivel(etapa, v)}
+                  />
+                </div>
+              );
+            })}
+            {etapasConfigDB.filter((c) => c.is_customizada).map((etapa) => {
+              const naCand = candidatosVaga.filter(
+                (c) => colunasEstado[c.id] === etapa.etapa_nome && !desclassificados.has(c.id)
+              ).length;
+              return (
+                <div key={etapa.etapa_nome} className="flex items-center justify-between px-4 py-2.5 border-t border-border bg-secondary/20">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">custom</span>
+                    <span className="text-sm text-foreground truncate">{etapa.etapa_nome}</span>
+                    {naCand > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 shrink-0">{naCand}</span>
+                    )}
+                  </div>
+                  <Switch
+                    checked={etapa.visivel}
+                    onCheckedChange={(v) => toggleEtapaVisivel(etapa.etapa_nome, v)}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex gap-2">
+            <Input
+              value={novaEtapaNome}
+              onChange={(e) => setNovaEtapaNome(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && adicionarEtapaCustomizada()}
+              placeholder="Nome da nova etapa (ex: Entrevista com RH interno)"
+              className="flex-1 h-9 text-sm"
+            />
+            <button
+              onClick={adicionarEtapaCustomizada}
+              disabled={!novaEtapaNome.trim() || adicionandoEtapa}
+              className="h-9 px-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <Plus className="h-4 w-4" /> Adicionar
             </button>
           </div>
         </ModalShell>

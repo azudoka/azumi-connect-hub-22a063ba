@@ -354,3 +354,78 @@ export function emailEntrevistaConfirmada(params: {
     paragrafo(`Boa sorte! Estamos torcendo por você. 🚀`)
   );
 }
+
+export function emailMovimentacaoCandidato(params: {
+  nome: string;
+  cargoVaga: string;
+  etapaNova: string;
+}): string {
+  return emailWrapper(
+    "Atualização no seu processo seletivo",
+    paragrafo(
+      `Olá, <strong>${params.nome}</strong>! Temos novidades sobre sua candidatura para a vaga de <strong>${params.cargoVaga}</strong>.`
+    ) +
+    `<div style="margin:24px auto;max-width:360px;background:#EEF5FF;border:1px solid #c5d8f5;border-radius:12px;padding:18px 24px;text-align:center;">
+      <p style="margin:0 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#7FA8E8;font-family:${FONT_FAMILY};">Você está agora em</p>
+      <p style="margin:0;font-size:20px;font-weight:800;color:#264478;font-family:${FONT_FAMILY};">${params.etapaNova}</p>
+    </div>` +
+    paragrafo(
+      `Continue acompanhando — em breve nossa equipe entrará em contato com os próximos passos. Estamos torcendo por você! 🚀`
+    )
+  );
+}
+
+export function emailMovimentacaoConsultor(params: {
+  nomeConsultor: string;
+  nomeCandidato: string;
+  cargoVaga: string;
+  etapaAnterior: string;
+  etapaNova: string;
+}): string {
+  return emailWrapper(
+    "Movimentação de candidato",
+    paragrafo(
+      `Olá, <strong>${params.nomeConsultor}</strong>! Há uma atualização no processo seletivo da vaga de <strong>${params.cargoVaga}</strong>.`
+    ) +
+    `<div style="margin:24px auto;max-width:400px;background:#F7F9FD;border:1px solid #D8E8F5;border-radius:12px;overflow:hidden;">
+      <div style="background:#264478;padding:10px 20px;">
+        <p style="margin:0;font-size:13px;font-weight:700;color:#fff;font-family:${FONT_FAMILY};">Candidato: ${params.nomeCandidato}</p>
+      </div>
+      <div style="padding:14px 20px;display:flex;gap:12px;align-items:center;text-align:left;">
+        <div style="flex:1;">
+          <p style="margin:0 0 2px;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#7FA8E8;font-family:${FONT_FAMILY};">De</p>
+          <p style="margin:0;font-size:14px;font-weight:600;color:#5B6B85;font-family:${FONT_FAMILY};">${params.etapaAnterior}</p>
+        </div>
+        <p style="margin:0;font-size:20px;color:#264478;">→</p>
+        <div style="flex:1;">
+          <p style="margin:0 0 2px;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#7FA8E8;font-family:${FONT_FAMILY};">Para</p>
+          <p style="margin:0;font-size:14px;font-weight:700;color:#264478;font-family:${FONT_FAMILY};">${params.etapaNova}</p>
+        </div>
+      </div>
+    </div>` +
+    paragrafo(`Acesse a plataforma para acompanhar o andamento do processo.`)
+  );
+}
+
+export function emailMovimentacaoCliente(params: {
+  nomeContato: string;
+  nomeCandidato: string;
+  cargoVaga: string;
+  etapaNova: string;
+}): string {
+  return emailWrapper(
+    `Atualização: ${params.nomeCandidato}`,
+    paragrafo(
+      `Olá, <strong>${params.nomeContato}</strong>! Gostaríamos de informar que houve uma movimentação no processo seletivo da vaga de <strong>${params.cargoVaga}</strong>.`
+    ) +
+    `<div style="margin:24px auto;max-width:360px;background:#EEF5FF;border:1px solid #c5d8f5;border-radius:12px;padding:18px 24px;text-align:center;">
+      <p style="margin:0 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#7FA8E8;font-family:${FONT_FAMILY};">Candidato</p>
+      <p style="margin:0 0 10px;font-size:17px;font-weight:700;color:#14233F;font-family:${FONT_FAMILY};">${params.nomeCandidato}</p>
+      <p style="margin:0 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#7FA8E8;font-family:${FONT_FAMILY};">Está agora em</p>
+      <p style="margin:0;font-size:20px;font-weight:800;color:#264478;font-family:${FONT_FAMILY};">${params.etapaNova}</p>
+    </div>` +
+    paragrafo(
+      `Nossa equipe segue trabalhando para encontrar o melhor perfil para a sua empresa. Em breve traremos mais novidades!`
+    )
+  );
+}
