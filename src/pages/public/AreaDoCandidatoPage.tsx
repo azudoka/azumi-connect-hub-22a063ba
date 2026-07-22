@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Mail, ArrowRight, CheckCircle2, Instagram, Linkedin, Facebook, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import azumiLogoBranca from "@/assets/brand/azumi-logo-branca.png";
+
+const CONNECT_LOGO = "https://raw.githubusercontent.com/azudoka/azumi-connect-hub-oficial/main/public/connect-logo.png";
 import {
   sendEmail,
   emailAcessoAreaCandidato,
@@ -102,8 +105,10 @@ export default function AreaDoCandidatoPage() {
       <div className="px-4 pt-4 pb-2">
         <div className="max-w-5xl mx-auto flex items-center justify-between rounded-full px-4 py-1.5 backdrop-blur-md border border-white/10 shadow-elevated"
           style={{ background: "hsl(var(--ocean) / 0.9)" }}>
-          <Link to="/vagas" className="flex items-center rounded-full px-2 py-1 transition-colors hover:bg-white/10">
-            <AzumiLogo product="Connect" light size={19} hideSubtitle />
+          <Link to="/vagas" className="flex items-center gap-2 rounded-full px-2 py-1 transition-colors hover:bg-white/10">
+            <img src={azumiLogoBranca} alt="Azumi RH" style={{ height: 22 }} />
+            <div className="w-px h-4 bg-white/20" />
+            <img src={CONNECT_LOGO} alt="Connect" style={{ height: 28 }} />
           </Link>
           <Link
             to="/vagas"
