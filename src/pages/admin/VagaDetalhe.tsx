@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 import { publicarVaga, despublicarVaga, getVaga, atualizarVaga, definirStatusVaga, excluirVaga, criarVaga, type VagaSupabase, type CriarVagaInput } from "@/services/vagasService";
 import { criarLinkCurto } from "@/services/shortLinkService";
-import { emailConviteQuestionario, emailAprovado, emailNaoAprovado, emailSolicitarNps, emailAgendamentoEntrevista, emailConsultorContraProposta, emailCompletarCadastro, emailReagendarEntrevista, emailMudancaProcesso, sendEmail } from "@/lib/emailTemplates";
+import { emailConviteQuestionario, emailAprovado, emailNaoAprovado, emailSolicitarNps, emailAgendamentoEntrevista, emailConsultorContraProposta, emailCompletarCadastro, emailReagendarEntrevista, emailMudancaProcesso, emailEntrevistaConfirmada, sendEmail } from "@/lib/emailTemplates";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -3628,18 +3628,17 @@ export default function VagaDetalheAdmin() {
                       .eq("token", ag.token);
                     if (error) { toast.error("Erro ao confirmar."); return; }
                     if (cExtra.email) {
-                      const link = `${window.location.origin}/confirmar-entrevista/${ag.token}`;
-                      sendEmail(cExtra.email, `Entrevista confirmada — ${vaga.titulo ?? vaga.cargo}`, emailAgendamentoEntrevista({
-                        nome: cExtra.nome,
-                        tituloVaga: vaga.titulo ?? vaga.cargo,
-                        cargoVaga: vaga.cargo,
-                        data1: new Date(horarioSugerido).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" }),
-                        hora1: new Date(horarioSugerido).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-                        data2: new Date(horarioSugerido).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" }),
-                        hora2: new Date(horarioSugerido).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-                        modalidade: "A confirmar",
-                        link,
-                      }));
+                      sendEmail(
+                        cExtra.email,
+                        `🎉 Entrevista confirmada — ${vaga.titulo ?? vaga.cargo}`,
+                        emailEntrevistaConfirmada({
+                          nome: cExtra.nome.split(" ")[0],
+                          cargoVaga: vaga.titulo ?? vaga.cargo,
+                          data: new Date(horarioSugerido).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" }),
+                          hora: new Date(horarioSugerido).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+                          modalidade: "A confirmar",
+                        })
+                      );
                     }
                     setAgendamentosMap((prev) => ({ ...prev, [revisarSugestaoOpen!]: { ...prev[revisarSugestaoOpen!], status: "confirmado" } }));
                     toast.success("Entrevista confirmada no horário do candidato.");
@@ -3756,6 +3755,7 @@ export default function VagaDetalheAdmin() {
         onConvidarParaVaga={(id) => { setConvidarVagaCandId(id); setConvidarVagaOpen(true); }}
         onRecarregarCandidaturas={recarregarCandidaturas}
         onExcluir={(id) => setExcluirCandidatoOpen(id)}
+        onRevisarSugestao={(id) => setRevisarSugestaoOpen(id)}
         onReagendar={() => {
           if (fichaCandidatoId) {
             setAgendamentosMap((prev) => {
@@ -5920,6 +5920,7 @@ function CandidatoDetailSheet({
   onRecarregarCandidaturas,
   onExcluir,
   onReagendar,
+  onRevisarSugestao,
 }: {
   open: boolean;
   candidato: CandidatoBase | null;
@@ -5946,6 +5947,7 @@ function CandidatoDetailSheet({
   onRecarregarCandidaturas?: () => void;
   onExcluir?: (id: string) => void;
   onReagendar?: () => void;
+  onRevisarSugestao?: (candidatoId: string) => void;
 }) {
   useScrollLock(open);
   const { id: vagaIdParam } = useParams();
@@ -6346,9 +6348,25 @@ function CandidatoDetailSheet({
                   </p>
                 )}
                 {st === "candidato_sugeriu" && agendamento.horarioCandidato && (
-                  <p className="text-[11px] text-muted-foreground">
-                    Horário sugerido: <strong>{new Date(agendamento.horarioCandidato).toLocaleString("pt-BR", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</strong>
-                  </p>
+                  <div className="space-y-2">
+                    <p className="text-[11px] text-muted-foreground">
+                      Horário sugerido: <strong className="text-foreground">{new Date(agendamento.horarioCandidato).toLocaleString("pt-BR", { weekday: "long", day: "2-digit", month: "long", hour: "2-digit", minute: "2-digit" })}</strong>
+                    </p>
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        onClick={() => onRevisarSugestao?.(cand.id)}
+                        className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-primary text-primary-foreground hover:bg-[hsl(var(--primary)/0.9)] text-xs font-medium"
+                      >
+                        <CalendarCheck2 className="h-3.5 w-3.5" /> Aceitar horário sugerido
+                      </button>
+                      <button
+                        onClick={() => onRevisarSugestao?.(cand.id)}
+                        className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-border hover:bg-secondary text-xs font-medium"
+                      >
+                        <CalendarDays className="h-3.5 w-3.5" /> Propor outro horário
+                      </button>
+                    </div>
+                  </div>
                 )}
                 {st === "aguardando_candidato" && (
                   <button

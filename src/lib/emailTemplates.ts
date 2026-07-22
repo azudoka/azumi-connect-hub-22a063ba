@@ -286,3 +286,41 @@ export function emailMudancaProcesso(params: { nome: string; cargoVaga: string }
     )
   );
 }
+
+export function emailEntrevistaConfirmada(params: { nome: string; cargoVaga: string; data: string; hora: string; modalidade: string }): string {
+  const tips = `
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border-radius:12px;overflow:hidden;border:1px solid #e3eaf5;">
+      <tr><td style="background:#264478;padding:12px 20px;">
+        <p style="margin:0;font-size:13px;font-weight:700;color:#ffffff;font-family:${FONT_FAMILY};">✅ Dicas para arrasar na entrevista</p>
+      </td></tr>
+      <tr><td style="background:#f7f9fd;padding:16px 20px;">
+        <ul style="margin:0;padding:0 0 0 18px;font-size:13px;color:#5B6B85;font-family:${FONT_FAMILY};line-height:2;">
+          <li>Revise suas principais experiências e conquistas profissionais</li>
+          <li>Pesquise sobre a empresa e a vaga antes de entrar</li>
+          <li>Tenha em mãos seu currículo e portfólio, se houver</li>
+          <li>Prepare-se para responder sobre seu perfil e motivações</li>
+          <li>Vista-se de forma adequada ao ambiente profissional</li>
+          <li>Chegue (ou entre na chamada) com alguns minutos de antecedência 😊</li>
+        </ul>
+      </td></tr>
+    </table>`;
+
+  const infoBox = `
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border-radius:10px;background:#EEF5FF;border:1px solid #c5d8f5;">
+      <tr><td style="padding:14px 20px;text-align:left;">
+        <p style="margin:0 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#7FA8E8;font-family:${FONT_FAMILY};">Data e horário confirmados</p>
+        <p style="margin:0;font-size:17px;font-weight:700;color:#14233F;font-family:${FONT_FAMILY};">${params.data} às ${params.hora}</p>
+        <p style="margin:4px 0 0;font-size:12px;color:#5B6B85;font-family:${FONT_FAMILY};">${params.modalidade}</p>
+      </td></tr>
+    </table>`;
+
+  return emailWrapper(
+    "🎉 Entrevista confirmada!",
+    paragrafo(
+      `Olá, <strong>${params.nome}</strong>! Sua sugestão de horário foi aceita e a entrevista para a vaga de <strong>${params.cargoVaga}</strong> está confirmada!`
+    ) +
+    infoBox +
+    tips +
+    paragrafo(`Boa sorte! Estamos torcendo por você. 🚀`)
+  );
+}
