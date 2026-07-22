@@ -256,3 +256,33 @@ export function emailCompletarCadastro(params: { nome: string; cargoVaga: string
     ) + botao(params.link, "Completar meu cadastro")
   );
 }
+
+export function emailReagendarEntrevista(params: { nome: string; cargoVaga: string }): string {
+  return emailWrapper(
+    "Precisamos reagendar sua entrevista",
+    paragrafo(
+      `Olá, <strong>${params.nome}</strong>! Tivemos uma eventualidade e infelizmente não conseguiremos realizar a entrevista no horário previamente combinado para a vaga de <strong>${params.cargoVaga}</strong>.`
+    ) +
+    paragrafo(
+      `Pedimos desculpas pelo transtorno. Nossa equipe entrará em contato em breve com novas opções de horário para que possamos dar continuidade ao processo seletivo.`
+    ) +
+    paragrafo(
+      `Obrigada pela compreensão e pela sua participação!`
+    )
+  );
+}
+
+export function emailMudancaProcesso(params: { nome: string; cargoVaga: string }): string {
+  return emailWrapper(
+    "Atualização sobre seu processo seletivo",
+    paragrafo(
+      `Olá, <strong>${params.nome}</strong>! Gostaríamos de informar que houve uma atualização no andamento do processo seletivo para a vaga de <strong>${params.cargoVaga}</strong>.`
+    ) +
+    paragrafo(
+      `Sua participação <strong>continua ativa</strong> e seguiremos avaliando seu perfil. Em breve nossa equipe entrará em contato com os próximos passos.`
+    ) +
+    paragrafo(
+      `Agradecemos sua paciência e interesse em fazer parte do time!`
+    )
+  );
+}

@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 import { publicarVaga, despublicarVaga, getVaga, atualizarVaga, definirStatusVaga, excluirVaga, criarVaga, type VagaSupabase, type CriarVagaInput } from "@/services/vagasService";
 import { criarLinkCurto } from "@/services/shortLinkService";
-import { emailConviteQuestionario, emailAprovado, emailNaoAprovado, emailSolicitarNps, emailAgendamentoEntrevista, emailConsultorContraProposta, emailCompletarCadastro, sendEmail } from "@/lib/emailTemplates";
+import { emailConviteQuestionario, emailAprovado, emailNaoAprovado, emailSolicitarNps, emailAgendamentoEntrevista, emailConsultorContraProposta, emailCompletarCadastro, emailReagendarEntrevista, emailMudancaProcesso, sendEmail } from "@/lib/emailTemplates";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -3756,6 +3756,15 @@ export default function VagaDetalheAdmin() {
         onConvidarParaVaga={(id) => { setConvidarVagaCandId(id); setConvidarVagaOpen(true); }}
         onRecarregarCandidaturas={recarregarCandidaturas}
         onExcluir={(id) => setExcluirCandidatoOpen(id)}
+        onReagendar={() => {
+          if (fichaCandidatoId) {
+            setAgendamentosMap((prev) => {
+              const next = { ...prev };
+              delete next[fichaCandidatoId];
+              return next;
+            });
+          }
+        }}
       />
 
       {/* ── Modal: Convidar para outra vaga ──────────────────────── */}
@@ -4003,6 +4012,12 @@ export default function VagaDetalheAdmin() {
             Mover de <strong className="text-foreground">{voltaEtapaOpen.de}</strong> para <strong className="text-foreground">{voltaEtapaOpen.para}</strong>.
             Essa é uma etapa anterior no processo — confirma que foi um erro ou que existe um motivo para retroceder?
           </p>
+          {(voltaEtapaOpen.de === "Entrevista Azumi" || voltaEtapaOpen.de === "Entrevista gestor" || voltaEtapaOpen.de === "Quest/Entrevista") && (
+            <div className="mt-3 rounded-md bg-[hsl(var(--info)/0.1)] border border-[hsl(var(--info)/0.3)] px-3 py-2.5 text-xs text-info flex items-start gap-2">
+              <CalendarDays className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>O candidato receberá um e-mail informando sobre a mudança no processo. Qualquer agendamento de entrevista pendente será cancelado e um novo poderá ser criado.</span>
+            </div>
+          )}
           <textarea
             value={voltaJustificativa}
             onChange={(e) => setVoltaJustificativa(e.target.value)}
@@ -4018,11 +4033,28 @@ export default function VagaDetalheAdmin() {
             </button>
             <button
               disabled={!voltaJustificativa.trim()}
-              onClick={() => {
-                const { candId, para } = voltaEtapaOpen;
+              onClick={async () => {
+                const { candId, de, para } = voltaEtapaOpen;
                 setColunasEstado((prev) => ({ ...prev, [candId]: para }));
                 const cand = candidatosVaga.find((c) => c.id === candId);
                 toast.info(`${cand?.nome ?? "Candidato"} movido para ${para}. Motivo: ${voltaJustificativa}`);
+                const etapasEntrevista = ["Entrevista Azumi", "Entrevista gestor", "Quest/Entrevista"] as Coluna[];
+                if (etapasEntrevista.includes(de)) {
+                  const ag = agendamentosMap[candId];
+                  if (ag) {
+                    await supabase.from("entrevista_agendamentos").update({ status: "expirado" } as any).eq("token", ag.token);
+                    setAgendamentosMap((prev) => { const next = { ...prev }; delete next[candId]; return next; });
+                  }
+                  const candidatoExtra = candidatosExtras.find((c) => c.id === candId);
+                  if (candidatoExtra?.email) {
+                    const cargoVaga = vaga?.titulo ?? "Vaga";
+                    sendEmail(
+                      candidatoExtra.email,
+                      `Atualização no seu processo seletivo — ${cargoVaga}`,
+                      emailMudancaProcesso({ nome: candidatoExtra.nome.split(" ")[0], cargoVaga })
+                    );
+                  }
+                }
                 setVoltaEtapaOpen(null);
                 setVoltaJustificativa("");
               }}
@@ -5887,6 +5919,7 @@ function CandidatoDetailSheet({
   onConvidarParaVaga,
   onRecarregarCandidaturas,
   onExcluir,
+  onReagendar,
 }: {
   open: boolean;
   candidato: CandidatoBase | null;
@@ -5912,6 +5945,7 @@ function CandidatoDetailSheet({
   onConvidarParaVaga?: (candidatoId: string) => void;
   onRecarregarCandidaturas?: () => void;
   onExcluir?: (id: string) => void;
+  onReagendar?: () => void;
 }) {
   useScrollLock(open);
   const { id: vagaIdParam } = useParams();
@@ -6100,7 +6134,7 @@ function CandidatoDetailSheet({
         onTouchMove={(e) => e.stopPropagation()}
       >
       <aside
-        className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-2xl max-h-[92vh] flex flex-col animate-scale-in overflow-hidden"
+        className="bg-card border border-border rounded-2xl shadow-elevated w-full max-w-4xl max-h-[92vh] flex flex-col animate-scale-in overflow-hidden"
         role="dialog"
         aria-label={`Ficha de ${cand.nome}`}
         onClick={(e) => e.stopPropagation()}
@@ -6170,7 +6204,7 @@ function CandidatoDetailSheet({
           </div>
 
           {/* Ações principais */}
-          <div className="mt-4 flex flex-wrap gap-1.5">
+          <div className="mt-4 flex gap-1.5 overflow-x-auto pb-0.5">
             <button
               onClick={() => onSolicitarDisc(cand.id)}
               className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-border hover:bg-secondary text-xs font-medium"
@@ -6332,6 +6366,24 @@ function CandidatoDetailSheet({
                     className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-border hover:bg-secondary text-[11px] font-medium"
                   >
                     <Mail className="h-3 w-3" /> Reenviar lembrete
+                  </button>
+                )}
+                {st !== "descontinuado" && st !== "expirado" && (
+                  <button
+                    onClick={async () => {
+                      if (!candidatoExtra?.email) { toast.error("Candidato sem e-mail cadastrado."); return; }
+                      await supabase.from("entrevista_agendamentos").update({ status: "expirado" } as any).eq("token", agendamento.token);
+                      sendEmail(
+                        candidatoExtra.email,
+                        `Reagendamento de entrevista — ${tituloVaga}`,
+                        emailReagendarEntrevista({ nome: candidatoExtra.nome.split(" ")[0], cargoVaga: tituloVaga })
+                      );
+                      toast.success("E-mail de reagendamento enviado. O agendamento foi resetado.");
+                      onReagendar?.();
+                    }}
+                    className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-[hsl(var(--warning)/0.5)] text-warning hover:bg-[hsl(var(--warning)/0.1)] text-[11px] font-medium"
+                  >
+                    <CalendarDays className="h-3 w-3" /> Reagendar
                   </button>
                 )}
               </div>
