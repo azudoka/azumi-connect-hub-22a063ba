@@ -270,9 +270,9 @@ export default function MeuPerfilPage() {
           style={{ background: "rgba(3,29,56,0.92)", backdropFilter: "blur(10px)" }}>
           {/* Logos */}
           <div className="flex items-center gap-4">
-            <img src={azumiLogoBranca} alt="Azumi RH" style={{ height: 32, width: "auto" }} />
+            <img src={azumiLogoBranca} alt="Azumi RH" style={{ height: 96, width: "auto" }} />
             <div className="w-px h-6 bg-white/20" />
-            <img src={CONNECT_LOGO} alt="Connect" style={{ height: 28, width: "auto" }} />
+            <img src={CONNECT_LOGO} alt="Connect" style={{ height: 84, width: "auto" }} />
           </div>
           {/* Nav */}
           <nav className="flex items-center gap-1.5">
@@ -724,9 +724,9 @@ export default function MeuPerfilPage() {
           {/* Logos */}
           <div className="flex items-center gap-4">
             <img src={azumiLogoBranca} alt="Azumi RH"
-              style={{ height: 42, width: "auto", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.3))" }} />
+              style={{ height: 84, width: "auto", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.3))" }} />
             <div className="w-px h-10 bg-white/15" />
-            <img src={CONNECT_LOGO} alt="Connect" style={{ height: 36, width: "auto" }} />
+            <img src={CONNECT_LOGO} alt="Connect" style={{ height: 72, width: "auto" }} />
           </div>
           {/* Social */}
           <div className="flex items-center gap-2.5">
