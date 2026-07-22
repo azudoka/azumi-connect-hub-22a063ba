@@ -197,7 +197,7 @@ export default function BancoTalentosDrawer({ open, onClose }: Props) {
 
   return createPortal(
     <div className="fixed inset-0 z-[90] bg-[hsl(var(--background)/0.7)] backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div className="relative flex w-full max-w-5xl max-h-[90vh] flex-col bg-background shadow-elevated overflow-hidden rounded-xl">
+      <div className="relative flex w-full max-w-7xl max-h-[90vh] flex-col bg-background shadow-elevated overflow-hidden rounded-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div>
