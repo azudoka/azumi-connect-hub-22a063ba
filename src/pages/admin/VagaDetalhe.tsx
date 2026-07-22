@@ -1236,23 +1236,19 @@ export default function VagaDetalheAdmin() {
   function handleDrop(coluna: Coluna) {
     if (!draggingId) return;
     const id = draggingId;
+    // Read current column BEFORE clearing state so we have the correct origin
+    const colunaAtual = colunasEstado[id];
     setDraggingId(null);
     setDragOverCol(null);
-    if (tentarMoverSemAlerta(id, coluna)) return;
-    const colunaAtual = colunasEstado[id];
+    if (colunaAtual === coluna) return;
     const indexAtual = colunas.indexOf(colunaAtual);
     const indexNova = colunas.indexOf(coluna);
-    if (indexNova < indexAtual) {
+    // Backward move must be intercepted BEFORE tentarMoverSemAlerta (which always returns true)
+    if (indexNova >= 0 && indexAtual >= 0 && indexNova < indexAtual) {
       setVoltaEtapaOpen({ candId: id, de: colunaAtual, para: coluna });
       return;
     }
-    const cand = candidatosVaga.find((c) => c.id === id);
-    setColunasEstado((prev) =>
-      prev[id] === coluna ? prev : { ...prev, [id]: coluna }
-    );
-    if (cand && colunasEstado[id] !== coluna) {
-      toast.info(`${cand.nome} movido para ${coluna}`);
-    }
+    tentarMoverSemAlerta(id, coluna);
   }
 
   function handleCliqueEnviar() {
@@ -4037,7 +4033,21 @@ export default function VagaDetalheAdmin() {
                 const { candId, de, para } = voltaEtapaOpen;
                 setColunasEstado((prev) => ({ ...prev, [candId]: para }));
                 const cand = candidatosVaga.find((c) => c.id === candId);
-                toast.info(`${cand?.nome ?? "Candidato"} movido para ${para}. Motivo: ${voltaJustificativa}`);
+                toast.info(`${cand?.nome ?? "Candidato"} movido para ${para}.`);
+                // Persist audit record
+                try {
+                  await (supabase as any).from("candidate_etapa_historico").insert({
+                    candidate_id: candId,
+                    etapa: para,
+                    etapa_anterior: de,
+                    job_id: vagaSupabaseData?.id ?? null,
+                    justificativa: voltaJustificativa.trim(),
+                    moved_by: usuario?.id ?? null,
+                    tipo: "retrocesso",
+                    entrou_em: new Date().toISOString(),
+                  });
+                } catch (e) { console.error("[auditoria retrocesso]", e); }
+                // Interview stage: reset agendamento + notify candidate
                 const etapasEntrevista = ["Entrevista Azumi", "Entrevista gestor", "Quest/Entrevista"] as Coluna[];
                 if (etapasEntrevista.includes(de)) {
                   const ag = agendamentosMap[candId];
@@ -5954,6 +5964,16 @@ function CandidatoDetailSheet({
   const navigate = useNavigate();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [fichaTab, setFichaTab] = useState<"dados" | "disc" | "processos" | "respostas">("dados");
+  const [retrocessos, setRetrocessos] = useState<{ id: string; etapa: string; etapa_anterior: string | null; justificativa: string | null; entrou_em: string }[]>([]);
+  useEffect(() => {
+    if (!open || !candidato?.id) return;
+    (supabase as any).from("candidate_etapa_historico")
+      .select("id, etapa, etapa_anterior, justificativa, entrou_em")
+      .eq("candidate_id", candidato.id)
+      .eq("tipo", "retrocesso")
+      .order("entrou_em", { ascending: false })
+      .then(({ data }: { data: any }) => { if (data) setRetrocessos(data); });
+  }, [open, candidato?.id]);
   const [editarCandOpen, setEditarCandOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     nome: candidatoExtra?.nome ?? "",
@@ -6762,6 +6782,31 @@ function CandidatoDetailSheet({
                 </div>
               )}
             </div>
+
+            {retrocessos.length > 0 && (
+              <div className="rounded-lg border border-[hsl(var(--warning)/0.35)] bg-[hsl(var(--warning)/0.04)] p-3">
+                <div className="text-xs font-semibold text-warning uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <AlertTriangle className="h-3 w-3" /> Movimentações auditadas ({retrocessos.length})
+                </div>
+                <ul className="space-y-2">
+                  {retrocessos.map((r) => (
+                    <li key={r.id} className="rounded-md border border-[hsl(var(--warning)/0.2)] bg-card px-3 py-2 text-xs">
+                      <div className="flex items-center gap-1 text-warning font-medium mb-0.5">
+                        <span>{r.etapa_anterior ?? "—"}</span>
+                        <span className="text-muted-foreground">→</span>
+                        <span>{r.etapa}</span>
+                        <span className="ml-auto text-[10px] text-muted-foreground font-normal">
+                          {new Date(r.entrou_em).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                      {r.justificativa && (
+                        <p className="text-muted-foreground leading-snug mt-0.5">"{r.justificativa}"</p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <div className="rounded-lg border border-border p-3">
               <div className="flex items-center justify-between mb-2">
