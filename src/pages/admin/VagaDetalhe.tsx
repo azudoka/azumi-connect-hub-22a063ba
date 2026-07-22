@@ -6204,90 +6204,96 @@ function CandidatoDetailSheet({
           </div>
 
           {/* Ações principais */}
-          <div className="mt-4 flex gap-1.5 overflow-x-auto pb-0.5">
-            <button
-              onClick={() => onSolicitarDisc(cand.id)}
-              className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-border hover:bg-secondary text-xs font-medium"
-            >
-              <MessageCircle className="h-3.5 w-3.5" /> Solicitar DISC
-            </button>
-            {(() => {
-              const labelRelatorio = relatorioStatus === "enviado"
-                ? "Relatório enviado"
-                : relatorioStatus === "rascunho"
-                ? "Rascunho salvo"
-                : "Gerar relatório";
-              const corRelatorio = relatorioStatus === "enviado"
-                ? "bg-success text-success-foreground hover:bg-[hsl(var(--success)/0.9)]"
-                : relatorioStatus === "rascunho"
-                ? "bg-[hsl(var(--warning)/0.2)] text-warning border border-[hsl(var(--warning)/0.4)] hover:bg-[hsl(var(--warning)/0.3)]"
-                : "bg-primary text-primary-foreground hover:bg-[hsl(var(--primary)/0.9)]";
-              return (
-                <button
-                  onClick={() => onAbrirRelatorio(cand.id)}
-                  className={cn(
-                    "inline-flex items-center gap-1 h-8 px-3 rounded-md text-xs font-medium",
-                    corRelatorio
-                  )}
-                >
-                  <FileText className="h-3.5 w-3.5" />
-                  {labelRelatorio}
-                </button>
-              );
-            })()}
-            {etapaPodeAgendar && (() => {
-              const agSt = agendamento?.status;
-              const aguardando = agSt === "aguardando_candidato" || agSt === "consultor_contra_proposta";
-              if (aguardando) {
-                return (
-                  <button disabled className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-border text-xs font-medium opacity-50 cursor-not-allowed">
-                    <CalendarDays className="h-3.5 w-3.5" /> Aguardando resposta
-                  </button>
-                );
-              }
-              if (agSt === "candidato_sugeriu") {
-                return (
-                  <button disabled className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-destructive/40 text-destructive text-xs font-medium opacity-80 cursor-not-allowed">
-                    <CalendarDays className="h-3.5 w-3.5" /> Candidato sugeriu horário
-                  </button>
-                );
-              }
-              if (agSt === "confirmado") {
-                return (
-                  <button disabled className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-success/40 text-success text-xs font-medium opacity-80 cursor-not-allowed">
-                    <CalendarCheck2 className="h-3.5 w-3.5" /> Entrevista confirmada
-                  </button>
-                );
-              }
-              return (
-                <button
-                  onClick={() => onAgendar(cand.id)}
-                  className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-border hover:bg-secondary text-xs font-medium"
-                >
-                  <CalendarPlus className="h-3.5 w-3.5" /> Agendar entrevista
-                </button>
-              );
-            })()}
-            <button
-              onClick={() => onConvidarParaVaga?.(cand.id)}
-              className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-border hover:bg-secondary text-xs font-medium"
-            >
-              <UserPlus className="h-3.5 w-3.5" /> Convidar para vaga
-            </button>
-            <button
-              onClick={() => onDeclinar(cand.id)}
-              className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-[hsl(var(--destructive)/0.3)] text-destructive hover:bg-[hsl(var(--destructive)/0.1)] text-xs font-medium ml-auto"
-            >
-              <ThumbsDown className="h-3.5 w-3.5" /> Registrar declínio
-            </button>
-            {onExcluir && (
+          <div className="mt-4 space-y-2">
+            {/* Linha 1: ações primárias */}
+            <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => onExcluir(cand.id)}
-                className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-[hsl(var(--destructive)/0.3)] text-destructive hover:bg-[hsl(var(--destructive)/0.1)] text-xs font-medium"
+                onClick={() => onSolicitarDisc(cand.id)}
+                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm font-medium"
               >
-                <Trash2 className="h-3.5 w-3.5" /> Excluir ficha
+                <MessageCircle className="h-4 w-4" /> Solicitar DISC
               </button>
-            )}
+              {(() => {
+                const labelRelatorio = relatorioStatus === "enviado"
+                  ? "Relatório enviado"
+                  : relatorioStatus === "rascunho"
+                  ? "Rascunho salvo"
+                  : "Gerar relatório";
+                const corRelatorio = relatorioStatus === "enviado"
+                  ? "bg-success text-success-foreground hover:bg-[hsl(var(--success)/0.9)]"
+                  : relatorioStatus === "rascunho"
+                  ? "bg-[hsl(var(--warning)/0.2)] text-warning border border-[hsl(var(--warning)/0.4)] hover:bg-[hsl(var(--warning)/0.3)]"
+                  : "bg-primary text-primary-foreground hover:bg-[hsl(var(--primary)/0.9)]";
+                return (
+                  <button
+                    onClick={() => onAbrirRelatorio(cand.id)}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-medium",
+                      corRelatorio
+                    )}
+                  >
+                    <FileText className="h-4 w-4" />
+                    {labelRelatorio}
+                  </button>
+                );
+              })()}
+              {etapaPodeAgendar && (() => {
+                const agSt = agendamento?.status;
+                const aguardando = agSt === "aguardando_candidato" || agSt === "consultor_contra_proposta";
+                if (aguardando) {
+                  return (
+                    <button disabled className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg border border-border text-sm font-medium opacity-50 cursor-not-allowed">
+                      <CalendarDays className="h-4 w-4" /> Aguardando resposta
+                    </button>
+                  );
+                }
+                if (agSt === "candidato_sugeriu") {
+                  return (
+                    <button disabled className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg border border-destructive/40 text-destructive text-sm font-medium opacity-80 cursor-not-allowed">
+                      <CalendarDays className="h-4 w-4" /> Candidato sugeriu horário
+                    </button>
+                  );
+                }
+                if (agSt === "confirmado") {
+                  return (
+                    <button disabled className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg border border-success/40 text-success text-sm font-medium opacity-80 cursor-not-allowed">
+                      <CalendarCheck2 className="h-4 w-4" /> Entrevista confirmada
+                    </button>
+                  );
+                }
+                return (
+                  <button
+                    onClick={() => onAgendar(cand.id)}
+                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm font-medium"
+                  >
+                    <CalendarPlus className="h-4 w-4" /> Agendar entrevista
+                  </button>
+                );
+              })()}
+              <button
+                onClick={() => onConvidarParaVaga?.(cand.id)}
+                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg border border-border hover:bg-secondary text-sm font-medium"
+              >
+                <UserPlus className="h-4 w-4" /> Convidar para vaga
+              </button>
+            </div>
+            {/* Linha 2: ações de risco */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => onDeclinar(cand.id)}
+                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg border border-[hsl(var(--destructive)/0.3)] text-destructive hover:bg-[hsl(var(--destructive)/0.08)] text-sm font-medium"
+              >
+                <ThumbsDown className="h-4 w-4" /> Registrar declínio
+              </button>
+              {onExcluir && (
+                <button
+                  onClick={() => onExcluir(cand.id)}
+                  className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg border border-[hsl(var(--destructive)/0.3)] text-destructive hover:bg-[hsl(var(--destructive)/0.08)] text-sm font-medium"
+                >
+                  <Trash2 className="h-4 w-4" /> Excluir ficha
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Bloco de agendamento de entrevista */}
