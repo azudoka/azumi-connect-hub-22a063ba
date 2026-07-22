@@ -69,6 +69,7 @@ import VagaDetalheCliente from "./pages/cliente/VagaDetalheCliente";
 import ConfirmarEntrevistaPage from "./pages/public/ConfirmarEntrevistaPage";
 import NpsAvulsoPage from "./pages/public/NpsAvulsoPage";
 import AtualizarCadastroPage from "./pages/public/AtualizarCadastroPage";
+import MeuPerfilPage from "./pages/public/MeuPerfilPage";
 import VagasPublicasPage from "./pages/VagasPublicasPage";
 import VagaPublicaDetalhePage from "./pages/VagaPublicaDetalhePage";
 import RedirecionadorPage from "./pages/RedirecionadorPage";
@@ -208,6 +209,7 @@ const AppRoutes = () => (
     <Route path="/convite/:token" element={<ConviteRedirect />} />
     <Route path="/nps/:token" element={<NpsAvulsoPage />} />
     <Route path="/atualizar-cadastro/:token" element={<AtualizarCadastroPage />} />
+    <Route path="/meu-perfil/:token" element={<MeuPerfilPage />} />
 
     {/* Admin / Consultor */}
     <Route

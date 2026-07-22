@@ -408,6 +408,7 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
 
       // Sempre INSERT — reaproveitamos os DADOS do candidato anterior (nome, email, etc.)
       // mas cada candidatura a uma vaga é uma linha nova com seu próprio job_id.
+      const tokenAcesso = crypto.randomUUID();
       const row = {
         job_id: vagaId ?? null,
         nome: c.nome,
@@ -437,6 +438,7 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
         indicado_por: c.indicadoPor || null,
         lgpd_aceite: c.aceitePrivacidade,
         lgpd_aceite_at: c.aceitePrivacidade ? new Date().toISOString() : null,
+        token_acesso_candidato: tokenAcesso,
       };
 
       const { data: candidatoInserido, error } = await supabase
@@ -524,7 +526,7 @@ export default function CandidaturaModal({ open, onClose, modo, vagaTitulo, vaga
         sendEmail(
           c.email,
           "Bem-vindo(a) à Azumi RH!",
-          emailBoasVindas({ nome: c.nome.split(" ")[0], link: window.location.origin + "/vagas" })
+          emailBoasVindas({ nome: c.nome.split(" ")[0], link: window.location.origin + "/meu-perfil/" + tokenAcesso })
         );
       }
 
